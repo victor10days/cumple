@@ -80,8 +80,8 @@ def specs(
         return
     table = Table(box=box.SIMPLE_HEAD, title=f"cumple {__version__}: {len(profiles)} destinations", title_justify="left")
     table.add_column("id", style="bold", no_wrap=True)
-    table.add_column("destination", max_width=28)
-    table.add_column("loudness", max_width=40)
+    table.add_column("destination", max_width=24)
+    table.add_column("loudness", max_width=30)
     table.add_column("peak", no_wrap=True)
     table.add_column("grade", no_wrap=True)
     for p in profiles:

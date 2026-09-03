@@ -15,6 +15,7 @@ PADDING_TOLERANCE_S = 0.25  # "not permitted" still allows a few frames of black
 METADATA_TOLERANCE_LU = 0.5
 DC_OFFSET_WARN_DBFS = -60.0
 SPEECH_ASSUMED_FRACTION = 1.0  # until the speech detector lands, treat programmes as dialogue-led
+LFE_FULL_RANGE_DB = -15.0  # LFE with more high-band energy than this is carrying full-range programme
 
 
 class Status(str, Enum):
@@ -225,8 +226,30 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
             have.add("bwf")
         ok = bool(have & set(f.containers))
         out.append(Finding("format.container", Status.PASS if ok else Status.FAIL, "container", info.container + (" with bext" if info.bext else ""), ", ".join(f.containers), clause=clause("format.container")))
-    if f.lfe_lowpass_hz is not None and "LFE" in m.roles:
-        out.append(Finding("format.lfe_band", Status.SKIP, "LFE content", "not measured yet", f"nothing above {f.lfe_lowpass_hz:g} Hz", note="lands in a later build", clause=clause("format.lfe_band")))
+    ls = m.layout_stats
+    if f.lfe_lowpass_hz is not None and "LFE" in m.roles and ls is not None:
+        i = m.roles.index("LFE")
+        ratio = ls.hf_ratio_db[i]
+        if ls.silent(i):
+            out.append(Finding("format.lfe_band", Status.INFO, "LFE content", "channel is silent", f"nothing above {f.lfe_lowpass_hz:g} Hz", note="an empty LFE passes trivially; make sure that is intended", clause=clause("format.lfe_band"), value=ratio))
+        else:
+            ok = ratio <= LFE_FULL_RANGE_DB
+            out.append(Finding("format.lfe_band", Status.PASS if ok else Status.FAIL, "LFE content", f"{ratio:+.1f} dB of its energy above {ls.corner_hz:g} Hz", f"below {LFE_FULL_RANGE_DB:g} dB (tool default)", note=None if ok else "the LFE channel carries full-range programme; either a full-range channel sits in the LFE slot or the LFE was never low-passed", clause=clause("format.lfe_band"), fix=None if ok else f"low-pass the LFE at {f.lfe_lowpass_hz:g} Hz, or check the channel order", value=ratio))
+    if f.channel_order == "smpte" and ls is not None and m.channels in (6, 8) and not m.is_package:
+        expected = 3
+        guess = ls.lfe_like
+        if guess is None:
+            out.append(Finding("format.channel_order", Status.INFO, "channel order", "no channel looks like an LFE", "L R C LFE Ls Rs (SMPTE)", note="cannot confirm the order from the audio: the LFE is empty or every channel is full-range", clause=clause("format.layout")))
+        elif guess == expected:
+            out.append(Finding("format.channel_order", Status.PASS, "channel order", "LFE-like channel at position 4", "L R C LFE Ls Rs (SMPTE)", clause=clause("format.layout")))
+        elif guess == 5 and m.channels == 6:
+            out.append(Finding("format.channel_order", Status.FAIL, "channel order", "LFE-like channel at position 6", "L R C LFE Ls Rs (SMPTE)", note="this looks like Film order (L C R Ls Rs LFE); the destination expects SMPTE order", clause=clause("format.layout"), fix="re-export with the channels in SMPTE order L R C LFE Ls Rs"))
+        else:
+            out.append(Finding("format.channel_order", Status.WARN, "channel order", f"LFE-like channel at position {guess + 1}", "L R C LFE Ls Rs (SMPTE)", note="the only low-frequency-only channel is not where the LFE should be; check the channel mapping", clause=clause("format.layout")))
+    if ls is not None:
+        silent = [r for r, i in zip(m.roles, range(m.channels)) if ls.silent(i)]
+        if silent and len(silent) < m.channels:
+            out.append(Finding("signal.silent_channels", Status.WARN, "silent channels", ", ".join(silent), "none expected", note="a silent channel in a multichannel deliverable is usually a routing mistake"))
 
     # ---- padding ---------------------------------------------------------------
     if p.padding.head_max_s is not None:

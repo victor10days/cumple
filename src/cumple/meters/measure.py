@@ -11,6 +11,7 @@ import soundfile as sf
 
 from ..io.reader import DEFAULT_BLOCK_FRAMES, AudioInfo, Package, iter_blocks, probe
 from .bs1770 import LoudnessMeter, LoudnessResult, default_roles
+from .layout import LayoutMeter, LayoutResult
 from .truepeak import PeakMeter, PeakResult, to_db
 
 SILENCE_DBFS = -80.0  # below this, a sample counts as padding / digital black
@@ -32,6 +33,7 @@ class Measurement:
     phase_correlation: float | None = None  # stereo only
     mono_fold_loudness: float | None = None  # loudness of (L+R)/2, stereo only
     speech_fraction: float | None = None  # not measured yet (lands with the dialogue gate)
+    layout_stats: LayoutResult | None = None
     info: AudioInfo | None = None
     package: Package | None = None
     extra: dict = field(default_factory=dict)
@@ -146,10 +148,13 @@ def _run(path: Path, fs: int, channels: int, roles: list[str], blocks: Iterator[
     peak = PeakMeter(fs, channels)
     stats = _Stats(fs, channels)
     fold = LoudnessMeter(fs, 1) if channels == 2 else None
+    layout = LayoutMeter(fs, channels) if channels >= 3 else None
     for block in blocks:
         loud.feed(block)
         peak.feed(block)
         stats.feed(block)
+        if layout is not None:
+            layout.feed(block)
         if fold is not None:
             fold.feed(block.mean(axis=1, keepdims=True))
     head, tail = stats.head_tail()
@@ -167,6 +172,7 @@ def _run(path: Path, fs: int, channels: int, roles: list[str], blocks: Iterator[
         tail_silence_s=tail,
         phase_correlation=stats.correlation(),
         mono_fold_loudness=(fold.result().integrated if fold is not None else None),
+        layout_stats=(layout.result() if layout is not None else None),
         info=info,
         package=package,
     )
