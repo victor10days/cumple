@@ -15,7 +15,7 @@ from . import __version__
 from .checks import evaluate
 from .io import load_package, probe
 from .meters.measure import measure
-from .report import print_report, report_to_dict
+from .report import print_report, report_to_dict, write_sheet
 from .specs import ProfileNotFound, get, load_all
 from .specs.schema import GRADE_LABEL, Profile
 
@@ -214,6 +214,9 @@ def check(
     spec: str = typer.Option(..., "--spec", "-s", help="Destination profile id (see `cumple specs`)."),
     as_json: bool = typer.Option(False, "--json", help="Print the full report as JSON instead of a table."),
     clauses: bool = typer.Option(False, "--clauses", help="Print the source's words under each finding."),
+    sheet: bool = typer.Option(False, "--sheet", help="Write the QC sheet (<name>.qc.html) next to the file."),
+    pdf: bool = typer.Option(False, "--pdf", help="Also print the sheet to PDF with the local Chrome."),
+    out: Path | None = typer.Option(None, "--out", help="Directory for the sheet and JSON instead of next to the file."),
 ) -> None:
     """Measure a file or package against a destination. Exit 0 on PASS, 1 on FAIL."""
     profile = _profile_or_exit(spec)
@@ -227,6 +230,13 @@ def check(
         console.print_json(json.dumps(report_to_dict(report)))
     else:
         print_report(report, console, show_clauses=clauses)
+    if sheet or pdf or out is not None:
+        base_dir = out if out is not None else (path if path.is_dir() else path.parent)
+        base_dir.mkdir(parents=True, exist_ok=True)
+        stem = path.name if path.is_dir() else path.stem
+        html_path, pdf_path = write_sheet(report, base_dir / f"{stem}.qc.html", pdf=pdf)
+        (base_dir / f"{stem}.qc.json").write_text(json.dumps(report_to_dict(report), indent=2))
+        console.print(f"[dim]sheet:[/] {html_path}" + (f"  [dim]pdf:[/] {pdf_path}" if pdf_path else ("  [yellow]pdf: Chrome not found or printing failed[/]" if pdf else "")))
     raise typer.Exit(0 if report.passed else 1)
 
 
