@@ -123,6 +123,7 @@ class LoudnessResult:
     lra: float  # LU
     momentary: np.ndarray = field(repr=False)  # one value per 100 ms hop, block ends at t
     short_term: np.ndarray = field(repr=False)
+    integrated_ungated: float = -np.inf  # BS.1770-1 style: absolute gate only
     hop_s: float = HOP_S
     relative_gate: bool = True
     blocks_total: int = 0
@@ -195,8 +196,14 @@ class LoudnessMeter:
     def short_term_energies(self) -> np.ndarray:
         return self._windowed(SHORT_TERM_HOPS)
 
-    def integrated(self) -> tuple[float, int, int]:
-        """(integrated loudness, blocks total, blocks that passed the gates)."""
+    def integrated(self, relative_gate: bool | None = None) -> tuple[float, int, int]:
+        """(integrated loudness, blocks total, blocks that passed the gates).
+
+        relative_gate=None uses the meter's setting; pass True/False to get the other
+        reading from the same pass (BS.1770-4 style with the gate, BS.1770-1 style without).
+        """
+        if relative_gate is None:
+            relative_gate = self.relative_gate
         energies = self.momentary_energies()
         if energies.size == 0:
             return -np.inf, 0, 0
@@ -204,7 +211,7 @@ class LoudnessMeter:
         keep = levels > ABSOLUTE_GATE_LKFS
         if not keep.any():
             return -np.inf, len(energies), 0
-        if self.relative_gate:
+        if relative_gate:
             threshold = loudness_from_energy(energies[keep].mean()) + RELATIVE_GATE_LU
             keep &= levels > threshold
             if not keep.any():
@@ -232,8 +239,10 @@ class LoudnessMeter:
         momentary = loudness_from_energy(self.momentary_energies())
         short_term = loudness_from_energy(self.short_term_energies())
         integrated, total, gated = self.integrated()
+        ungated, _, _ = self.integrated(relative_gate=False)
         return LoudnessResult(
             integrated=float(integrated),
+            integrated_ungated=float(ungated),
             momentary_max=float(momentary.max()) if momentary.size else -np.inf,
             short_term_max=float(short_term.max()) if short_term.size else -np.inf,
             lra=self.loudness_range(),

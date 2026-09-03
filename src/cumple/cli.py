@@ -12,7 +12,10 @@ from rich.panel import Panel
 from rich.table import Table
 
 from . import __version__
+from .checks import evaluate
 from .io import load_package, probe
+from .meters.measure import measure
+from .report import print_report, report_to_dict
 from .specs import ProfileNotFound, get, load_all
 from .specs.schema import GRADE_LABEL, Profile
 
@@ -25,7 +28,6 @@ app = typer.Typer(
 console = Console()
 
 NOT_YET = {
-    "check": "measurement engine",
     "diff": "audio diff",
     "watch": "watch folder",
     "fix": "gain-only fix",
@@ -207,10 +209,25 @@ def _not_yet(name: str) -> None:
 
 
 @app.command()
-def check(path: Path = typer.Argument(..., exists=True), spec: str = typer.Option(..., "--spec", "-s", help="Destination profile id.")) -> None:
-    """Measure a file, folder or package against a destination and write the QC sheet."""
-    _profile_or_exit(spec)
-    _not_yet("check")
+def check(
+    path: Path = typer.Argument(..., exists=True, help="An audio file, or a directory of discrete channel files."),
+    spec: str = typer.Option(..., "--spec", "-s", help="Destination profile id (see `cumple specs`)."),
+    as_json: bool = typer.Option(False, "--json", help="Print the full report as JSON instead of a table."),
+    clauses: bool = typer.Option(False, "--clauses", help="Print the source's words under each finding."),
+) -> None:
+    """Measure a file or package against a destination. Exit 0 on PASS, 1 on FAIL."""
+    profile = _profile_or_exit(spec)
+    try:
+        m = measure(path)
+    except ValueError as e:
+        console.print(f"[red]cannot measure {path}:[/] {e}")
+        raise typer.Exit(2)
+    report = evaluate(profile, m)
+    if as_json:
+        console.print_json(json.dumps(report_to_dict(report)))
+    else:
+        print_report(report, console, show_clauses=clauses)
+    raise typer.Exit(0 if report.passed else 1)
 
 
 @app.command()
