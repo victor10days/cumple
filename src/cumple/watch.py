@@ -49,7 +49,7 @@ def already_done(p: Path, out_dir: Path | None) -> bool:
 
 
 def process(p: Path, profile: Profile, out_dir: Path | None, pdf: bool, log_csv: Path | None):
-    m = measure(p)
+    m = measure(p, leqm=profile.leqm is not None)
     report = evaluate(profile, m)
     base = out_dir or p.parent
     base.mkdir(parents=True, exist_ok=True)

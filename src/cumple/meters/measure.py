@@ -10,7 +10,9 @@ import numpy as np
 import soundfile as sf
 
 from ..io.reader import DEFAULT_BLOCK_FRAMES, AudioInfo, Package, iter_blocks, probe
-from .bs1770 import LoudnessMeter, LoudnessResult, default_roles
+from .bs1770 import STEP, SUB_HOP_S, LoudnessMeter, LoudnessResult, default_roles
+from .dialogue import SpeechDetector, SpeechResult
+from .leqm import LeqmMeter, LeqmResult
 from .layout import LayoutMeter, LayoutResult
 from .truepeak import PeakMeter, PeakResult, to_db
 
@@ -32,8 +34,12 @@ class Measurement:
     tail_silence_s: float
     phase_correlation: float | None = None  # stereo only
     mono_fold_loudness: float | None = None  # loudness of (L+R)/2, stereo only
-    speech_fraction: float | None = None  # not measured yet (lands with the dialogue gate)
+    rms_dbfs: float = -np.inf
+    noise_floor_dbfs: float = -np.inf
+    speech_fraction: float | None = None  # share of active programme that is speech-like (heuristic)
+    speech: SpeechResult | None = None
     layout_stats: LayoutResult | None = None
+    leqm: LeqmResult | None = None
     info: AudioInfo | None = None
     package: Package | None = None
     extra: dict = field(default_factory=dict)
@@ -72,10 +78,21 @@ class _Stats:
         self.lr = 0.0
         self.ll = 0.0
         self.rr = 0.0
+        self.sq = 0.0
+        self.win = int(round(samplerate * 0.1))
+        self._win_pending = np.empty((0, channels))
+        self.win_energy: list[float] = []
 
     def feed(self, x: np.ndarray) -> None:
         n = x.shape[0]
         self.sum += x.sum(axis=0)
+        self.sq += float(np.sum(x * x))
+        w = np.concatenate([self._win_pending, x]) if self._win_pending.size else x
+        k = len(w) // self.win
+        if k:
+            whole = w[: k * self.win].reshape(k, self.win, self.ch)
+            self.win_energy.extend(np.mean(whole * whole, axis=(1, 2)))
+        self._win_pending = w[k * self.win :]
         loud = np.flatnonzero(np.abs(x).max(axis=1) >= self.thr)
         if loud.size:
             if self.first_loud is None:
@@ -95,6 +112,19 @@ class _Stats:
         if self.first_loud is None:
             return self.n / self.fs, 0.0
         return self.first_loud / self.fs, (self.n - 1 - self.last_loud) / self.fs
+
+    def rms_dbfs(self) -> float:
+        total = self.n * self.ch
+        return 10 * np.log10(self.sq / total) if total and self.sq > 0 else -np.inf
+
+    def noise_floor_dbfs(self) -> float:
+        """RMS of the quietest 10 % of 100 ms windows (ACX's noise floor idea)."""
+        e = np.sort(np.asarray(self.win_energy))
+        if e.size == 0:
+            return -np.inf
+        k = max(1, int(len(e) * 0.1))
+        q = float(e[:k].mean())
+        return 10 * np.log10(q) if q > 0 else -np.inf
 
     def correlation(self) -> float | None:
         if self.ch != 2 or self.ll <= 0 or self.rr <= 0:
@@ -116,17 +146,18 @@ def _package_blocks(pkg: Package, roles: list[str], block_frames: int) -> Iterat
             h.close()
 
 
-def measure(path: str | Path, roles: list[str] | None = None, block_frames: int = DEFAULT_BLOCK_FRAMES) -> Measurement:
-    """Measure a file. For a directory, measure it as a package of discrete channel files."""
+def measure(path: str | Path, roles: list[str] | None = None, block_frames: int = DEFAULT_BLOCK_FRAMES, leqm: bool = False) -> Measurement:
+    """Measure a file. For a directory, measure it as a package of discrete channel files.
+    leqm=True also runs the cinema Leq(m) meter (an 8k-tap FIR per channel; only when asked)."""
     path = Path(path)
     if path.is_dir():
-        return measure_package(path, block_frames=block_frames)
+        return measure_package(path, block_frames=block_frames, leqm=leqm)
     info = probe(path)
     roles = roles or default_roles(info.channels)
-    return _run(path, info.samplerate, info.channels, roles, iter_blocks(path, block_frames), info=info)
+    return _run(path, info.samplerate, info.channels, roles, iter_blocks(path, block_frames), info=info, leqm=leqm)
 
 
-def measure_package(directory: str | Path, block_frames: int = DEFAULT_BLOCK_FRAMES) -> Measurement:
+def measure_package(directory: str | Path, block_frames: int = DEFAULT_BLOCK_FRAMES, leqm: bool = False) -> Measurement:
     from ..io.reader import load_package
 
     pkg = load_package(directory)
@@ -140,25 +171,34 @@ def measure_package(directory: str | Path, block_frames: int = DEFAULT_BLOCK_FRA
     if not present:
         raise ValueError("no recognised channel files in package")
     fs = next(iter(pkg.infos.values())).samplerate
-    return _run(Path(directory), fs, len(present), present, _package_blocks(pkg, present, block_frames), package=pkg)
+    return _run(Path(directory), fs, len(present), present, _package_blocks(pkg, present, block_frames), package=pkg, leqm=leqm)
 
 
-def _run(path: Path, fs: int, channels: int, roles: list[str], blocks: Iterator[np.ndarray], info: AudioInfo | None = None, package: Package | None = None) -> Measurement:
+def _run(path: Path, fs: int, channels: int, roles: list[str], blocks: Iterator[np.ndarray], info: AudioInfo | None = None, package: Package | None = None, leqm: bool = False) -> Measurement:
     loud = LoudnessMeter(fs, channels, roles=roles)
     peak = PeakMeter(fs, channels)
     stats = _Stats(fs, channels)
+    speech = SpeechDetector(fs, channels, roles=roles)
     fold = LoudnessMeter(fs, 1) if channels == 2 else None
     layout = LayoutMeter(fs, channels) if channels >= 3 else None
+    leqm_meter = LeqmMeter(fs, channels, roles=roles) if leqm else None
     for block in blocks:
         loud.feed(block)
         peak.feed(block)
         stats.feed(block)
+        speech.feed(block)
         if layout is not None:
             layout.feed(block)
         if fold is not None:
             fold.feed(block.mean(axis=1, keepdims=True))
+        if leqm_meter is not None:
+            leqm_meter.feed(block)
     head, tail = stats.head_tail()
+    sp = speech.result()
     lr = loud.result()
+    n_sub = len(loud._hop_energies())
+    dg, dg_blocks = loud.dialogue_gated(sp.mask_at(SUB_HOP_S, n_sub))
+    lr.dialogue_gated, lr.dialogue_blocks = dg, dg_blocks
     return Measurement(
         path=path,
         samplerate=fs,
@@ -171,8 +211,13 @@ def _run(path: Path, fs: int, channels: int, roles: list[str], blocks: Iterator[
         head_silence_s=head,
         tail_silence_s=tail,
         phase_correlation=stats.correlation(),
+        rms_dbfs=stats.rms_dbfs(),
+        noise_floor_dbfs=stats.noise_floor_dbfs(),
         mono_fold_loudness=(fold.result().integrated if fold is not None else None),
+        speech_fraction=sp.fraction,
+        speech=sp,
         layout_stats=(layout.result() if layout is not None else None),
+        leqm=(leqm_meter.result() if leqm_meter is not None else None),
         info=info,
         package=package,
     )

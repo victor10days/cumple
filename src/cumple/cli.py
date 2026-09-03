@@ -225,7 +225,7 @@ def check(
     """Measure a file or package against a destination. Exit 0 on PASS, 1 on FAIL."""
     profile = _profile_or_exit(spec)
     try:
-        m = measure(path)
+        m = measure(path, leqm=profile.leqm is not None)
     except ValueError as e:
         console.print(f"[red]cannot measure {path}:[/] {e}")
         raise typer.Exit(2)

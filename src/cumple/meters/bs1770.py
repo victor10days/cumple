@@ -131,6 +131,8 @@ class LoudnessResult:
     momentary: np.ndarray = field(repr=False)  # one value per 100 ms hop, block ends at t
     short_term: np.ndarray = field(repr=False)
     integrated_ungated: float = -np.inf  # BS.1770-1 style: absolute gate only
+    dialogue_gated: float = -np.inf  # BS.1770-1 style over speech blocks only (approximation)
+    dialogue_blocks: int = 0
     hop_s: float = HOP_S
     relative_gate: bool = True
     blocks_total: int = 0
@@ -224,6 +226,27 @@ class LoudnessMeter:
             if not keep.any():
                 return -np.inf, len(energies), 0
         return loudness_from_energy(energies[keep].mean()), len(energies), int(keep.sum())
+
+    def dialogue_gated(self, speech_mask: np.ndarray, min_speech_share: float = 0.5) -> tuple[float, int]:
+        """BS.1770-1 style (absolute gate only) loudness over the 400 ms blocks whose sub-hops
+        are at least `min_speech_share` speech. speech_mask is a bool array on the 10 ms grid.
+        Returns (loudness, blocks counted); -inf when no block qualifies."""
+        e = self._hop_energies() @ self.weights
+        if len(e) < MOMENTARY_HOPS:
+            return -np.inf, 0
+        m = np.asarray(speech_mask, dtype=float)
+        if len(m) < len(e):
+            m = np.concatenate([m, np.zeros(len(e) - len(m))])
+        m = m[: len(e)]
+        c = np.concatenate([[0.0], np.cumsum(e)])
+        cm = np.concatenate([[0.0], np.cumsum(m)])
+        energies = ((c[MOMENTARY_HOPS:] - c[:-MOMENTARY_HOPS]) / MOMENTARY_HOPS)[::STEP]
+        share = ((cm[MOMENTARY_HOPS:] - cm[:-MOMENTARY_HOPS]) / MOMENTARY_HOPS)[::STEP]
+        levels = loudness_from_energy(energies)
+        keep = (levels > ABSOLUTE_GATE_LKFS) & (share >= min_speech_share)
+        if not keep.any():
+            return -np.inf, 0
+        return float(loudness_from_energy(energies[keep].mean())), int(keep.sum())
 
     def loudness_range(self) -> float:
         """EBU Tech 3342: percentiles of the gated short-term distribution."""

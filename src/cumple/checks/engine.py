@@ -105,9 +105,11 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
     # ---- loudness -------------------------------------------------------------
     if p.loudness:
         speech = m.speech_fraction if m.speech_fraction is not None else SPEECH_ASSUMED_FRACTION
-        if m.speech_fraction is None and any(r.when != "always" for r in p.loudness.rules):
-            out.append(Finding("loudness.speech", Status.INFO, "speech share", "not measured", "switches at 15 %",
-                               note="assumed dialogue-led until the speech detector lands"))
+        if any(r.when != "always" or r.method == "dialogue_gated" for r in p.loudness.rules):
+            if m.speech_fraction is None:
+                out.append(Finding("loudness.speech", Status.INFO, "speech share", "not measured", "switches at 15 %", note="assumed dialogue-led"))
+            else:
+                out.append(Finding("loudness.speech", Status.INFO, "speech share", f"{100 * speech:.0f} % of active programme", "switches at 15 %", note="heuristic speech detector, an approximation of Dolby Dialogue Intelligence", value=speech))
 
         def applicable(r: LoudnessRule) -> bool:
             if r.when == "speech_below_15pct":
@@ -121,8 +123,12 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
         results: list[tuple[LoudnessRule, float, bool, str | None]] = []
         for r in primary + fallback:
             if r.method == "dialogue_gated":
-                value = m.loudness.integrated_ungated if not r.gated_relative else m.loudness.integrated
-                note = "approximation: full programme, BS.1770-1, no speech gate yet"
+                if np.isfinite(m.loudness.dialogue_gated) and m.loudness.dialogue_blocks > 0:
+                    value = m.loudness.dialogue_gated
+                    note = f"approximation of Dialogue Intelligence: heuristic speech gate, {m.loudness.dialogue_blocks} speech blocks, BS.1770-1 (no relative gate)"
+                else:
+                    value = m.loudness.integrated_ungated if not r.gated_relative else m.loudness.integrated
+                    note = "no speech detected; measured as full programme instead"
             else:
                 value = m.loudness.integrated if r.gated_relative else m.loudness.integrated_ungated
                 note = None
@@ -138,6 +144,9 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
 
         for r, value, ok, note in results:
             code = "loudness.dialogue_gated" if r.method == "dialogue_gated" else "loudness.integrated"
+            clause_code = code
+            if r.role == "fallback":
+                code = "loudness.fallback"
             unit = "LKFS" if r.method == "dialogue_gated" else "LUFS"
             what = ("dialogue-gated loudness" if r.method == "dialogue_gated" else "integrated loudness") + (" (fallback)" if r.role == "fallback" else "")
             if ok:
@@ -153,9 +162,7 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
             if status is Status.FAIL:
                 target = r.target if r.target is not None else ((r.min + r.max) / 2 if r.min is not None and r.max is not None else (r.max if r.max is not None else r.min))
                 fix = _gain_fix(target - value, m, p) if np.isfinite(value) else "the file is effectively silent"
-            if r.method == "dialogue_gated" and status is Status.PASS:
-                status = Status.WARN if note else status
-            out.append(Finding(code, status, what, _db(value, unit), _bounds(r) + f", {r.standard.upper().replace('BS', 'BS.')}", note=note, clause=clause(code), fix=fix, value=value))
+            out.append(Finding(code, status, what, _db(value, unit), _bounds(r) + f", {r.standard.upper().replace('BS', 'BS.')}", note=note, clause=clause(clause_code), fix=fix, value=value))
 
     # ---- peaks -----------------------------------------------------------------
     tp, sp = m.peaks.true_peak_dbtp, m.peaks.sample_peak_dbfs
@@ -282,7 +289,8 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
     if p.checks.metadata_must_match:
         bext = info.bext if info is not None else {}
         raw = bext.get("loudness_value")
-        if raw in (None, 0x7FFF):
+        unset = raw is None or raw == 0x7FFF or abs(float(raw) - 327.67) < 0.005 or float(raw) > 99.99
+        if unset:
             out.append(Finding("metadata.bext_loudness", Status.INFO, "embedded loudness", "none", "bext LoudnessValue", note="no loudness metadata in the file; nothing to contradict", clause=clause("metadata.bext_loudness")))
         else:
             embedded = float(raw) / 100.0 if abs(float(raw)) > 100 else float(raw)
@@ -290,10 +298,30 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
             ok = abs(diff) <= METADATA_TOLERANCE_LU
             out.append(Finding("metadata.bext_loudness", Status.PASS if ok else Status.FAIL, "embedded loudness", f"bext says {embedded:.1f} LUFS, measured {m.loudness.integrated:.1f}", f"within {METADATA_TOLERANCE_LU:g} LU (tool default)", clause=clause("metadata.bext_loudness"), fix=None if ok else "re-write the bext loudness fields from the actual measurement", value=diff))
 
-    # ---- not yet implemented rules, said out loud ---------------------------------
+    # ---- cinema Leq(m) ---------------------------------------------------------------
     if p.leqm is not None:
-        out.append(Finding("leqm.level", Status.SKIP, "Leq(m)", "not measured yet", f"≤ {p.leqm.max_db:g} dB", note="the cinema meter lands in a later build", clause=clause("leqm.level")))
+        if m.leqm is None:
+            out.append(Finding("leqm.level", Status.SKIP, "Leq(m)", "not measured", f"≤ {p.leqm.max_db:g} dB", note="run with the cinema meter enabled (cumple does this automatically for cinema profiles)", clause=clause("leqm.level")))
+        else:
+            v = m.leqm.leqm_db
+            ok = np.isfinite(v) and round(v) <= p.leqm.max_db  # TASA: pass or fail to the nearest 1 dB
+            out.append(Finding("leqm.level", Status.PASS if ok else Status.FAIL, "Leq(m)", f"{v:.1f} dB", f"≤ {p.leqm.max_db:g} dB Leq(m)", note=f"convention: M-weighted RMS {m.leqm.calibration_dbfs:g} dBFS on a screen channel = {m.leqm.calibration_db:g} dB; surrounds -3 dB; per-channel detectors summed", clause=clause("leqm.level"), fix=None if ok else f"lower the whole mix by {v - p.leqm.max_db:.1f} dB, or re-balance; Leq(m) tracks gain exactly", value=v))
+
+    # ---- RMS rules (ACX) -------------------------------------------------------------
     if p.rms is not None:
-        out.append(Finding("rms.level", Status.SKIP, "RMS level", "not measured yet", f"{p.rms.rms_min_dbfs:g} to {p.rms.rms_max_dbfs:g} dBFS", note="lands in a later build", clause=clause("rms.level")))
+        v = m.rms_dbfs
+        ok = np.isfinite(v) and p.rms.rms_min_dbfs <= v <= p.rms.rms_max_dbfs
+        fix = None
+        if not ok and np.isfinite(v):
+            target = (p.rms.rms_min_dbfs + p.rms.rms_max_dbfs) / 2
+            fix = _gain_fix(target - v, m, p) if p.peaks.true_peak_max is not None else f"{'raise' if target > v else 'lower'} by {abs(target - v):.1f} dB (peak would become {m.peaks.sample_peak_dbfs + target - v:+.1f} dBFS)"
+        out.append(Finding("rms.level", Status.PASS if ok else Status.FAIL, "RMS level", _db(v, "dBFS"), f"{p.rms.rms_min_dbfs:g} to {p.rms.rms_max_dbfs:g} dBFS", clause=clause("rms.level"), fix=fix, value=v))
+        if p.rms.noise_floor_max_dbfs is not None:
+            nf = m.noise_floor_dbfs
+            ok = nf <= p.rms.noise_floor_max_dbfs
+            out.append(Finding("rms.noise_floor", Status.PASS if ok else Status.FAIL, "noise floor", _db(nf, "dBFS"), f"≤ {p.rms.noise_floor_max_dbfs:g} dBFS RMS", note="RMS of the quietest 10 % of 100 ms windows (tool method)", clause=clause("rms.noise_floor"), fix=None if ok else "clean up the room tone (noise reduction or a quieter take); gain changes move the floor too", value=nf))
+    if p.checks.duration_max_s is not None:
+        ok = m.duration_s <= p.checks.duration_max_s
+        out.append(Finding("duration.max", Status.PASS if ok else Status.FAIL, "duration", f"{m.duration_s / 60:.1f} min", f"≤ {p.checks.duration_max_s / 60:g} min", clause=clause("duration.max"), fix=None if ok else "split the file", value=m.duration_s))
 
     return Report(profile=p, measurement=m, findings=out)

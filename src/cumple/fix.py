@@ -94,10 +94,10 @@ def apply(src: Path, dst: Path, gain_db: float, block: int = 1 << 18) -> None:
 
 
 def fix_file(src: Path, profile: Profile, dst: Path | None = None) -> tuple[FixPlan, Path | None, Measurement | None]:
-    m = measure(src)
+    m = measure(src, leqm=profile.leqm is not None)
     fp = plan(profile, m)
     if fp.gain_db is None or fp.gain_db == 0.0:
         return fp, None, None
     dst = dst or src.with_name(f"{src.stem}.{profile.id}{src.suffix}")
     apply(src, dst, fp.gain_db)
-    return fp, dst, measure(dst)
+    return fp, dst, measure(dst, leqm=profile.leqm is not None)
