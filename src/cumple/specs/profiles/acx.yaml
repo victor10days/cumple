@@ -1,0 +1,28 @@
+id: acx
+name: ACX / Audible audiobook
+family: audiobook
+summary: ACX Audio Submission Requirements, the one major spec that uses RMS instead of BS.1770. RMS between -23 and -18 dBFS, peaks at or below -3 dBFS, noise floor at or below -60 dBFS RMS, 44.1 kHz, 192 kbps CBR MP3, room tone at head and tail, at most 120 minutes per file.
+peaks:
+  sample_peak_max: -3.0
+rms:
+  rms_min_dbfs: -23.0
+  rms_max_dbfs: -18.0
+  noise_floor_max_dbfs: -60.0
+format:
+  sample_rates: [44100]
+  containers: [mp3, wav, flac]
+checks:
+  duration_max_s: 7200
+clauses:
+  rms.level: "Measure between -23 dB and -18 dB RMS. (paraphrase of ACX Audio Submission Requirements)"
+  peak.sample: "Peak values no higher than -3 dB. (paraphrase of ACX Audio Submission Requirements)"
+  rms.noise_floor: "Noise floor no higher than -60 dB RMS. (paraphrase of ACX Audio Submission Requirements)"
+  duration.max: "Each file is a single chapter or section and no longer than 120 minutes; 0.5 to 1 second of room tone at the head and 1 to 5 seconds at the tail. (paraphrase of ACX Audio Submission Requirements)"
+clauses_verbatim: false
+provenance:
+  - title: "ACX Audio Submission Requirements"
+    publisher: ACX (Audible)
+    url: https://www.acx.com/help/acx-audio-submission-requirements/200013520
+    retrieved: 2026-09-03
+    grade: READ
+    notes: "The live page redirected during research; values are from the ACX document text."

@@ -1,0 +1,46 @@
+id: dpp-as11
+name: UK DPP / AS-11 programme delivery
+family: broadcast
+summary: UK broadcaster file delivery (DPP, restated in Channel 4's v5.2 spec). -23.0 LUFS ±0.5 LU for non-live programmes (±1.0 live), true peak recommended below -3 dBTP and failed above -1 dBTP, LRA guide 18 LU, stereo must fold to mono, 48 kHz / 24-bit PCM.
+loudness:
+  policy: all
+  rules:
+    - method: integrated
+      standard: bs1770-4
+      target: -23.0
+      tolerance: 0.5
+      notes: "±1.0 LU applies to live programmes."
+peaks:
+  true_peak_max: -1.0
+  true_peak_recommended: -3.0
+dynamics:
+  lra_guide_max: 18.0
+format:
+  sample_rates: [48000]
+  bit_depths: [24]
+  layouts: [stereo, "5.1"]
+  containers: [mxf, wav, bwf]
+checks:
+  mono_compatibility: true
+clauses:
+  loudness.integrated: "Programme loudness -23.0 LUFS, tolerance ±0.5 LU for non-live and ±1.0 LU for live programmes, EBU I mode over the whole programme, LFE excluded. (paraphrase of the Channel 4 restatement of the DPP spec)"
+  peak.true: "Maximum true peak recommended -3 dBTP; a programme with true peaks above -1 dBTP fails. (paraphrase)"
+  dynamics.lra: "Loudness range guide of 18 LU, and no more than 6 LU for speech in factual programmes. (paraphrase)"
+  mono.compat: "Stereo audio must be mono compatible; phase must fold down. (paraphrase)"
+  format.sample_rate: "PCM at 48 kHz, 24-bit, one channel per MXF audio track. (paraphrase)"
+clauses_verbatim: false
+provenance:
+  - title: "Programme Delivery Specification File: DPP / Channel 4"
+    publisher: Channel 4 (DPP member)
+    version: "v5.2"
+    published: "2022"
+    url: https://assets-corporate.channel4.com/_flysystem/s3/documents/2023-03/ProgrammeDeliverySpecificationFile_DPP-Channel4_v5.2.pdf
+    retrieved: 2026-09-03
+    grade: READ
+    notes: "thedpp.com is login-gated; Channel 4 publishes the DPP figures."
+  - title: "AMWA AS-11 UK DPP HD"
+    publisher: AMWA
+    url: https://amwa-tv.github.io/AS-11_UK_DPP_HD/AMWA_AS_11_UK_DPP_HD.html
+    retrieved: 2026-09-03
+    grade: READ
+    role: supporting

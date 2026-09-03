@@ -1,0 +1,26 @@
+id: aes-td1008-speech
+name: AES TD1008 streaming, speech-anchored
+family: streaming
+summary: AES recommendation for internet streaming and on-demand distribution, speech content (news, talk, drama, podcasts). Speech-anchored -18 LUFS, +1 LU tolerance, -1 dBTP at the codec input. Written for distributors, not mastering engineers.
+loudness:
+  policy: all
+  rules:
+    - method: dialogue_gated
+      standard: bs1770-4
+      min: -19.0
+      max: -17.0
+      notes: "Dialog Integrated Loudness preferred; TD1008 states +1 LU as the tolerance. cumple uses a symmetric ±1 window."
+peaks:
+  true_peak_max: -1.0
+clauses:
+  loudness.dialogue_gated: "Speech-anchored content: -18 LUFS with +1 LU tolerance; measure Dialog Integrated Loudness where possible, otherwise Integrated Loudness. (paraphrase of AES TD1008)"
+  peak.true: "Maximum true peak -1 dBTP at the input to the codec. (paraphrase of AES TD1008)"
+clauses_verbatim: false
+provenance:
+  - title: "AES TD1008: Recommendations for Loudness of Internet Audio Streaming and On-Demand Distribution"
+    publisher: AES
+    version: "AESTD1008.1.21-9"
+    published: "24 September 2021"
+    url: https://aes2.org/wp-content/uploads/2024/01/20210924_TD1008_v3.13.pdf
+    retrieved: 2026-09-03
+    grade: READ

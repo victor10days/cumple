@@ -13,11 +13,18 @@ format:
   layouts: ["5.1", "7.1"]
   channel_order: smpte
 clauses:
-  leqm.level: "Trailers shall not exceed 85 dB Leq(m), measured over the full duration ±3 s with M-weighting, per-channel detectors summed, pass or fail to the nearest 1 dB. (paraphrase of the TASA Standard, annex dated 15 January 2015)"
-  leqm.calibration: "Reference: -20 dBFS corresponds to 85 dBC SPL for each screen channel; surround channels are calibrated 3 dB lower and therefore contribute 3 dB less to the sum. (paraphrase of the TASA Standard §1.4)"
-  leqm.weighting: "The M-weighting response is tabulated in the TASA Standard §1.4.2 with tolerances: 0 dB at 2 kHz, -5.6 dB at 1 kHz, +6.6 dB at 6.3 kHz, -35.5 dB at 31 Hz, -27.8 dB at 20 kHz. cumple designs its filter from that table and tests it against the same tolerances."
-clauses_verbatim: false
+  leqm.level: "The TASA Standard defines the measurement and calls the limit 'a flexible number' set by its Ad Hoc Committee; the PDF does not print it. The figure of 85 dB Leq(m), in force since 2001 after starting at 87 in 1999, is documented in ISDCF Doc 11 (Ioan Allen, 2016)."
+  leqm.calibration: "For example, using SMPTE Standards, −20 dBFS on a digital medium represents the reference level. A DFSS may produce +4 dBu at −20 dBFS, and may be designed so that such an electrical reference level produces 85 dBC Sound Pressure Level re: 20 μPa for each channel. [...] if the surround level is calibrated at 82 dBC for each channel (as practiced with 5.1, 6.1, 6.1(EX) and 7.1 formats) rather than 85 dB given in the example above, the contribution of each surround channel to the sum shall be 3 dB less than a screen channel."
+  leqm.detectors: "To prevent differences between electrical addition (vector) and acoustical addition in the reverberant field of a room (scalar), each of the channels shall employ a separate detector circuit, and the output of each of the detector circuits shall be added."
+  leqm.weighting: "The frequency weighting equalizer is based on an International Telecommunications Union recommended filter for the assessment of background noise in audio programs. [...] Note that for the purposes of insertion gain, the frequency 2.0 kHz is used for the 0 dB reference level. (The response table in §1.4.2 runs from -35.5 dB at 31 Hz through 0.0 dB at 2 kHz and +6.6 dB at 6.3 kHz to -27.8 dB at 20 kHz, each with a tolerance.)"
+clauses_verbatim: true
 provenance:
+  - title: "ISDCF Doc 11: Trailer loudness history and the TASA standard (Ioan Allen)"
+    publisher: ISDCF
+    published: "15 March 2016"
+    retrieved: 2026-09-03
+    grade: READ
+    notes: "Source of the numeric limit: 87 dB Leq(m) in 1999, lowered to 85 dB in 2001 and unchanged since."
   - title: "TASA Standard for Trailer Loudness"
     publisher: Trailer Audio Standards Association
     published: "annex dated 15 January 2015"

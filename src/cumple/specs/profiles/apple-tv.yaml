@@ -1,7 +1,7 @@
 id: apple-tv
 name: Apple TV+ / Apple TV app
 family: streaming
-summary: Apple Video and Audio Asset Guide. A permitted range rather than a target. Dialogue-anchored -31 to -10 LKFS (ideally -30 to -18), non-dialogue -31 to -5 LKFS, true peak at most -1 dBTP, 48 kHz / 24-bit, no full-band content in the LFE.
+summary: Apple Video and Audio Asset Guide. A permitted range rather than a target. Dialogue-anchored -31 to -10 LKFS (ideally -30 to -18), non-dialogue -31 to -5 LKFS, true peak at most -1 dB TP, 24-bit LPCM at 48 kHz, no full-frequency content in the LFE.
 loudness:
   policy: all
   rules:
@@ -10,7 +10,7 @@ loudness:
       min: -31.0
       max: -10.0
       when: speech_at_or_above_15pct
-      notes: "Apple measures BS.1770 with Dialogue Intelligence on the 5.1 render, integrated across the full duration. Ideal range -30 to -18 LKFS is reported as a note, not enforced."
+      notes: "Apple measures BS.1770 with Dialogue Intelligence, integrated over the full duration. The ideal window -30 to -18 LKFS is reported, not enforced."
     - method: integrated
       standard: bs1770-4
       min: -31.0
@@ -21,18 +21,19 @@ peaks:
 format:
   sample_rates: [48000]
   bit_depths: [24]
-  layouts: [stereo, "5.1", "7.1", atmos-adm]
+  layouts: [stereo, lt-rt, "5.1", "7.1", atmos-adm]
   channel_order: smpte
   containers: [wav, bwf, rf64, adm-bwf]
   lfe_lowpass_hz: 120.0
 clauses:
-  loudness.dialogue_gated: "Dialogue-anchored programs: -31 to -10 LKFS permitted, ideally -30 to -18 LKFS, measured with BS.1770 and Dialogue Intelligence on the 5.1 render, integrated across the full duration. (paraphrase of the Asset Guide v5.3.18)"
-  loudness.integrated: "Programs that are not dialogue-anchored: -31 to -5 LKFS, BS.1770-4 (or -3), full program. (paraphrase of the Asset Guide v5.3.18)"
-  peak.true: "True peak at most -1 dB TP, measured per ITU-R BS.1770-4. (paraphrase of the Immersive Audio Source Profile)"
-  format.sample_rate: "All audio must be 24-bit linear PCM at 48 kHz. (paraphrase of the Immersive Audio Source Profile)"
-  format.lfe_band: "Full-frequency content should not be present in the LFE channel. cumple treats content above 120 Hz in the LFE as full-frequency; Apple does not state a corner frequency. (paraphrase of the Immersive Audio Source Profile)"
-  format.layout: "5.1 as L, R, C, LFE, Ls, Rs; 7.1 as L, R, C, LFE, Ls, Rs, Lrs, Rrs. (paraphrase of the Asset Guide v5.3.18)"
-clauses_verbatim: false
+  loudness.dialogue_gated: "The average loudness of dialogue or speech in the Dolby Atmos file must be within the range of -31 LKFS to -10 LKFS, and should ideally be between -30 LKFS and -18 LKFS. [...] 1770 + Dialogue Intelligence (or other speech-gating algorithm) to measure the dialogue-gated loudness, integrated over the full duration of the asset, to verify it falls within the specified range indicated above."
+  loudness.integrated: "For Dolby Atmos files where dialogue is not the anchor element (for example, music assets), the average audio loudness of the Dolby Atmos file must be within the range of -31 LKFS to -5 LKFS."
+  peak.true: "True-peak level should not exceed -1 dB TP measured as per ITU-R BS.1770-4."
+  format.sample_rate: "All audio must be 24-bit linear pulse code modulation (LPCM) audio at 48kHz."
+  format.bit_depth: "All audio tracks in the file must be 24-bit LPCM audio at 48kHz."
+  format.lfe_band: "Full-frequency content should not be present in the Low-Frequency Effects (LFE) channel of the BWF ADM."
+  format.layout: "Expected channels: L, R, C, LFE, Ls, Rs [...] Expected channels: L, R, C, LFE, Ls, Rs, Rls (or Lrs), Rrs [...] Expected Dolby Pro Logic channels: Lt, Rt or expected stereo channels: L, R"
+clauses_verbatim: true
 provenance:
   - title: "Apple Video and Audio Asset Guide"
     publisher: Apple

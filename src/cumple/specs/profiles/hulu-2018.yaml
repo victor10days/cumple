@@ -1,0 +1,32 @@
+id: hulu-2018
+name: Hulu content partner guidebook (2018, stale)
+family: streaming
+summary: Hulu's public Content Partner Guidebook v5.0 from 2018. -24 LKFS per BS.1770-4, sample peak -2 dBFS, 48 kHz LPCM 16 or 24-bit interleaved, 8-channel L R C LFE Ls Rs Lt Rt. Kept for reference; Hulu now delivers through Disney.
+loudness:
+  policy: all
+  rules:
+    - method: integrated
+      standard: bs1770-4
+      target: -24.0
+      tolerance: 2.0
+peaks:
+  sample_peak_max: -2.0
+format:
+  sample_rates: [48000]
+  bit_depths: [16, 24]
+  layouts: [stereo, "5.1", "5.1+lt-rt"]
+  channel_order: smpte
+  packaging: interleaved
+clauses:
+  loudness.integrated: "-24 LKFS/LUFS measured per ITU-R BS.1770-4. (paraphrase of the guidebook)"
+  peak.sample: "Peak -2 dBFS (sample peak). (paraphrase of the guidebook)"
+clauses_verbatim: false
+provenance:
+  - title: "Hulu Content Partner Guidebook"
+    publisher: Hulu
+    version: "v5.0"
+    published: "2018"
+    url: http://assets.hulu.com/portaldocuments/ContentPartnerGuidebook_v5.0.pdf
+    retrieved: 2026-09-03
+    grade: READ
+    notes: "Stale: the newest public version is from 2018."

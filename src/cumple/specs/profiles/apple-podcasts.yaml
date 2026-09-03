@@ -1,0 +1,26 @@
+id: apple-podcasts
+name: Apple Podcasts
+family: podcast
+summary: Apple Podcasts audio requirements. -16 LKFS ±1, true peak at or below -1 dBFS; RSS episodes as MP3 or AAC (mono 64 to 128 kbps, stereo 128 to 256 kbps) at 44.1 or 48 kHz; subscriber audio as 24-bit stereo WAV or FLAC.
+loudness:
+  policy: all
+  rules:
+    - method: integrated
+      standard: bs1770-4
+      target: -16.0
+      tolerance: 1.0
+peaks:
+  true_peak_max: -1.0
+format:
+  sample_rates: [44100, 48000, 88200, 96000, 176400, 192000]
+clauses:
+  loudness.integrated: "Loudness -16 dB LKFS with a ±1 dB tolerance. (paraphrase of Apple Podcasts audio requirements)"
+  peak.true: "True peak no higher than -1 dBFS. (paraphrase of Apple Podcasts audio requirements)"
+  format.sample_rate: "44.1 or 48 kHz for RSS MP3/AAC; 44.1 to 192 kHz, 24-bit, stereo for Apple Podcasts Connect WAV or FLAC. (paraphrase)"
+clauses_verbatim: false
+provenance:
+  - title: "Audio requirements, Apple Podcasts for Creators"
+    publisher: Apple
+    url: https://podcasters.apple.com/support/893-audio-requirements
+    retrieved: 2026-09-03
+    grade: READ

@@ -1,0 +1,42 @@
+id: amazon-5.1-package
+name: Amazon MGM Studios 5.1 (discrete mono files)
+family: streaming
+summary: Amazon Studios near-field 5.1 delivery. -27 LKFS ±2 dialogue-gated (BS.1770-1 with Dialogue Intelligence, Nugen VisLM2 as the reference meter), -2 dBTP, 48 kHz / 24-bit, one mono .wav per channel; interleaved files are not accepted.
+loudness:
+  policy: all
+  rules:
+    - method: dialogue_gated
+      standard: bs1770-1
+      target: -27.0
+      tolerance: 2.0
+peaks:
+  true_peak_max: -2.0
+format:
+  sample_rates: [48000]
+  bit_depths: [24]
+  channel_counts: [6]
+  layouts: ["5.1"]
+  channel_order: smpte
+  packaging: discrete
+  containers: [wav, bwf]
+stems:
+  must_sum_to_printmaster: true
+  residual_max_dbfs: -60.0
+clauses:
+  loudness.dialogue_gated: "-27 ±2 LU, ITU-R BS.1770-1 with dialogue gating (Dolby Dialogue Intelligence); reference meter Nugen VisLM2. (paraphrase of the Amazon Studios asset technical specifications)"
+  peak.true: "-2 dBTP maximum. (paraphrase)"
+  format.packaging: "Each .wav file must be flattened. Discrete .wav files required per channel. Interleaved audio is not acceptable. (as quoted in search extraction of the gated portal)"
+  stems.sum: "True D/M/E: dialogue, music and effects stems played together must reproduce the original-version printmaster at matching levels. (paraphrase)"
+clauses_verbatim: false
+provenance:
+  - title: "Amazon Studios Asset Technical Specifications"
+    publisher: Amazon MGM Studios
+    url: https://portal.amazonstudios.com/hc/en-us/articles/15986845319323-Asset-Technical-Specifications
+    retrieved: 2026-09-03
+    grade: GATED
+    notes: "Partner portal returns 403 without a login; values come from search extraction."
+  - title: "Stem residual default"
+    publisher: cumple
+    retrieved: 2026-09-03
+    grade: TOOL_DEFAULT
+    role: default

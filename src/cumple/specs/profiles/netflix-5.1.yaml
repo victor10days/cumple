@@ -1,0 +1,66 @@
+id: netflix-5.1
+name: Netflix 5.1 near-field printmaster
+family: streaming
+summary: Netflix near-field 5.1 mix. -27 LKFS ±2 dialogue-gated (BS.1770-1 with Dialogue Intelligence), -24 ±2 full program if speech is under 15 %, -2 dBTP, 48 kHz / 24-bit, L R C LFE Ls Rs; stems must sum to the printmaster.
+loudness:
+  policy: any
+  rules:
+    - method: dialogue_gated
+      standard: bs1770-1
+      target: -27.0
+      tolerance: 2.0
+      when: speech_at_or_above_15pct
+    - method: integrated
+      standard: bs1770-4
+      target: -24.0
+      tolerance: 2.0
+      when: speech_below_15pct
+    - method: integrated
+      standard: bs1770-4
+      target: -27.0
+      tolerance: 2.0
+      role: fallback
+      notes: "Netflix QC rule: if the dialogue-gated measurement fails, re-measure BS.1770-4 full program and do not flag if that passes. The fallback window is taken as -27 ±2; to be verified against the live page."
+peaks:
+  true_peak_max: -2.0
+  true_peak_recommended: -2.3
+format:
+  sample_rates: [48000]
+  bit_depths: [24]
+  channel_counts: [6]
+  layouts: ["5.1"]
+  channel_order: smpte
+  containers: [wav, bwf, rf64]
+  lfe_lowpass_hz: 120.0
+stems:
+  must_sum_to_printmaster: true
+  residual_max_dbfs: -60.0
+  me_must_have_no_speech: true
+clauses:
+  loudness.dialogue_gated: "-27 LKFS ±2 LU, dialogue-gated, measured over the entire program per ITU-R BS.1770-1 with Dolby Dialogue Intelligence. (paraphrase of Sound Mix Specifications v1.6)"
+  loudness.integrated: "Near-field mixes with less than 15 % dialogue: -24 LKFS ±2 LU, BS.1770-3 or -4, full program. (paraphrase of Sound Mix Specifications v1.6)"
+  peak.true: "True peak shall not exceed -2 dBTP; a limiter at -2.3 dBFS is recommended. (paraphrase of Sound Mix Specifications v1.6)"
+  format.layout: "5.1 channel order L, R, C, LFE, Ls, Rs. (paraphrase of Originals Delivery Specifications OC-3-3)"
+  stems.sum: "The DX, MX and FX stems must equal the 5.1 mix when combined. No numeric tolerance is published; -60 dBFS residual is cumple's default. (paraphrase of Originals Delivery Specifications OC-3-3)"
+  stems.me_speech: "The M&E must be fully filled and contain no dialogue. (paraphrase of M&E Creation and Delivery Guidelines)"
+clauses_verbatim: false
+provenance:
+  - title: "Netflix Sound Mix Specifications & Best Practices"
+    publisher: Netflix
+    version: "v1.6"
+    url: https://partnerhelp.netflixstudios.com/hc/en-us/articles/360001794307
+    retrieved: 2026-09-03
+    grade: SE
+    notes: "The Partner Help Center moved behind studiopartner.netflix.net, a JavaScript app; values were recovered via search extraction and must be re-read directly."
+  - title: "Netflix Originals Delivery Specifications OC-3-3"
+    publisher: Netflix
+    version: "OC-3-3"
+    published: "July 2019"
+    retrieved: 2026-09-03
+    grade: READ
+    notes: "Historical, read from a re-hosted copy; used for stems, M&E and channel order only."
+  - title: "Stem residual and LFE corner defaults"
+    publisher: cumple
+    retrieved: 2026-09-03
+    grade: TOOL_DEFAULT
+    role: default

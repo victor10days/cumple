@@ -9,7 +9,7 @@ from cumple.specs.schema import Grade, LoudnessRule
 
 def test_all_builtin_profiles_load():
     profiles = load_all()
-    assert len(profiles) >= 5
+    assert len(profiles) >= 20
     for path in builtin_dir().glob("*.yaml"):
         assert path.stem in profiles
 

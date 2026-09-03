@@ -9,7 +9,7 @@ loudness:
       standard: bs1770-4
       target: -23.0
       tolerance: 1.0
-      notes: "R 128 v5.0 allows ±1.0 LU where exact normalisation is not practical (live); for file-based QC the deviation should be within ±0.2 LU. cumple uses ±1.0 as the pass window and reports the ±0.2 window as a note."
+      notes: "R 128 permits ±1.0 LU where the target is not practically attainable (live); for QC workflows it allows ±0.2 LU for measurement error. cumple passes at ±1.0 and reports the ±0.2 window in the note."
 peaks:
   true_peak_max: -1.0
 format:
@@ -19,10 +19,11 @@ format:
 checks:
   metadata_must_match: true
 clauses:
-  loudness.integrated: "Programme Loudness Level shall be normalised to a Target Level of -23.0 LUFS; permitted deviation ±1.0 LU where exact normalisation is not practical, ±0.2 LU for file-based QC. (paraphrase of R 128 v5.0)"
-  peak.true: "Maximum Permitted True Peak Level: -1 dBTP, measured with a meter compliant with Tech 3341. (paraphrase of R 128 v5.0)"
-  metadata.bext_loudness: "Loudness metadata carried with the programme (BWF bext LoudnessValue, LoudnessRange) must reflect the measured values. (paraphrase of R 128 v5.0 and Tech 3285 v2)"
-clauses_verbatim: false
+  loudness.integrated: "that the Programme Loudness Level shall be normalised to a Target Level of −23.0 LUFS. Where attaining the Target Level is not achievable practically (for example, live programmes), a tolerance of ±1.0 LU is permitted. A broadcaster should ensure that a deviation from the Target Level towards the limits of the tolerance does not become standard practice; [...] that for the implementation of Loudness workflows (for example, in Quality Control environments) a tolerance of ±0.2 LU is allowed in order to take account of measurement errors"
+  loudness.method: "that the measurement shall be made with a loudness meter compliant with ITU-R BS.1770 (including the level-gating method described in equation (7)) and EBU Tech 3341"
+  peak.true: "that the True Peak Level of a programme shall not exceed −1 dBTP (dB True Peak) during production (linear audio), measured with a meter compliant with ITU-R BS.1770 and EBU Tech 3341. The measurement tolerance is ±0.3 dB (for signals with a bandwidth limited to 20 kHz)."
+  metadata.bext_loudness: "LoudnessValue: A 16-bit signed integer, equal to round(100x the Integrated Loudness Value of the file in LUFS). [...] If any of the loudness parameters are not being used then their 16-bit integer values shall be set to 7FFFh, which is a value outside the range of the parameter values."
+clauses_verbatim: true
 provenance:
   - title: "EBU R 128: Loudness normalisation and permitted maximum level of audio signals"
     publisher: EBU
@@ -38,3 +39,9 @@ provenance:
     url: https://tech.ebu.ch/docs/tech/tech3285.pdf
     retrieved: 2026-09-03
     grade: READ
+  - title: "Metadata match tolerance"
+    publisher: cumple
+    retrieved: 2026-09-03
+    grade: TOOL_DEFAULT
+    role: default
+    notes: "R 128 says loudness metadata must reflect the measured values but gives no tolerance; cumple flags a mismatch above 0.5 LU."

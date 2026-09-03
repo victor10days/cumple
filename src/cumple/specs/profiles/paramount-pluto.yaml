@@ -1,0 +1,37 @@
+id: paramount-pluto
+name: Paramount Global content delivery (Pluto TV ingest)
+family: streaming
+summary: Paramount's public Global Content Delivery Guide v2.2, which covers Pluto TV ingest rather than Paramount+ post deliverables. About -24 LKFS per BS.1770-4, sample peak -2 dBFS, 48 kHz minimum, 16 or 24-bit LPCM.
+loudness:
+  policy: all
+  rules:
+    - method: integrated
+      standard: bs1770-4
+      target: -24.0
+      tolerance: 2.0
+      notes: "The guide says loudness should approximate -24 LKFS; the ±2 window is cumple's reading of 'approximate'."
+peaks:
+  sample_peak_max: -2.0
+format:
+  sample_rates: [48000, 96000]
+  bit_depths: [16, 24]
+  layouts: [mono, stereo, lt-rt, "5.1", "5.1+lt-rt"]
+  channel_order: smpte
+clauses:
+  loudness.integrated: "All audio loudness levels should approximate -24 LKFS/LUFS (based on ITU-R BS.1770-4 loudness measurement methods). (as quoted from the guide)"
+  peak.sample: "Audio peak level of -2 dBFS. (as quoted from the guide; a sample peak, not a true peak)"
+  format.layout: "ProRes 8-channel: 1 L, 2 R, 3 C, 4 LFE, 5 Ls, 6 Rs, 7 Lt, 8 Rt, all discrete. (paraphrase of the guide)"
+clauses_verbatim: false
+provenance:
+  - title: "Paramount Global Content Delivery Guide"
+    publisher: Paramount
+    version: "V2.2"
+    url: https://www.paramount.com/sites/g/files/dxjhpe356/files/2024-07/Global_Content_Delivery_Guide_V2.2.pdf
+    retrieved: 2026-09-03
+    grade: READ
+    notes: "Body text is Pluto TV FAST-channel ingest; no public Paramount+ post-production audio spec was found."
+  - title: "Tolerance reading"
+    publisher: cumple
+    retrieved: 2026-09-03
+    grade: TOOL_DEFAULT
+    role: default

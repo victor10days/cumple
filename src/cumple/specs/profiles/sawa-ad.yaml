@@ -1,0 +1,29 @@
+id: sawa-ad
+name: Cinema advertising (SAWA)
+family: cinema
+summary: Screen Advertising World Association limit for cinema commercials. 82 dB Leq(m), 3 dB below the TASA trailer limit, measured the same way.
+leqm:
+  max_db: 82.0
+  calibration_dbfs: -20.0
+  calibration_spl_db: 85.0
+  surround_offset_db: -3.0
+format:
+  sample_rates: [48000, 96000]
+  bit_depths: [24]
+  layouts: ["5.1", "7.1"]
+  channel_order: smpte
+clauses:
+  leqm.level: "Cinema advertisements shall not exceed 82 dB Leq(m). (paraphrase of the SAWA Screen Advertising Guide to Sound)"
+clauses_verbatim: false
+provenance:
+  - title: "Screen Advertising Guide to Sound in Cinema"
+    publisher: SAWA
+    url: https://www.sawa.com/wp-content/uploads/2010/10/sound_in_cinema.pdf
+    retrieved: 2026-09-03
+    grade: READ
+  - title: "TASA Standard for Trailer Loudness"
+    publisher: Trailer Audio Standards Association
+    url: https://www.tasatrailers.org/TASAStandard.pdf
+    retrieved: 2026-09-03
+    grade: READ
+    role: supporting

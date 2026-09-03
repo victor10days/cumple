@@ -1,0 +1,33 @@
+id: ebu-r128-s1-short
+name: EBU R 128 s1 short-form (adverts, promos)
+family: broadcast
+summary: R 128 for commercials and promos. -23.0 LUFS integrated at QC tolerance ±0.2 LU, maximum short-term loudness -18.0 LUFS, -1 dBTP.
+loudness:
+  policy: all
+  rules:
+    - method: integrated
+      standard: bs1770-4
+      target: -23.0
+      tolerance: 0.2
+dynamics:
+  short_term_max: -18.0
+peaks:
+  true_peak_max: -1.0
+format:
+  sample_rates: [48000]
+  bit_depths: [16, 24]
+checks:
+  metadata_must_match: true
+clauses:
+  loudness.integrated: "that the Programme Loudness Level shall be normalised to a Target Level of −23.0 LUFS [...] for the implementation of loudness workflows (for example, in Quality Control environments) a tolerance of ±0.2 LU is allowed in order to take account of measurement errors"
+  dynamics.short_term_max: "that the Short-term Loudness Level (measured in compliance with EBU Tech 3341) shall not exceed −18.0 LUFS (+5.0 LU on the relative scale). For the implementation of loudness workflows (for example, in Quality Control environments) a tolerance of +0.2 LU is allowed in order to take account of measurement errors"
+  peak.true: "that the True Peak Level of the programme shall not exceed −1 dBTP (dB True Peak) for linear audio, measured with a meter compliant with ITU-R BS.1770 and EBU Tech 3341. The measurement tolerance is ±0.3 dB (for signals with a bandwidth limited to 20 kHz)."
+clauses_verbatim: true
+provenance:
+  - title: "EBU R 128 s1: Loudness parameters for short-form content (adverts, promos, etc.)"
+    publisher: EBU
+    version: "v3"
+    published: "August 2020"
+    url: https://tech.ebu.ch/docs/r/r128s1.pdf
+    retrieved: 2026-09-03
+    grade: READ

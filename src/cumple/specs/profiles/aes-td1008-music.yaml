@@ -1,0 +1,25 @@
+id: aes-td1008-music
+name: AES TD1008 streaming, music
+family: music
+summary: AES recommendation for streamed music. Track-normalized to -16 LUFS integrated with ±0.2 LU tolerance, -1 dBTP at the codec input; album mode normalizes the loudest track to -14 LUFS.
+loudness:
+  policy: all
+  rules:
+    - method: integrated
+      standard: bs1770-4
+      target: -16.0
+      tolerance: 0.2
+peaks:
+  true_peak_max: -1.0
+clauses:
+  loudness.integrated: "Music, track-normalized: -16 LUFS integrated, tolerance ±0.2 LU; in album mode the loudest track is normalized to -14 LUFS. (paraphrase of AES TD1008)"
+  peak.true: "Maximum true peak -1 dBTP at the input to the codec. (paraphrase of AES TD1008)"
+clauses_verbatim: false
+provenance:
+  - title: "AES TD1008: Recommendations for Loudness of Internet Audio Streaming and On-Demand Distribution"
+    publisher: AES
+    version: "AESTD1008.1.21-9"
+    published: "24 September 2021"
+    url: https://aes2.org/wp-content/uploads/2024/01/20210924_TD1008_v3.13.pdf
+    retrieved: 2026-09-03
+    grade: READ

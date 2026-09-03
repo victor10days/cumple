@@ -1,0 +1,23 @@
+id: youtube
+name: YouTube (community-measured)
+family: music
+summary: YouTube publishes no loudness specification. Third-party measurements put its playback normalization near -14 LUFS with true peaks kept at or below -1 dBTP. Use with that caveat.
+loudness:
+  policy: all
+  rules:
+    - method: integrated
+      standard: bs1770-4
+      target: -14.0
+      tolerance: 1.0
+peaks:
+  true_peak_max: -1.0
+clauses:
+  loudness.integrated: "About -14 LUFS, measured by third parties from YouTube's playback normalization; YouTube publishes nothing. (community measurement)"
+  peak.true: "-1 dBTP is common advice for lossy delivery; YouTube publishes nothing. (community practice)"
+clauses_verbatim: false
+provenance:
+  - title: "Community measurements of YouTube playback normalization"
+    publisher: various
+    retrieved: 2026-09-03
+    grade: COMMUNITY
+    notes: "No primary document exists. Treat a PASS here as 'consistent with what people have measured', not as compliance."

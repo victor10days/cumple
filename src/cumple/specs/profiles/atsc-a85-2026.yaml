@@ -1,0 +1,37 @@
+id: atsc-a85-2026
+name: ATSC A/85:2026 television (US)
+family: broadcast
+summary: US television loudness under the CALM Act. -24 LKFS with about ±2 dB tolerance; long-form content is measured as dialogue level with BS.1770-1 and a dialogue gate, short-form as the full mix with BS.1770-3 or later; true peak below -2 dBTP.
+loudness:
+  policy: any
+  rules:
+    - method: dialogue_gated
+      standard: bs1770-1
+      target: -24.0
+      tolerance: 2.0
+      when: speech_at_or_above_15pct
+      notes: "Long-form content: dialogue level, BS.1770-1 without the relative gate, plus a dialogue-gating algorithm, over the entire duration."
+    - method: integrated
+      standard: bs1770-4
+      target: -24.0
+      tolerance: 2.0
+      when: speech_below_15pct
+      notes: "Full-program mix only when the content contains no dialogue whatsoever (A/85 §5.2.4); short-form content uses this method too."
+peaks:
+  true_peak_max: -2.0
+format:
+  sample_rates: [48000]
+  bit_depths: [16, 24]
+clauses:
+  loudness.dialogue_gated: "It is vital that the average Dialogue Level be measured and reported as the Loudness for Long-form Content. This should be performed using BS.1770-1 (i.e., without the relative-level gate added in subsequent versions), along with a Dialogue-Gating algorithm, and measured over the entire duration (not act by act) of the Content's composite mix."
+  loudness.integrated: "For delivery or exchange of Content without metadata (and where there is no prior arrangement by the parties regarding Loudness), the Target Loudness value should be –24 LKFS. Measurement tolerance of up to approximately ±2 dB around this value is anticipated, due to measurement variations. Content Loudness should not be targeted to the high or low side of this tolerance."
+  peak.true: "The True Peak level should be kept below –2 dBTP in order to provide headroom to avoid potential clipping due to downstream processing (such as audio coding used in delivery). Minor measurement tolerance of up to approximately ±0.5 dBTP around this value is anticipated, due to meter variations, and is acceptable."
+clauses_verbatim: true
+provenance:
+  - title: "ATSC A/85: Techniques for Establishing and Maintaining Audio Loudness for Digital Television"
+    publisher: ATSC
+    version: "A/85:2026-07"
+    published: "8 July 2026"
+    url: https://www.atsc.org/wp-content/uploads/2026/07/A85-2026-07.pdf
+    retrieved: 2026-09-03
+    grade: READ

@@ -1,0 +1,28 @@
+id: nbcu-commercial
+name: NBCUniversal linear commercial
+family: broadcast
+summary: NBCU Linear Commercial Guidelines (short-form). Measured average of -24 LKFS ±2 dB of the full program mix, not dialogue only, with a BS.1770-based meter; matches ATSC A/85 and the AC-3 dialnorm.
+loudness:
+  policy: all
+  rules:
+    - method: integrated
+      standard: bs1770-4
+      target: -24.0
+      tolerance: 2.0
+peaks:
+  true_peak_max: -2.0
+format:
+  sample_rates: [48000]
+  bit_depths: [16, 24]
+clauses:
+  loudness.integrated: "Provide a measured AVERAGE of -24 LKFS (+/-2 dB) of the full program mix (not only dialog). Use an ITU-R BS.1770 based broadcast loudness meter. (as quoted from the guidelines)"
+  peak.true: "The guidelines reference ATSC A/85, whose true peak recommendation is below -2 dBTP. (paraphrase)"
+clauses_verbatim: false
+provenance:
+  - title: "Linear NBCU Commercial Guidelines"
+    publisher: NBCUniversal
+    published: "February 2024"
+    url: https://together.nbcuni.com/wp-content/uploads/sites/3/2024/01/Linear-NBCU-Commercial-Guidelines-Feb-24.pdf
+    retrieved: 2026-09-03
+    grade: READ
+    notes: "Short-form commercial guidelines; NBCU's long-form delivery spec is not public."

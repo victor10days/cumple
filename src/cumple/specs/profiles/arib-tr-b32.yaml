@@ -1,0 +1,35 @@
+id: arib-tr-b32
+name: ARIB TR-B32 (Japan television)
+family: broadcast
+summary: Japanese television loudness. -24 LKFS ±1 LU, -1 dBTP, BS.1770-2 gating. The ARIB text is paid and in Japanese; the numbers here come from the AES TD1006 regional table.
+loudness:
+  policy: all
+  rules:
+    - method: integrated
+      standard: bs1770-4
+      target: -24.0
+      tolerance: 1.0
+peaks:
+  true_peak_max: -1.0
+format:
+  sample_rates: [48000]
+  bit_depths: [16, 24]
+clauses:
+  loudness.integrated: "Target -24 LKFS, tolerance ±1 LU, measured with BS.1770-2 gating. (from the AES TD1006 regional table, not the ARIB text)"
+  peak.true: "Maximum true peak -1 dBTP. (from the AES TD1006 regional table)"
+clauses_verbatim: false
+provenance:
+  - title: "ARIB TR-B32: Operational Guidelines for Loudness of Digital Television Programmes"
+    publisher: ARIB
+    url: https://www.arib.or.jp/english/std_tr/broadcasting/desc/tr-b32.html
+    retrieved: 2026-09-03
+    grade: SECONDARY
+    notes: "Values taken from AES TD1006 (Oct 2017) Table 1, not read from the ARIB document."
+  - title: "AES TD1006: Recommendations for loudness of audio for OTT and OVD"
+    publisher: AES
+    version: "AESTD1006.1.17-10"
+    published: "October 2017"
+    url: https://aes2.org/wp-content/uploads/2024/01/AESTD1006_1_17_10.pdf
+    retrieved: 2026-09-03
+    grade: READ
+    role: supporting

@@ -1,0 +1,25 @@
+id: apple-digital-masters
+name: Apple Digital Masters
+family: music
+summary: Apple Music's mastered-for-Apple programme. No loudness target and no numeric peak, but audible clipping at the encoder disqualifies a track. 24-bit PCM at 44.1 to 192 kHz; never upsample or pad 44.1/16 sources.
+peaks:
+  true_peak_max: -1.0
+format:
+  sample_rates: [44100, 48000, 88200, 96000, 176400, 192000]
+  bit_depths: [24]
+  containers: [wav, aiff, flac]
+clauses:
+  peak.true: "Apple gives no numeric peak limit; it says audible clipping caused by excessive levels to the encoder may be reason for tracks not to be badged. -1 dBTP is cumple's default headroom for AAC encoding."
+  format.bit_depth: "Deliver 24-bit PCM at the native sample rate (44.1 to 192 kHz); do not upsample or bit-pad 44.1 kHz / 16-bit sources. (paraphrase of the Apple Digital Masters guide)"
+clauses_verbatim: false
+provenance:
+  - title: "Apple Digital Masters: Technology Overview"
+    publisher: Apple
+    url: https://www.apple.com/apple-music/apple-digital-masters/docs/apple-digital-masters.pdf
+    retrieved: 2026-09-03
+    grade: READ
+  - title: "Peak headroom default"
+    publisher: cumple
+    retrieved: 2026-09-03
+    grade: TOOL_DEFAULT
+    role: default

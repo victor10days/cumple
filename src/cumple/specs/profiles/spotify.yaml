@@ -1,0 +1,32 @@
+id: spotify
+name: Spotify music master
+family: music
+summary: Spotify normalizes playback to -14 LUFS (Loud -11, Quiet -19). Masters at -14 LUFS integrated with true peaks at or below -1 dBTP arrive unchanged; anything louder is turned down and should keep peaks at or below -2 dBTP.
+loudness:
+  policy: all
+  rules:
+    - method: integrated
+      standard: bs1770-4
+      target: -14.0
+      tolerance: 1.0
+      notes: "Spotify publishes the normalization level, not a delivery tolerance; ±1 LU is cumple's window. A quieter master is fine and is simply turned up (limited to available headroom); a louder one is turned down."
+peaks:
+  true_peak_max: -1.0
+format:
+  sample_rates: [44100, 48000, 88200, 96000]
+  bit_depths: [16, 24]
+clauses:
+  loudness.integrated: "Playback is normalized to -14 dB LUFS by default (ITU 1770); Loud is -11 and Quiet is -19. (paraphrase of Spotify's loudness normalization page)"
+  peak.true: "Master with true peaks at or below -1 dBTP; if the master is louder than -14 LUFS, keep true peaks at or below -2 dBTP so that turning it down does not add distortion. (paraphrase of Spotify's loudness normalization page)"
+clauses_verbatim: false
+provenance:
+  - title: "Loudness normalization"
+    publisher: Spotify for Artists
+    url: https://support.spotify.com/us/artists/article/loudness-normalization/
+    retrieved: 2026-09-03
+    grade: READ
+  - title: "Tolerance window"
+    publisher: cumple
+    retrieved: 2026-09-03
+    grade: TOOL_DEFAULT
+    role: default

@@ -1,0 +1,32 @@
+id: soundcloud
+name: SoundCloud master
+family: music
+summary: SoundCloud normalizes to -14 LUFS integrated. Keep true peaks at or below -1 dBTP, or -2 dBTP if the master is louder than -14 LUFS.
+loudness:
+  policy: all
+  rules:
+    - method: integrated
+      standard: bs1770-4
+      target: -14.0
+      tolerance: 1.0
+      notes: "±1 LU is cumple's window around the published normalization level."
+peaks:
+  true_peak_max: -1.0
+format:
+  sample_rates: [44100, 48000, 88200, 96000]
+  bit_depths: [16, 24]
+clauses:
+  loudness.integrated: "Tracks are normalized to -14 LUFS integrated (ITU-R BS.1770). (paraphrase of SoundCloud help)"
+  peak.true: "True peak at or below -1 dBTP, or -2 dBTP if louder than -14 LUFS. (paraphrase of SoundCloud help)"
+clauses_verbatim: false
+provenance:
+  - title: "Will SoundCloud play my track at the level it's mastered?"
+    publisher: SoundCloud
+    url: https://help.soundcloud.com/hc/en-us/articles/360053660014
+    retrieved: 2026-09-03
+    grade: READ
+  - title: "Tolerance window"
+    publisher: cumple
+    retrieved: 2026-09-03
+    grade: TOOL_DEFAULT
+    role: default

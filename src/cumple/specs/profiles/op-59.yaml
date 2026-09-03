@@ -1,0 +1,28 @@
+id: op-59
+name: Free TV Australia OP-59
+family: broadcast
+summary: Australian television loudness. -24 LKFS ±1 dB, -2 dBTP, BS.1770-3. A recommendation, not a regulation.
+loudness:
+  policy: all
+  rules:
+    - method: integrated
+      standard: bs1770-4
+      target: -24.0
+      tolerance: 1.0
+peaks:
+  true_peak_max: -2.0
+format:
+  sample_rates: [48000]
+  bit_depths: [16, 24]
+clauses:
+  loudness.integrated: "Target loudness -24 LKFS with a tolerance of ±1 dB, measured per ITU-R BS.1770-3. (paraphrase of OP-59 Issue 4)"
+  peak.true: "Maximum true peak -2 dBTP. (paraphrase of OP-59 Issue 4)"
+clauses_verbatim: false
+provenance:
+  - title: "OP-59: Measurement and Management of Loudness for TV Broadcasting"
+    publisher: Free TV Australia
+    version: "Issue 4"
+    published: "October 2018"
+    url: https://www.freetv.com.au/wp-content/uploads/2019/08/OP-59-Measurement-and-Managemnt-of-Loudness-for-TV-Broadcasting-Issue-4-October-2018.pdf
+    retrieved: 2026-09-03
+    grade: READ

@@ -1,0 +1,44 @@
+id: disney-plus
+name: Disney+ near-field mix
+family: streaming
+summary: Disney media tech specs for home audio. -27 LKFS dialogue anchor; -24 LKFS program loudness when speech is under 15 %; BS.1770-3/-4 relative gating over the full composite program; every bed and object at or below -2 dBTP; monitoring at 79 dBC.
+loudness:
+  policy: any
+  rules:
+    - method: dialogue_gated
+      standard: bs1770-4
+      target: -27.0
+      tolerance: 2.0
+      when: speech_at_or_above_15pct
+      notes: "Disney states the -27 LKFS dialogue anchor; the ±2 tolerance is cumple's assumption pending a direct read of the page."
+    - method: integrated
+      standard: bs1770-4
+      target: -24.0
+      tolerance: 2.0
+      when: speech_below_15pct
+      notes: "A ±0.4 tolerance was reported by search extraction; it is unusually tight and unverified, so ±2 is used until the page is read directly."
+peaks:
+  true_peak_max: -2.0
+format:
+  sample_rates: [48000]
+  bit_depths: [24]
+  layouts: [stereo, "5.1", "7.1", atmos-adm]
+  channel_order: smpte
+  containers: [wav, bwf, rf64, adm-bwf]
+clauses:
+  loudness.dialogue_gated: "-27 LKFS dialogue anchor, measured on the full composite program with the relative-level (G10) gating of BS.1770-3 or -4. (paraphrase of mediatechspecs.disney.com)"
+  loudness.integrated: "-24 LKFS program loudness when the speech or dialogue percentage is below 15 %. (paraphrase of mediatechspecs.disney.com)"
+  peak.true: "Limit all beds and objects individually to -2 dBTP or lower; the Atmos printmaster may exceed -2 dBTP when measured via the 5.1 re-render. (paraphrase of mediatechspecs.disney.com)"
+clauses_verbatim: false
+provenance:
+  - title: "Disney Media Tech Specs: Production Audio"
+    publisher: Disney
+    url: https://mediatechspecs.disney.com/production/audio/production-audio
+    retrieved: 2026-09-03
+    grade: SE
+    notes: "The site is a JavaScript app; values were recovered via search extraction."
+  - title: "Tolerance assumption"
+    publisher: cumple
+    retrieved: 2026-09-03
+    grade: TOOL_DEFAULT
+    role: default

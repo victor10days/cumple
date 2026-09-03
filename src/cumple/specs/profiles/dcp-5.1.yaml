@@ -1,0 +1,26 @@
+id: dcp-5.1
+name: DCP 5.1 audio (ISDCF channel order)
+family: cinema
+summary: "Digital cinema package audio per the ISDCF channel recommendation. 48 or 96 kHz, 24-bit, channels in the order L R C LFE Ls Rs (then HI and VI-N on 7 and 8), always an even channel count. No loudness target, since cinema mixes are calibrated to the room; trailers use the TASA profile."
+format:
+  sample_rates: [48000, 96000]
+  bit_depths: [24]
+  layouts: ["5.1", "7.1"]
+  channel_order: smpte
+  containers: [wav, bwf, rf64]
+clauses:
+  format.layout: "Channel 1 L, 2 R, 3 C, 4 LFE, 5 Ls, 6 Rs, 7 HI, 8 VI-N, 9 Lc, 10 Rc, 11 Lrs, 12 Rrs, 13 motion data, 14 sync signal, 15 sign language video, 16 unused; an even number of channels is required. (paraphrase of ISDCF Doc 4)"
+  format.sample_rate: "48 or 96 kHz at 24-bit is the practice stated by SMPTE ST 428-2, which is paywalled and not verified here."
+clauses_verbatim: false
+provenance:
+  - title: "ISDCF Doc 4: Audio channel recommendations for DCPs"
+    publisher: ISDCF
+    published: "29 June 2017"
+    url: https://files.isdcf.com/papers/ISDCF-Doc4-Audio-channel-recommendations.pdf
+    retrieved: 2026-09-03
+    grade: READ
+  - title: "SMPTE ST 428-2 (sample rate and bit depth)"
+    publisher: SMPTE
+    retrieved: 2026-09-03
+    grade: GATED
+    role: supporting

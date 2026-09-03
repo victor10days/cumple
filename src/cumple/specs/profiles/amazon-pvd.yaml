@@ -1,0 +1,32 @@
+id: amazon-pvd
+name: Prime Video Direct mezzanine audio
+family: streaming
+summary: Public Prime Video Direct (Video Central) audio rules. -24 LKFS ±2 integrated, -2 dBTP, 48 kHz, fully mixed program track only, 8-channel layout L R C LFE Ls Rs Lt Rt, audio and video durations within 2.0 s.
+loudness:
+  policy: all
+  rules:
+    - method: integrated
+      standard: bs1770-4
+      target: -24.0
+      tolerance: 2.0
+peaks:
+  true_peak_max: -2.0
+format:
+  sample_rates: [48000]
+  bit_depths: [16, 24]
+  layouts: [stereo, "5.1", "5.1+lt-rt"]
+  channel_order: smpte
+checks:
+  av_duration_tolerance_s: 2.0
+clauses:
+  loudness.integrated: "-24 LKFS ±2 dB integrated program loudness per ITU-R BS.1770. (paraphrase of Prime Video Direct content specifications)"
+  peak.true: "True peak not above -2 dBTP. (paraphrase)"
+  format.layout: "8-channel layout L, R, C, LFE, Ls, Rs, Lt, Rt; M&E, silent, MOS and commentary tracks must be removed from the mezzanine. (paraphrase of Video Central audio page)"
+  duration.av: "Audio and video durations must match within 2.0 seconds. (paraphrase of Video Central audio page)"
+clauses_verbatim: false
+provenance:
+  - title: "Prime Video Central: Delivery experience, Audio"
+    publisher: Amazon
+    url: https://videocentral.amazon.com/support/delivery-experience/audio
+    retrieved: 2026-09-03
+    grade: READ

@@ -1,0 +1,35 @@
+id: atsc-a85-streaming
+name: ATSC A/85:2026 Annex L streaming range
+family: streaming
+summary: The new Annex L guidance for internet delivery. One consistent target between -23 and -27 LKFS, measured like television (dialogue level for long-form), true peak below -2 dBTP.
+loudness:
+  policy: any
+  rules:
+    - method: dialogue_gated
+      standard: bs1770-1
+      min: -27.0
+      max: -23.0
+      when: speech_at_or_above_15pct
+    - method: integrated
+      standard: bs1770-4
+      min: -27.0
+      max: -23.0
+      when: speech_below_15pct
+peaks:
+  true_peak_max: -2.0
+format:
+  sample_rates: [48000]
+  bit_depths: [16, 24]
+clauses:
+  loudness.dialogue_gated: "For Streaming delivery services only, a single Target Loudness between –23 to –27 LKFS is recommended, unless there are other prior arrangements between Content-exchange or delivery parties."
+  loudness.integrated: "It is strongly recommended that all Content be presented to the audience at only one specific and consistent Target Loudness. Long-form and Short-form Loudness measurements should be performed per Table M.1, regardless of the source of the Content."
+  peak.true: "The True Peak level should be kept below –2 dBTP in order to provide headroom to avoid potential clipping due to downstream processing (such as audio coding used in delivery)."
+clauses_verbatim: true
+provenance:
+  - title: "ATSC A/85:2026-07, Annex L: Guidelines for Establishing and Maintaining Audio Loudness of Internet-delivered Content"
+    publisher: ATSC
+    version: "A/85:2026-07"
+    published: "8 July 2026"
+    url: https://www.atsc.org/wp-content/uploads/2026/07/A85-2026-07.pdf
+    retrieved: 2026-09-03
+    grade: READ
