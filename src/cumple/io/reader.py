@@ -6,9 +6,10 @@ Everything here is read-only. Nothing in this module ever writes to or moves a f
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 import numpy as np
 import soundfile as sf
@@ -146,8 +147,7 @@ def iter_blocks(
     dtype: str = "float64",
 ) -> Iterator[np.ndarray]:
     """Yield (frames, channels) float blocks. Full scale is 1.0 for every subtype."""
-    for block in sf.blocks(str(path), blocksize=block_frames, dtype=dtype, always_2d=True):
-        yield block
+    yield from sf.blocks(str(path), blocksize=block_frames, dtype=dtype, always_2d=True)
 
 
 def read(path: str | Path, dtype: str = "float64") -> tuple[np.ndarray, int]:

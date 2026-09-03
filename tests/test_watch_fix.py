@@ -49,7 +49,16 @@ def test_watch_waits_for_a_file_to_stop_growing(tmp_path):
     w2 = Watcher(folder, get("ebu-r128"), stable_s=5.0, clock=lambda: clock["t"])
     assert w2.poll() == [] and w2.pending() == []
     # and the one-pass entry point ends by itself
-    assert watch(folder, get("ebu-r128"), once=True, clock=lambda: clock["t"], sleep=lambda s: clock.__setitem__("t", clock["t"] + s)) == 0
+    assert (
+        watch(
+            folder,
+            get("ebu-r128"),
+            once=True,
+            clock=lambda: clock["t"],
+            sleep=lambda s: clock.__setitem__("t", clock["t"] + s),
+        )
+        == 0
+    )
     assert ready.exists()
 
 

@@ -2,19 +2,19 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterator
 
 import numpy as np
 import soundfile as sf
 
 from ..io.reader import DEFAULT_BLOCK_FRAMES, AudioInfo, Package, iter_blocks, probe
-from .bs1770 import STEP, SUB_HOP_S, LoudnessMeter, LoudnessResult, default_roles
+from .bs1770 import SUB_HOP_S, LoudnessMeter, LoudnessResult, default_roles
 from .dialogue import SpeechDetector, SpeechResult
-from .leqm import LeqmMeter, LeqmResult
 from .layout import LayoutMeter, LayoutResult
-from .truepeak import PeakMeter, PeakResult, to_db
+from .leqm import LeqmMeter, LeqmResult
+from .truepeak import PeakMeter, PeakResult
 
 SILENCE_DBFS = -80.0  # below this, a sample counts as padding / digital black
 SMPTE_ORDER = ["L", "R", "C", "LFE", "Ls", "Rs", "Lrs", "Rrs"]
@@ -99,10 +99,10 @@ class _Stats:
                 self.first_loud = self.n + int(loud[0])
             self.last_loud = self.n + int(loud[-1])
         if self.ch == 2:
-            l, r = x[:, 0], x[:, 1]
-            self.lr += float(l @ r)
-            self.ll += float(l @ l)
-            self.rr += float(r @ r)
+            left, right = x[:, 0], x[:, 1]
+            self.lr += float(left @ right)
+            self.ll += float(left @ left)
+            self.rr += float(right @ right)
         self.n += n
 
     def dc(self) -> np.ndarray:
@@ -146,7 +146,9 @@ def _package_blocks(pkg: Package, roles: list[str], block_frames: int) -> Iterat
             h.close()
 
 
-def measure(path: str | Path, roles: list[str] | None = None, block_frames: int = DEFAULT_BLOCK_FRAMES, leqm: bool = False) -> Measurement:
+def measure(
+    path: str | Path, roles: list[str] | None = None, block_frames: int = DEFAULT_BLOCK_FRAMES, leqm: bool = False
+) -> Measurement:
     """Measure a file. For a directory, measure it as a package of discrete channel files.
     leqm=True also runs the cinema Leq(m) meter (an 8k-tap FIR per channel; only when asked)."""
     path = Path(path)
@@ -171,10 +173,21 @@ def measure_package(directory: str | Path, block_frames: int = DEFAULT_BLOCK_FRA
     if not present:
         raise ValueError("no recognised channel files in package")
     fs = next(iter(pkg.infos.values())).samplerate
-    return _run(Path(directory), fs, len(present), present, _package_blocks(pkg, present, block_frames), package=pkg, leqm=leqm)
+    return _run(
+        Path(directory), fs, len(present), present, _package_blocks(pkg, present, block_frames), package=pkg, leqm=leqm
+    )
 
 
-def _run(path: Path, fs: int, channels: int, roles: list[str], blocks: Iterator[np.ndarray], info: AudioInfo | None = None, package: Package | None = None, leqm: bool = False) -> Measurement:
+def _run(
+    path: Path,
+    fs: int,
+    channels: int,
+    roles: list[str],
+    blocks: Iterator[np.ndarray],
+    info: AudioInfo | None = None,
+    package: Package | None = None,
+    leqm: bool = False,
+) -> Measurement:
     loud = LoudnessMeter(fs, channels, roles=roles)
     peak = PeakMeter(fs, channels)
     stats = _Stats(fs, channels)

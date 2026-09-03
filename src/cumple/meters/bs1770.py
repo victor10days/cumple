@@ -48,14 +48,28 @@ _HIGHPASS_F0 = 38.13547087602444
 _HIGHPASS_Q = 0.5003270373238773
 
 # The coefficients as printed in BS.1770 for 48 kHz, used by the tests.
-BS1770_48K_SHELF = dict(b0=1.53512485958697, b1=-2.69169618940638, b2=1.19839281085285, a1=-1.69065929318241, a2=0.73248077421585)
+BS1770_48K_SHELF = dict(
+    b0=1.53512485958697, b1=-2.69169618940638, b2=1.19839281085285, a1=-1.69065929318241, a2=0.73248077421585
+)
 BS1770_48K_HIGHPASS = dict(b0=1.0, b1=-2.0, b2=1.0, a1=-1.99004745483398, a2=0.99007225036621)
 
 # Channel weights G_i by role. Surrounds get +1.5 dB; LFE is excluded.
 ROLE_WEIGHT: dict[str, float] = {
-    "L": 1.0, "R": 1.0, "C": 1.0, "M": 1.0, "Lt": 1.0, "Rt": 1.0, "Lc": 1.0, "Rc": 1.0,
+    "L": 1.0,
+    "R": 1.0,
+    "C": 1.0,
+    "M": 1.0,
+    "Lt": 1.0,
+    "Rt": 1.0,
+    "Lc": 1.0,
+    "Rc": 1.0,
     "LFE": 0.0,
-    "Ls": 1.41, "Rs": 1.41, "Lss": 1.41, "Rss": 1.41, "Lrs": 1.41, "Rrs": 1.41,
+    "Ls": 1.41,
+    "Rs": 1.41,
+    "Lss": 1.41,
+    "Rss": 1.41,
+    "Lrs": 1.41,
+    "Rrs": 1.41,
 }
 
 
@@ -89,7 +103,7 @@ def _high_shelf(fs: float, f0: float, gain_db: float, q: float) -> tuple[np.ndar
     """
     k = np.tan(np.pi * f0 / fs)
     vh = 10 ** (gain_db / 20)
-    vb = vh ** 0.4996667741545416
+    vb = vh**0.4996667741545416
     a0 = 1 + k / q + k * k
     b = np.array([(vh + vb * k / q + k * k) / a0, 2 * (k * k - vh) / a0, (vh - vb * k / q + k * k) / a0])
     a = np.array([1.0, 2 * (k * k - 1) / a0, (1 - k / q + k * k) / a0])
@@ -159,7 +173,9 @@ class LoudnessMeter:
     ):
         self.fs = int(samplerate)
         self.channels = int(channels)
-        self.weights = np.asarray(weights, dtype=np.float64) if weights is not None else channel_weights(channels, roles)
+        self.weights = (
+            np.asarray(weights, dtype=np.float64) if weights is not None else channel_weights(channels, roles)
+        )
         self.relative_gate = relative_gate
         self.hop = int(round(self.fs * SUB_HOP_S))
         self._stages = k_weighting(self.fs)

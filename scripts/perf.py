@@ -39,7 +39,18 @@ def make(path: Path, channels: int, minutes: int) -> None:
 
 
 def run(path: Path) -> tuple[float, float]:
-    cmd = ["/usr/bin/time", "-l", sys.executable, "-m", "cumple.cli", "check", str(path), "--spec", "ebu-r128", "--json"]
+    cmd = [
+        "/usr/bin/time",
+        "-l",
+        sys.executable,
+        "-m",
+        "cumple.cli",
+        "check",
+        str(path),
+        "--spec",
+        "ebu-r128",
+        "--json",
+    ]
     t0 = time.time()
     res = subprocess.run(cmd, capture_output=True, text=True)
     wall = time.time() - t0
@@ -51,7 +62,9 @@ def run(path: Path) -> tuple[float, float]:
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     print(f"# Performance of cumple {__version__}\n")
-    print(f"Generated {date.today().isoformat()} on this machine ({os.uname().machine}); synthetic 24-bit PCM programmes at 48 kHz. Peak memory is the maximum resident set size reported by `/usr/bin/time -l` for the whole `cumple check --json` process, Python and NumPy included.\n")
+    print(
+        f"Generated {date.today().isoformat()} on this machine ({os.uname().machine}); synthetic 24-bit PCM programmes at 48 kHz. Peak memory is the maximum resident set size reported by `/usr/bin/time -l` for the whole `cumple check --json` process, Python and NumPy included.\n"
+    )
     print("| file | channels | duration | file size | wall time | real-time factor | peak memory |")
     print("|---|---|---|---|---|---|---|")
     for name, ch, minutes in CASES:
@@ -59,7 +72,9 @@ def main() -> None:
         make(p, ch, minutes)
         wall, rss = run(p)
         size = p.stat().st_size / 1e9
-        print(f"| {name} | {ch} | {minutes} min | {size:.2f} GB | {wall:.0f} s | {minutes * 60 / wall:.0f}x | {rss:.0f} MB |")
+        print(
+            f"| {name} | {ch} | {minutes} min | {size:.2f} GB | {wall:.0f} s | {minutes * 60 / wall:.0f}x | {rss:.0f} MB |"
+        )
     print("\nMemory should not grow with duration: the meters keep 10 ms energies and filter state, never the audio.")
 
 

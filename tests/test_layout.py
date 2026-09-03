@@ -30,7 +30,11 @@ def band_noise(seconds: float, lo: float | None, hi: float | None, rms_dbfs: flo
 def five_one(tmp_path, name, order="smpte", lfe_full_range=False, lfe_silent=False):
     seconds = 4.0
     full = [band_noise(seconds, 40, 16000, -26.0, s) for s in range(5)]
-    lfe = np.zeros(int(FS * seconds)) if lfe_silent else (band_noise(seconds, 40, 16000, -30.0, 9) if lfe_full_range else band_noise(seconds, 20, 100, -30.0, 9))
+    lfe = (
+        np.zeros(int(FS * seconds))
+        if lfe_silent
+        else (band_noise(seconds, 40, 16000, -30.0, 9) if lfe_full_range else band_noise(seconds, 20, 100, -30.0, 9))
+    )
     if order == "smpte":
         chans = [full[0], full[1], full[2], lfe, full[3], full[4]]
     else:  # film: L C R Ls Rs LFE

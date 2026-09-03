@@ -15,13 +15,13 @@ from . import __version__
 from .checks import evaluate
 from .diff import describe, diff_files, diff_to_dict, sum_stems_against
 from .fix import fix_file
-from .watch import watch as run_watch
 from .io import load_package, probe
 from .meters.measure import measure
 from .report import print_report, report_to_dict, write_sheet
 from .report.specs_md import render_specs_markdown
 from .specs import ProfileNotFound, get, load_all
 from .specs.schema import GRADE_LABEL, Profile
+from .watch import watch as run_watch
 
 app = typer.Typer(
     help="Delivery QC for audio. ¿Cumple? Does this file comply?",
@@ -30,7 +30,6 @@ app = typer.Typer(
     rich_markup_mode="rich",
 )
 console = Console()
-
 
 
 def _version(value: bool) -> None:
@@ -52,15 +51,21 @@ def _profile_or_exit(profile_id: str) -> Profile:
     except ProfileNotFound as e:
         console.print(f"[red]{e.args[0]}[/]")
         console.print("Run [bold]cumple specs[/] to list the destinations cumple knows.")
-        raise typer.Exit(2)
+        raise typer.Exit(2) from None
 
 
 @app.command()
 def specs(
-    family: str | None = typer.Option(None, "--family", "-f", help="streaming, broadcast, cinema, music, podcast, audiobook, standard"),
+    family: str | None = typer.Option(
+        None, "--family", "-f", help="streaming, broadcast, cinema, music, podcast, audiobook, standard"
+    ),
     as_json: bool = typer.Option(False, "--json", help="Machine-readable output."),
-    ids: bool = typer.Option(False, "--ids", help="Only the profile ids, one per line (for scripts and the macOS app)."),
-    markdown: bool = typer.Option(False, "--markdown", help="The full matrix with clauses and sources as Markdown (docs/SPECS.md)."),
+    ids: bool = typer.Option(
+        False, "--ids", help="Only the profile ids, one per line (for scripts and the macOS app)."
+    ),
+    markdown: bool = typer.Option(
+        False, "--markdown", help="The full matrix with clauses and sources as Markdown (docs/SPECS.md)."
+    ),
 ) -> None:
     """List the destinations cumple knows, with the grade of their sources."""
     profiles = [p for p in load_all().values() if family is None or p.family == family]
@@ -86,7 +91,9 @@ def specs(
         ]
         console.print_json(json.dumps(rows))
         return
-    table = Table(box=box.SIMPLE_HEAD, title=f"cumple {__version__}: {len(profiles)} destinations", title_justify="left")
+    table = Table(
+        box=box.SIMPLE_HEAD, title=f"cumple {__version__}: {len(profiles)} destinations", title_justify="left"
+    )
     table.add_column("id", style="bold", no_wrap=True)
     table.add_column("destination", max_width=24)
     table.add_column("loudness", max_width=30)
@@ -95,11 +102,20 @@ def specs(
     for p in profiles:
         table.add_row(p.id, p.name, p.loudness_compact(), p.peak_summary(), _grade_markup(p))
     console.print(table)
-    console.print("[dim]grade = how the numbers were obtained: READ is a primary document read directly; SE, SECONDARY, GATED and COMMUNITY are weaker. * = some value is the tool's own default. `cumple explain <id>` shows the rules and sources.[/]")
+    console.print(
+        "[dim]grade = how the numbers were obtained: READ is a primary document read directly; SE, SECONDARY, GATED and COMMUNITY are weaker. * = some value is the tool's own default. `cumple explain <id>` shows the rules and sources.[/]"
+    )
 
 
 def _grade_markup(p: Profile) -> str:
-    colour = {"READ": "green", "SE": "yellow", "SECONDARY": "yellow", "GATED": "red", "COMMUNITY": "red", "TOOL_DEFAULT": "magenta"}[p.grade.value]
+    colour = {
+        "READ": "green",
+        "SE": "yellow",
+        "SECONDARY": "yellow",
+        "GATED": "red",
+        "COMMUNITY": "red",
+        "TOOL_DEFAULT": "magenta",
+    }[p.grade.value]
     star = "[magenta]*[/]" if p.has_defaults else ""
     return f"[{colour}]{p.grade.value}[/]{star}"
 
@@ -117,9 +133,20 @@ def explain(profile_id: str = typer.Argument(..., help="A profile id from `cumpl
         for r in p.loudness.rules:
             rules.add_row("loudness", r.describe())
         if len(p.loudness.rules) > 1:
-            rules.add_row("", f"[dim]policy: {'any one applicable rule may pass' if p.loudness.policy == 'any' else 'every applicable rule must pass'}[/]")
+            rules.add_row(
+                "",
+                f"[dim]policy: {'any one applicable rule may pass' if p.loudness.policy == 'any' else 'every applicable rule must pass'}[/]",
+            )
     if p.peaks.true_peak_max is not None:
-        rules.add_row("true peak", f"≤ {p.peaks.true_peak_max:g} dBTP" + (f" (recommended ≤ {p.peaks.true_peak_recommended:g})" if p.peaks.true_peak_recommended is not None else ""))
+        rules.add_row(
+            "true peak",
+            f"≤ {p.peaks.true_peak_max:g} dBTP"
+            + (
+                f" (recommended ≤ {p.peaks.true_peak_recommended:g})"
+                if p.peaks.true_peak_recommended is not None
+                else ""
+            ),
+        )
     if p.peaks.sample_peak_max is not None:
         rules.add_row("sample peak", f"≤ {p.peaks.sample_peak_max:g} dBFS")
     if p.dynamics.lra_max is not None:
@@ -127,12 +154,20 @@ def explain(profile_id: str = typer.Argument(..., help="A profile id from `cumpl
     if p.dynamics.short_term_max is not None:
         rules.add_row("max short-term", f"≤ {p.dynamics.short_term_max:g} LUFS")
     if p.leqm is not None:
-        rules.add_row("Leq(m)", f"≤ {p.leqm.max_db:g} dB, {p.leqm.calibration_dbfs:g} dBFS = {p.leqm.calibration_spl_db:g} dBC")
+        rules.add_row(
+            "Leq(m)", f"≤ {p.leqm.max_db:g} dB, {p.leqm.calibration_dbfs:g} dBFS = {p.leqm.calibration_spl_db:g} dBC"
+        )
     if p.rms is not None:
-        rules.add_row("RMS", f"{p.rms.rms_min_dbfs:g} to {p.rms.rms_max_dbfs:g} dBFS" + (f", noise floor ≤ {p.rms.noise_floor_max_dbfs:g} dBFS" if p.rms.noise_floor_max_dbfs is not None else ""))
+        rules.add_row(
+            "RMS",
+            f"{p.rms.rms_min_dbfs:g} to {p.rms.rms_max_dbfs:g} dBFS"
+            + (
+                f", noise floor ≤ {p.rms.noise_floor_max_dbfs:g} dBFS" if p.rms.noise_floor_max_dbfs is not None else ""
+            ),
+        )
     f = p.format
     if f.sample_rates:
-        rules.add_row("sample rate", ", ".join(f"{r/1000:g} kHz" for r in f.sample_rates))
+        rules.add_row("sample rate", ", ".join(f"{r / 1000:g} kHz" for r in f.sample_rates))
     if f.bit_depths:
         rules.add_row("bit depth", ", ".join(f"{b}-bit" for b in f.bit_depths))
     if f.layouts:
@@ -158,7 +193,12 @@ def explain(profile_id: str = typer.Argument(..., help="A profile id from `cumpl
     console.print(rules)
 
     if p.clauses:
-        clauses = Table(box=box.SIMPLE_HEAD, title="In the source's words" + ("" if p.clauses_verbatim else "  [dim](paraphrased; verbatim quotes pending)[/]"), title_justify="left")
+        clauses = Table(
+            box=box.SIMPLE_HEAD,
+            title="In the source's words"
+            + ("" if p.clauses_verbatim else "  [dim](paraphrased; verbatim quotes pending)[/]"),
+            title_justify="left",
+        )
         clauses.add_column("rule", style="bold")
         clauses.add_column("clause")
         for code, text in p.clauses.items():
@@ -171,26 +211,39 @@ def explain(profile_id: str = typer.Argument(..., help="A profile id from `cumpl
     src.add_column("document")
     src.add_column("retrieved")
     for s in p.provenance:
-        doc = f"{s.title}" + (f", {s.version}" if s.version else "") + (f" ({s.published})" if s.published else "") + f"\n[dim]{s.publisher}[/]" + (f"\n[dim]{s.url}[/]" if s.url else "") + (f"\n[italic]{s.notes}[/]" if s.notes else "")
+        doc = (
+            f"{s.title}"
+            + (f", {s.version}" if s.version else "")
+            + (f" ({s.published})" if s.published else "")
+            + f"\n[dim]{s.publisher}[/]"
+            + (f"\n[dim]{s.url}[/]" if s.url else "")
+            + (f"\n[italic]{s.notes}[/]" if s.notes else "")
+        )
         src.add_row(s.grade.value, s.role, doc, s.retrieved.isoformat())
     console.print(src)
-    console.print(f"[dim]Grade meanings: " + "; ".join(f"{g.value} = {label}" for g, label in GRADE_LABEL.items()) + "[/]")
+    console.print(
+        "[dim]Grade meanings: " + "; ".join(f"{g.value} = {label}" for g, label in GRADE_LABEL.items()) + "[/]"
+    )
 
 
 @app.command()
-def info(path: Path = typer.Argument(..., exists=True, help="An audio file or a directory of discrete channel files.")) -> None:
+def info(
+    path: Path = typer.Argument(..., exists=True, help="An audio file or a directory of discrete channel files."),
+) -> None:
     """What the file is: container, rate, depth, channels, duration, embedded metadata."""
     if path.is_dir():
         try:
             pkg = load_package(path)
         except Exception as e:
             console.print(f"[red]cannot read package {path}:[/] {e}")
-            raise typer.Exit(2)
+            raise typer.Exit(2) from None
         table = Table(box=box.SIMPLE_HEAD, title=f"package {path.name}: {pkg.layout_guess}", title_justify="left")
         for col in ("role", "file", "rate", "depth", "channels", "duration"):
             table.add_column(col)
         for role, i in pkg.infos.items():
-            table.add_row(role, i.path.name, f"{i.samplerate}", f"{i.bit_depth}", f"{i.channels}", f"{i.duration_s:.3f} s")
+            table.add_row(
+                role, i.path.name, f"{i.samplerate}", f"{i.bit_depth}", f"{i.channels}", f"{i.duration_s:.3f} s"
+            )
         console.print(table)
         for problem in pkg.consistent():
             console.print(f"[red]problem:[/] {problem}")
@@ -199,7 +252,7 @@ def info(path: Path = typer.Argument(..., exists=True, help="An audio file or a 
         i = probe(path)
     except Exception as e:
         console.print(f"[red]cannot read {path}:[/] {e}")
-        raise typer.Exit(2)
+        raise typer.Exit(2) from None
     table = Table(box=box.SIMPLE_HEAD, show_header=False, title=str(path), title_justify="left")
     table.add_column("field", style="bold")
     table.add_column("value")
@@ -227,7 +280,9 @@ def check(
     clauses: bool = typer.Option(False, "--clauses", help="Print the source's words under each finding."),
     sheet: bool = typer.Option(False, "--sheet", help="Write the QC sheet (<name>.qc.html) next to the file."),
     pdf: bool = typer.Option(False, "--pdf", help="Also print the sheet to PDF with the local Chrome."),
-    out: Path | None = typer.Option(None, "--out", help="Directory for the sheet and JSON instead of next to the file."),
+    out: Path | None = typer.Option(
+        None, "--out", help="Directory for the sheet and JSON instead of next to the file."
+    ),
 ) -> None:
     """Measure a file or package against a destination. Exit 0 on PASS, 1 on FAIL."""
     profile = _profile_or_exit(spec)
@@ -235,7 +290,7 @@ def check(
         m = measure(path, leqm=profile.leqm is not None)
     except Exception as e:  # unreadable file, inconsistent package, libsndfile errors
         console.print(f"[red]cannot measure {path}:[/] {e}")
-        raise typer.Exit(2)
+        raise typer.Exit(2) from None
     report = evaluate(profile, m)
     if as_json:
         console.print_json(json.dumps(report_to_dict(report)))
@@ -247,14 +302,25 @@ def check(
         stem = path.name if path.is_dir() else path.stem
         html_path, pdf_path = write_sheet(report, base_dir / f"{stem}.qc.html", pdf=pdf)
         (base_dir / f"{stem}.qc.json").write_text(json.dumps(report_to_dict(report), indent=2))
-        console.print(f"[dim]sheet:[/] {html_path}" + (f"  [dim]pdf:[/] {pdf_path}" if pdf_path else ("  [yellow]pdf: Chrome not found or printing failed[/]" if pdf else "")))
+        console.print(
+            f"[dim]sheet:[/] {html_path}"
+            + (
+                f"  [dim]pdf:[/] {pdf_path}"
+                if pdf_path
+                else ("  [yellow]pdf: Chrome not found or printing failed[/]" if pdf else "")
+            )
+        )
     raise typer.Exit(0 if report.passed else 1)
 
 
 @app.command()
 def diff(
-    paths: list[Path] = typer.Argument(..., exists=True, help="Two files to compare, or the stems to sum when --against is given."),
-    against: Path | None = typer.Option(None, "--against", exists=True, help="Printmaster to compare the sum of the stems with."),
+    paths: list[Path] = typer.Argument(
+        ..., exists=True, help="Two files to compare, or the stems to sum when --against is given."
+    ),
+    against: Path | None = typer.Option(
+        None, "--against", exists=True, help="Printmaster to compare the sum of the stems with."
+    ),
     as_json: bool = typer.Option(False, "--json"),
     max_offset: float = typer.Option(10.0, "--max-offset", help="Largest time offset to search, in seconds."),
 ) -> None:
@@ -269,7 +335,7 @@ def diff(
             r = diff_files(paths[0], paths[1], max_offset_s=max_offset)
     except Exception as e:
         console.print(f"[red]cannot compare:[/] {e}")
-        raise typer.Exit(2)
+        raise typer.Exit(2) from None
     if as_json:
         console.print_json(json.dumps(diff_to_dict(r)))
     else:
@@ -295,13 +361,29 @@ def watch(
     def on_result(p, report, html_path, pdf_path):
         colour = "green" if report.passed else "red"
         fails = ", ".join(f.what for f in report.findings if f.status.value == "fail")
-        console.print(f"[bold {colour}]{report.verdict}[/] {p.name}  [dim]{report.measurement.loudness.integrated:.1f} LUFS, {report.measurement.peaks.true_peak_dbtp:+.1f} dBTP[/]" + (f"  [red]{fails}[/]" if fails else "") + f"  [dim]→ {(pdf_path or html_path).name}[/]")
+        console.print(
+            f"[bold {colour}]{report.verdict}[/] {p.name}  [dim]{report.measurement.loudness.integrated:.1f} LUFS, {report.measurement.peaks.true_peak_dbtp:+.1f} dBTP[/]"
+            + (f"  [red]{fails}[/]" if fails else "")
+            + f"  [dim]→ {(pdf_path or html_path).name}[/]"
+        )
 
     try:
-        n = run_watch(folder, profile, interval_s=interval, stable_s=stable, pdf=pdf, out_dir=out, log_csv=log_csv, once=once, redo=redo, on_result=on_result, on_status=lambda msg: console.print(f"[dim]{msg}[/]"))
+        n = run_watch(
+            folder,
+            profile,
+            interval_s=interval,
+            stable_s=stable,
+            pdf=pdf,
+            out_dir=out,
+            log_csv=log_csv,
+            once=once,
+            redo=redo,
+            on_result=on_result,
+            on_status=lambda msg: console.print(f"[dim]{msg}[/]"),
+        )
     except KeyboardInterrupt:
         console.print("[dim]stopped[/]")
-        raise typer.Exit(0)
+        raise typer.Exit(0) from None
     if once:
         console.print(f"[dim]{n} file(s) measured; log at {log_csv}[/]")
 
@@ -310,7 +392,9 @@ def watch(
 def fix(
     path: Path = typer.Argument(..., exists=True, dir_okay=False),
     spec: str = typer.Option(..., "--spec", "-s"),
-    gain_only: bool = typer.Option(True, "--gain-only", help="The only kind of fix cumple does; kept explicit on purpose."),
+    gain_only: bool = typer.Option(
+        True, "--gain-only", help="The only kind of fix cumple does; kept explicit on purpose."
+    ),
     out: Path | None = typer.Option(None, "--out", help="Output file (default: <name>.<spec>.wav next to the source)."),
 ) -> None:
     """Write a gain-corrected copy when gain alone can make a file comply. Never limits."""
@@ -319,17 +403,24 @@ def fix(
         fp, dst, after = fix_file(path, profile, out)
     except Exception as e:
         console.print(f"[red]cannot fix {path}:[/] {e}")
-        raise typer.Exit(2)
+        raise typer.Exit(2) from None
     if fp.gain_db is None:
         console.print(f"[red]no fix written:[/] {fp.reason}")
         raise typer.Exit(1)
     if dst is None:
         console.print(f"[green]{fp.reason}[/]")
         raise typer.Exit(0)
-    console.print(f"wrote [bold]{dst}[/]: {fp.reason}  [dim](loudness {fp.loudness_before:.1f} → {after.loudness.integrated:.1f} LUFS, true peak {fp.true_peak_before:+.1f} → {after.peaks.true_peak_dbtp:+.1f} dBTP)[/]")
-    console.print("[dim]note: the copy carries no bext/iXML metadata; re-embed it in your DAW if the destination requires it[/]")
+    console.print(
+        f"wrote [bold]{dst}[/]: {fp.reason}  [dim](loudness {fp.loudness_before:.1f} → {after.loudness.integrated:.1f} LUFS, true peak {fp.true_peak_before:+.1f} → {after.peaks.true_peak_dbtp:+.1f} dBTP)[/]"
+    )
+    console.print(
+        "[dim]note: the copy carries no bext/iXML metadata; re-embed it in your DAW if the destination requires it[/]"
+    )
     report = evaluate(profile, after)
-    console.print(f"re-check: [bold {'green' if report.passed else 'yellow'}]{report.verdict}[/]" + ("" if report.passed else "  (other rules still fail; see `cumple check`)"))
+    console.print(
+        f"re-check: [bold {'green' if report.passed else 'yellow'}]{report.verdict}[/]"
+        + ("" if report.passed else "  (other rules still fail; see `cumple check`)")
+    )
     raise typer.Exit(0 if report.passed else 1)
 
 

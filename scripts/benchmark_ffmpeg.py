@@ -39,7 +39,11 @@ CASES = [
 
 
 def ffmpeg_summary(path: str) -> tuple[float, float, float]:
-    out = subprocess.run(["ffmpeg", "-nostats", "-hide_banner", "-i", path, "-filter_complex", "ebur128=peak=true", "-f", "null", "-"], capture_output=True, text=True).stderr
+    out = subprocess.run(
+        ["ffmpeg", "-nostats", "-hide_banner", "-i", path, "-filter_complex", "ebur128=peak=true", "-f", "null", "-"],
+        capture_output=True,
+        text=True,
+    ).stderr
     tail = out.split("Summary:")[-1]
     i = re.search(r"I:\s+(-?[\d.]+) LUFS", tail)
     lra = re.search(r"LRA:\s+(-?[\d.]+) LU", tail)
@@ -65,8 +69,10 @@ def fmt(x, expected=None, kind="I"):
 
 def main() -> None:
     ff = subprocess.run(["ffmpeg", "-version"], capture_output=True, text=True).stdout.split("\n")[0]
-    print(f"# cumple vs ffmpeg ebur128 on the EBU Loudness Test Set v5.0\n")
-    print(f"Generated {date.today().isoformat()} with cumple {__version__} and `{ff}`. Expected values from EBU Tech 3341 Table 1 (±0.1 LU; true peak +0.2/−0.4 dBTP) and Tech 3342 (±1 LU). ✓ means inside the published tolerance.\n")
+    print("# cumple vs ffmpeg ebur128 on the EBU Loudness Test Set v5.0\n")
+    print(
+        f"Generated {date.today().isoformat()} with cumple {__version__} and `{ff}`. Expected values from EBU Tech 3341 Table 1 (±0.1 LU; true peak +0.2/−0.4 dBTP) and Tech 3342 (±1 LU). ✓ means inside the published tolerance.\n"
+    )
     print("| file | expected | cumple I | ffmpeg I | cumple TP | ffmpeg TP | cumple LRA | ffmpeg LRA |")
     print("|---|---|---|---|---|---|---|---|")
     for name, ei, etp, elra in CASES:
@@ -75,9 +81,21 @@ def main() -> None:
             continue
         m = measure(hits[0])
         fi, ftp, flra = ffmpeg_summary(hits[0])
-        exp = " ".join(x for x in [f"I {ei:g}" if ei is not None else "", f"TP {etp:+g}" if etp is not None else "", f"LRA {elra:g}" if elra is not None else ""] if x)
-        print(f"| {name} | {exp} | {fmt(m.loudness.integrated, ei)} | {fmt(fi, ei)} | {fmt(m.peaks.true_peak_dbtp, etp, 'TP')} | {fmt(ftp, etp, 'TP')} | {fmt(m.loudness.lra, elra, 'LRA')} | {fmt(flra, elra, 'LRA')} |")
-    print("\nNotes: ffmpeg's ebur128 is an independent implementation with no published conformance report. On the five- and six-channel case 6 files it reports a true peak of −28 dBFS where the centre channel sits at −24 dBFS; cumple reports the centre channel. On the true-peak burst files ffmpeg reports a loudness range of about 20 LU for what is a single steady tone; those files carry no LRA expectation in Tech 3342, so this is noted, not scored.")
+        exp = " ".join(
+            x
+            for x in [
+                f"I {ei:g}" if ei is not None else "",
+                f"TP {etp:+g}" if etp is not None else "",
+                f"LRA {elra:g}" if elra is not None else "",
+            ]
+            if x
+        )
+        print(
+            f"| {name} | {exp} | {fmt(m.loudness.integrated, ei)} | {fmt(fi, ei)} | {fmt(m.peaks.true_peak_dbtp, etp, 'TP')} | {fmt(ftp, etp, 'TP')} | {fmt(m.loudness.lra, elra, 'LRA')} | {fmt(flra, elra, 'LRA')} |"
+        )
+    print(
+        "\nNotes: ffmpeg's ebur128 is an independent implementation with no published conformance report. On the five- and six-channel case 6 files it reports a true peak of −28 dBFS where the centre channel sits at −24 dBFS; cumple reports the centre channel. On the true-peak burst files ffmpeg reports a loudness range of about 20 LU for what is a single steady tone; those files carry no LRA expectation in Tech 3342, so this is noted, not scored."
+    )
 
 
 if __name__ == "__main__":

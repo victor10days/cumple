@@ -12,9 +12,9 @@ FS = 48000
 
 
 def stereo_noise(seconds=5.0, seed=1, level=-20.0):
-    l = band_noise(seconds, 30, 16000, level, seed)
-    r = band_noise(seconds, 30, 16000, level, seed + 100)
-    return np.stack([l, r], 1)
+    left = band_noise(seconds, 30, 16000, level, seed)
+    right = band_noise(seconds, 30, 16000, level, seed + 100)
+    return np.stack([left, right], 1)
 
 
 def test_identical_files_are_identical(tmp_path):

@@ -42,7 +42,9 @@ def _test_dir() -> Path | None:
 
 
 TEST_DIR = _test_dir()
-skip = pytest.mark.skipif(TEST_DIR is None, reason="EBU loudness test set not found in ~/.cache/cumple (see module docstring)")
+skip = pytest.mark.skipif(
+    TEST_DIR is None, reason="EBU loudness test set not found in ~/.cache/cumple (see module docstring)"
+)
 
 
 def files_for(case: str) -> list[Path]:
@@ -126,11 +128,20 @@ def test_case_14_max_momentary_over_the_stepped_file_is_minus_19():
 
 
 @skip
-@pytest.mark.parametrize("case,expected", [
-    ("3341-15", -6.0), ("3341-16", -6.0), ("3341-17", -6.0), ("3341-18", -6.0),
-    ("3341-19", 3.0),
-    ("3341-20", 0.0), ("3341-21", 0.0), ("3341-22", 0.0), ("3341-23", 0.0),
-])
+@pytest.mark.parametrize(
+    "case,expected",
+    [
+        ("3341-15", -6.0),
+        ("3341-16", -6.0),
+        ("3341-17", -6.0),
+        ("3341-18", -6.0),
+        ("3341-19", 3.0),
+        ("3341-20", 0.0),
+        ("3341-21", 0.0),
+        ("3341-22", 0.0),
+        ("3341-23", 0.0),
+    ],
+)
 def test_true_peak_cases(case, expected):
     files = files_for(case)
     assert files, case
@@ -140,7 +151,10 @@ def test_true_peak_cases(case, expected):
 
 
 @skip
-@pytest.mark.parametrize("case,expected", [("3342-1", 10.0), ("3342-2", 5.0), ("3342-3", 20.0), ("3342-4", 15.0), ("3342-5", 5.0), ("3342-6", 15.0)])
+@pytest.mark.parametrize(
+    "case,expected",
+    [("3342-1", 10.0), ("3342-2", 5.0), ("3342-3", 20.0), ("3342-4", 15.0), ("3342-5", 5.0), ("3342-6", 15.0)],
+)
 def test_loudness_range_cases(case, expected):
     files = files_for(case)
     assert files, case

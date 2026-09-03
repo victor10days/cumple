@@ -24,11 +24,27 @@ from scipy.signal import fftconvolve, firwin2
 
 # TASA Standard §1.4.2: frequency (Hz), response (dB), tolerance (dB).
 TASA_M_WEIGHTING = [
-    (31, -35.5, 2.0), (63, -29.5, 1.4), (100, -25.4, 1.0), (200, -19.4, 0.85), (400, -13.4, 0.7),
-    (800, -7.5, 0.55), (1000, -5.6, 0.5), (2000, 0.0, 0.5), (3150, 3.4, 0.5), (4000, 4.9, 0.5),
-    (5000, 6.1, 0.5), (6300, 6.6, 0.0), (7100, 6.4, 0.2), (8000, 5.8, 0.4), (9000, 4.5, 0.6),
-    (10000, 2.5, 0.8), (12500, -5.6, 1.2), (14000, -10.9, 1.4), (16000, -17.3, 1.65),
-    (20000, -27.8, 2.0), (31500, -48.3, 2.8),
+    (31, -35.5, 2.0),
+    (63, -29.5, 1.4),
+    (100, -25.4, 1.0),
+    (200, -19.4, 0.85),
+    (400, -13.4, 0.7),
+    (800, -7.5, 0.55),
+    (1000, -5.6, 0.5),
+    (2000, 0.0, 0.5),
+    (3150, 3.4, 0.5),
+    (4000, 4.9, 0.5),
+    (5000, 6.1, 0.5),
+    (6300, 6.6, 0.0),
+    (7100, 6.4, 0.2),
+    (8000, 5.8, 0.4),
+    (9000, 4.5, 0.6),
+    (10000, 2.5, 0.8),
+    (12500, -5.6, 1.2),
+    (14000, -10.9, 1.4),
+    (16000, -17.3, 1.65),
+    (20000, -27.8, 2.0),
+    (31500, -48.3, 2.8),
 ]
 CALIBRATION_DBFS = -20.0
 CALIBRATION_DB = 85.0
@@ -71,7 +87,15 @@ class LeqmResult:
 class LeqmMeter:
     """Streaming Leq(m) with per-channel overlap-save FIR filtering."""
 
-    def __init__(self, samplerate: int, channels: int, roles: list[str] | None = None, calibration_dbfs: float = CALIBRATION_DBFS, calibration_db: float = CALIBRATION_DB, surround_offset_db: float = SURROUND_OFFSET_DB):
+    def __init__(
+        self,
+        samplerate: int,
+        channels: int,
+        roles: list[str] | None = None,
+        calibration_dbfs: float = CALIBRATION_DBFS,
+        calibration_db: float = CALIBRATION_DB,
+        surround_offset_db: float = SURROUND_OFFSET_DB,
+    ):
         self.fs = int(samplerate)
         self.channels = int(channels)
         self.roles = roles or ["L"] * channels

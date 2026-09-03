@@ -65,10 +65,20 @@ def plan(p: Profile, m: Measurement) -> FixPlan:
     if p.peaks.sample_peak_max is not None and np.isfinite(sp):
         hi = min(hi, p.peaks.sample_peak_max - sp)
     if rule is None and p.peaks.true_peak_max is None and p.peaks.sample_peak_max is None:
-        return FixPlan(None, "this destination has no loudness or peak rule that gain could satisfy", level, None, tp, None, rule)
+        return FixPlan(
+            None, "this destination has no loudness or peak rule that gain could satisfy", level, None, tp, None, rule
+        )
     if lo > hi:
         need = lo
-        return FixPlan(None, f"gain alone cannot do it: loudness needs at least {need:+.1f} dB but the peak allows at most {hi:+.1f} dB; the mix needs headroom (limiting or a mix change is a creative decision, so cumple does not do it)", level, None, tp, None, rule)
+        return FixPlan(
+            None,
+            f"gain alone cannot do it: loudness needs at least {need:+.1f} dB but the peak allows at most {hi:+.1f} dB; the mix needs headroom (limiting or a mix change is a creative decision, so cumple does not do it)",
+            level,
+            None,
+            tp,
+            None,
+            rule,
+        )
     if rule is not None and rule.target is not None:
         want = rule.target - level
     elif rule is not None and rule.min is not None and rule.max is not None:
@@ -78,13 +88,17 @@ def plan(p: Profile, m: Measurement) -> FixPlan:
     gain = float(min(max(want, lo), hi))
     if abs(gain) < 0.05 and lo <= 0.0 <= hi:
         return FixPlan(0.0, "already complies; nothing to change", level, level, tp, tp, rule)
-    return FixPlan(gain, f"apply {gain:+.2f} dB", level, level + gain if np.isfinite(level) else None, tp, tp + gain, rule)
+    return FixPlan(
+        gain, f"apply {gain:+.2f} dB", level, level + gain if np.isfinite(level) else None, tp, tp + gain, rule
+    )
 
 
 def apply(src: Path, dst: Path, gain_db: float, block: int = 1 << 18) -> None:
     """Write dst as src times the gain, same sample rate, channels and subtype, streaming."""
     with sf.SoundFile(str(src)) as fin:
-        with sf.SoundFile(str(dst), "w", samplerate=fin.samplerate, channels=fin.channels, subtype=fin.subtype, format=fin.format) as fout:
+        with sf.SoundFile(
+            str(dst), "w", samplerate=fin.samplerate, channels=fin.channels, subtype=fin.subtype, format=fin.format
+        ) as fout:
             g = 10 ** (gain_db / 20)
             while True:
                 x = fin.read(block, dtype="float64", always_2d=True)

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from .. import __version__
@@ -21,7 +21,7 @@ def report_to_dict(report: Report) -> dict[str, Any]:
     m, p = report.measurement, report.profile
     return {
         "cumple": __version__,
-        "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "generated": datetime.now(UTC).isoformat(timespec="seconds"),
         "path": str(m.path),
         "profile": {"id": p.id, "name": p.name, "grade": p.grade.value, "has_defaults": p.has_defaults},
         "verdict": report.verdict,

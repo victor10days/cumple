@@ -33,7 +33,9 @@ def _mono(x: np.ndarray) -> np.ndarray:
     return x.mean(axis=1) if x.ndim == 2 else x
 
 
-def estimate_offset(a: np.ndarray, b: np.ndarray, fs: int, max_offset_s: float = 10.0, analysis_s: float = 60.0) -> tuple[float, float]:
+def estimate_offset(
+    a: np.ndarray, b: np.ndarray, fs: int, max_offset_s: float = 10.0, analysis_s: float = 60.0
+) -> tuple[float, float]:
     """(offset in samples, normalised peak correlation, sign included)."""
     am, bm = _mono(a), _mono(b)
     n = int(min(len(am), len(bm), analysis_s * fs))
@@ -96,4 +98,6 @@ def align(a: np.ndarray, b: np.ndarray, fs: int, max_offset_s: float = 10.0) -> 
     b_al = fractional_shift(b, -lag)  # undo B's lateness
     if inverted:
         b_al = -b_al
-    return Alignment(offset_samples=float(lag), gain_db=0.0, polarity_inverted=bool(inverted), correlation=float(abs(rho))), b_al
+    return Alignment(
+        offset_samples=float(lag), gain_db=0.0, polarity_inverted=bool(inverted), correlation=float(abs(rho))
+    ), b_al

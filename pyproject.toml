@@ -32,7 +32,9 @@ cumple = "cumple.cli:app"
 [dependency-groups]
 dev = [
   "pytest>=8",
+  "pytest-cov>=5",
   "pyloudnorm>=0.2",
+  "ruff>=0.6",
 ]
 
 [build-system]
@@ -45,3 +47,15 @@ packages = ["src/cumple"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "W"]
+ignore = ["E501", "B008", "UP042"]  # typer defaults are idiomatic; str-Enums stay for pydantic/JSON
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]

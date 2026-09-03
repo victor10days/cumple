@@ -14,7 +14,9 @@ def _esc(s: str) -> str:
 
 def render_specs_markdown(profiles: list[Profile]) -> str:
     out = [f"# Destinations known to cumple {__version__}\n"]
-    out.append(f"Generated {date.today().isoformat()} from `src/cumple/specs/profiles/*.yaml`. Every number is traceable to the sources listed under each destination, and the grade says how good that trace is:\n")
+    out.append(
+        f"Generated {date.today().isoformat()} from `src/cumple/specs/profiles/*.yaml`. Every number is traceable to the sources listed under each destination, and the grade says how good that trace is:\n"
+    )
     out.append("\n".join(f"- **{g.value}**: {label}" for g, label in GRADE_LABEL.items()) + "\n")
     out.append("An asterisk after a grade means some value is the tool's own default where the source is silent.\n")
     out.append("## Matrix\n")
@@ -44,24 +46,37 @@ def render_specs_markdown(profiles: list[Profile]) -> str:
             other.append("bext truth")
         if p.rms is not None:
             other.append("RMS + noise floor")
-        out.append(f"| `{p.id}` | {_esc(p.name)} | {p.family} | {_esc(p.loudness_compact())} | {_esc(p.peak_summary())} | {_esc(', '.join(other))} | {p.grade.value}{'*' if p.has_defaults else ''} |")
+        out.append(
+            f"| `{p.id}` | {_esc(p.name)} | {p.family} | {_esc(p.loudness_compact())} | {_esc(p.peak_summary())} | {_esc(', '.join(other))} | {p.grade.value}{'*' if p.has_defaults else ''} |"
+        )
     out.append("")
     for p in sorted(profiles, key=lambda p: (p.family, p.id)):
         out.append(f"## {p.name} (`{p.id}`)\n")
         out.append(_esc(p.summary) + "\n")
         if p.loudness:
-            out.append("Loudness rules" + (" (any one applicable rule may pass)" if p.loudness.policy == "any" else "") + ":\n")
+            out.append(
+                "Loudness rules" + (" (any one applicable rule may pass)" if p.loudness.policy == "any" else "") + ":\n"
+            )
             for r in p.loudness.rules:
                 out.append(f"- {r.describe()}" + (f" — {_esc(r.notes)}" if r.notes else ""))
             out.append("")
         if p.clauses:
-            out.append("In the source's words" + ("" if p.clauses_verbatim else " (paraphrased; verbatim quotes pending)") + ":\n")
+            out.append(
+                "In the source's words"
+                + ("" if p.clauses_verbatim else " (paraphrased; verbatim quotes pending)")
+                + ":\n"
+            )
             for code, text in p.clauses.items():
                 out.append(f"- `{code}`: {_esc(text)}")
             out.append("")
         out.append("Sources:\n")
         for s in p.provenance:
-            line = f"- **{s.grade.value}** ({s.role}) {_esc(s.title)}" + (f", {s.version}" if s.version else "") + (f" ({s.published})" if s.published else "") + f" — {_esc(s.publisher)}"
+            line = (
+                f"- **{s.grade.value}** ({s.role}) {_esc(s.title)}"
+                + (f", {s.version}" if s.version else "")
+                + (f" ({s.published})" if s.published else "")
+                + f" — {_esc(s.publisher)}"
+            )
             if s.url:
                 line += f" — <{s.url}>"
             line += f" — retrieved {s.retrieved.isoformat()}"

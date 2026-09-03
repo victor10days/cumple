@@ -39,17 +39,29 @@ def describe(r: DiffResult) -> str:
         parts.append(f"at {al.gain_db:+.1f} dB")
     if abs(al.offset_samples) >= 0.5:
         ms = al.offset_samples / r.fs * 1000
-        parts.append(f"{abs(al.offset_samples):.0f} samples ({abs(ms):.2f} ms) {'late' if al.offset_samples > 0 else 'early'}")
+        parts.append(
+            f"{abs(al.offset_samples):.0f} samples ({abs(ms):.2f} ms) {'late' if al.offset_samples > 0 else 'early'}"
+        )
     elif abs(al.offset_samples) >= 0.05:
         parts.append(f"{al.offset_samples:+.2f} samples off")
     if al.polarity_inverted:
         parts.append("polarity inverted")
     head = f"{b} is {a}" + ((" " + ", ".join(parts)) if parts else " with no gain, offset or polarity change")
     tail = residual_meaning(r.residual_dbfs, r.residual_rel_db)
-    corrected = "After correcting for offset and polarity (level differences are kept, because stems must match the printmaster at level)" if r.stems else "After correcting for that"
-    resid = f"{corrected}, the residual is {r.residual_dbfs:.0f} dBFS RMS ({r.residual_rel_db:+.0f} dB relative to the original; peak {r.residual_peak_dbfs:.0f} dBFS)." if np.isfinite(r.residual_dbfs) else f"{corrected}, nothing is left."
+    corrected = (
+        "After correcting for offset and polarity (level differences are kept, because stems must match the printmaster at level)"
+        if r.stems
+        else "After correcting for that"
+    )
+    resid = (
+        f"{corrected}, the residual is {r.residual_dbfs:.0f} dBFS RMS ({r.residual_rel_db:+.0f} dB relative to the original; peak {r.residual_peak_dbfs:.0f} dBFS)."
+        if np.isfinite(r.residual_dbfs)
+        else f"{corrected}, nothing is left."
+    )
     lines = [f"{head}. {resid} {tail.capitalize()}."]
-    lines.append(f"Loudness {r.levels_a.integrated:.1f} to {r.levels_b.integrated:.1f} LUFS ({r.loudness_delta:+.1f} LU); true peak {r.levels_a.true_peak:+.1f} to {r.levels_b.true_peak:+.1f} dBTP ({r.true_peak_delta:+.1f} dB); loudness range {r.levels_a.lra:.1f} to {r.levels_b.lra:.1f} LU.")
+    lines.append(
+        f"Loudness {r.levels_a.integrated:.1f} to {r.levels_b.integrated:.1f} LUFS ({r.loudness_delta:+.1f} LU); true peak {r.levels_a.true_peak:+.1f} to {r.levels_b.true_peak:+.1f} dBTP ({r.true_peak_delta:+.1f} dB); loudness range {r.levels_a.lra:.1f} to {r.levels_b.lra:.1f} LU."
+    )
     notable = [(c, d) for c, d in r.band_deltas if abs(d - al.gain_db) >= 1.0]
     if notable:
         notable.sort(key=lambda cd: -abs(cd[1] - al.gain_db))
@@ -78,11 +90,32 @@ def diff_to_dict(r: DiffResult) -> dict[str, Any]:
         "duration_a_s": r.duration_a_s,
         "duration_b_s": r.duration_b_s,
         "identical": r.identical,
-        "alignment": {"offset_samples": al.offset_samples, "offset_ms": al.offset_samples / r.fs * 1000, "gain_db": _num(al.gain_db), "polarity_inverted": al.polarity_inverted, "correlation": al.correlation},
-        "residual": {"rms_dbfs": _num(r.residual_dbfs), "relative_db": _num(r.residual_rel_db), "peak_dbfs": _num(r.residual_peak_dbfs), "meaning": residual_meaning(r.residual_dbfs, r.residual_rel_db)},
+        "alignment": {
+            "offset_samples": al.offset_samples,
+            "offset_ms": al.offset_samples / r.fs * 1000,
+            "gain_db": _num(al.gain_db),
+            "polarity_inverted": al.polarity_inverted,
+            "correlation": al.correlation,
+        },
+        "residual": {
+            "rms_dbfs": _num(r.residual_dbfs),
+            "relative_db": _num(r.residual_rel_db),
+            "peak_dbfs": _num(r.residual_peak_dbfs),
+            "meaning": residual_meaning(r.residual_dbfs, r.residual_rel_db),
+        },
         "levels": {
-            "a": {"integrated_lufs": _num(r.levels_a.integrated), "lra_lu": _num(r.levels_a.lra), "true_peak_dbtp": _num(r.levels_a.true_peak), "rms_dbfs": _num(r.levels_a.rms_dbfs)},
-            "b": {"integrated_lufs": _num(r.levels_b.integrated), "lra_lu": _num(r.levels_b.lra), "true_peak_dbtp": _num(r.levels_b.true_peak), "rms_dbfs": _num(r.levels_b.rms_dbfs)},
+            "a": {
+                "integrated_lufs": _num(r.levels_a.integrated),
+                "lra_lu": _num(r.levels_a.lra),
+                "true_peak_dbtp": _num(r.levels_a.true_peak),
+                "rms_dbfs": _num(r.levels_a.rms_dbfs),
+            },
+            "b": {
+                "integrated_lufs": _num(r.levels_b.integrated),
+                "lra_lu": _num(r.levels_b.lra),
+                "true_peak_dbtp": _num(r.levels_b.true_peak),
+                "rms_dbfs": _num(r.levels_b.rms_dbfs),
+            },
         },
         "band_deltas_db": [{"hz": c, "delta_db": _num(d)} for c, d in r.band_deltas],
         "notes": r.notes,

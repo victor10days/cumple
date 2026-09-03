@@ -58,7 +58,12 @@ def test_info_on_file_and_package(tmp_path):
 def test_unreadable_file_is_reported_not_a_traceback(tmp_path):
     bad = tmp_path / "garbage.wav"
     bad.write_bytes(b"RIFF" + b"\x00" * 100)
-    for args in (["check", bad, "--spec", "ebu-r128"], ["info", bad], ["diff", bad, bad], ["fix", bad, "--spec", "ebu-r128"]):
+    for args in (
+        ["check", bad, "--spec", "ebu-r128"],
+        ["info", bad],
+        ["diff", bad, bad],
+        ["fix", bad, "--spec", "ebu-r128"],
+    ):
         r = run(*args)
         assert r.exit_code == 2, args
         assert "cannot" in r.stdout and "Traceback" not in r.stdout
@@ -139,17 +144,47 @@ def test_awkward_files_measure_and_evaluate(tmp_path, kind):
 
 
 def test_every_profile_evaluates_a_real_programme_without_error(tmp_path):
-    x = np.concatenate([stereo(speech_like(8, -30)), np.zeros((FS * 2, 2)), stereo(music_like(8, -22)), stereo(speech_like(6, -30, seed=7))])
+    x = np.concatenate(
+        [
+            stereo(speech_like(8, -30)),
+            np.zeros((FS * 2, 2)),
+            stereo(music_like(8, -22)),
+            stereo(speech_like(6, -30, seed=7)),
+        ]
+    )
     p = tmp_path / "programme.wav"
     sf.write(str(p), x, FS, subtype="PCM_24")
     m = measure(p, leqm=True)
     known = {
-        "loudness.speech", "loudness.integrated", "loudness.dialogue_gated", "loudness.fallback",
-        "peak.true", "peak.sample", "peak.clipping", "dynamics.lra", "dynamics.short_term_max",
-        "format.sample_rate", "format.bit_depth", "format.channels", "format.layout", "format.packaging",
-        "format.container", "format.lfe_band", "format.channel_order", "padding.head", "padding.tail",
-        "padding.head_min", "padding.tail_min", "signal.dc_offset", "signal.silent_channels", "mono.compat",
-        "metadata.bext_loudness", "leqm.level", "rms.level", "rms.noise_floor", "duration.max",
+        "loudness.speech",
+        "loudness.integrated",
+        "loudness.dialogue_gated",
+        "loudness.fallback",
+        "peak.true",
+        "peak.sample",
+        "peak.clipping",
+        "dynamics.lra",
+        "dynamics.short_term_max",
+        "format.sample_rate",
+        "format.bit_depth",
+        "format.channels",
+        "format.layout",
+        "format.packaging",
+        "format.container",
+        "format.lfe_band",
+        "format.channel_order",
+        "padding.head",
+        "padding.tail",
+        "padding.head_min",
+        "padding.tail_min",
+        "signal.dc_offset",
+        "signal.silent_channels",
+        "mono.compat",
+        "metadata.bext_loudness",
+        "leqm.level",
+        "rms.level",
+        "rms.noise_floor",
+        "duration.max",
     }
     for profile in load_all().values():
         report = evaluate(profile, m)

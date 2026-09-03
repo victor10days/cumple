@@ -29,7 +29,9 @@ def test_k_weighting_matches_the_printed_48k_coefficients():
     (b1, a1), (b2, a2) = k_weighting(48000)
     assert b1 == pytest.approx([BS1770_48K_SHELF["b0"], BS1770_48K_SHELF["b1"], BS1770_48K_SHELF["b2"]], abs=1e-7)
     assert a1[1:] == pytest.approx([BS1770_48K_SHELF["a1"], BS1770_48K_SHELF["a2"]], abs=1e-7)
-    assert b2 == pytest.approx([BS1770_48K_HIGHPASS["b0"], BS1770_48K_HIGHPASS["b1"], BS1770_48K_HIGHPASS["b2"]], abs=1e-7)
+    assert b2 == pytest.approx(
+        [BS1770_48K_HIGHPASS["b0"], BS1770_48K_HIGHPASS["b1"], BS1770_48K_HIGHPASS["b2"]], abs=1e-7
+    )
     assert a2[1:] == pytest.approx([BS1770_48K_HIGHPASS["a1"], BS1770_48K_HIGHPASS["a2"]], abs=1e-7)
 
 
@@ -85,9 +87,12 @@ def test_streaming_in_odd_blocks_gives_identical_results():
 
 def test_surround_weight_is_plus_1_5_db_and_lfe_is_excluded():
     base = sine(48000, 5, 1000, -23.0)
-    left = np.zeros((len(base), 6)); left[:, 0] = base
-    ls = np.zeros((len(base), 6)); ls[:, 4] = base
-    lfe = np.zeros((len(base), 6)); lfe[:, 3] = base
+    left = np.zeros((len(base), 6))
+    left[:, 0] = base
+    ls = np.zeros((len(base), 6))
+    ls[:, 4] = base
+    lfe = np.zeros((len(base), 6))
+    lfe[:, 3] = base
     l_val = measure(left).integrated
     assert measure(ls).integrated == pytest.approx(l_val + 10 * np.log10(1.41), abs=0.02)
     assert measure(lfe).integrated == -np.inf
@@ -96,10 +101,12 @@ def test_surround_weight_is_plus_1_5_db_and_lfe_is_excluded():
 
 def test_loudness_range_of_two_level_signal_is_their_difference():
     # Tech 3342 style: 20 s at -23 then 20 s at -33 gives an LRA of about 10 LU.
-    x = np.concatenate([
-        np.repeat(sine(48000, 20, 1000, -23.0)[:, None], 2, axis=1),
-        np.repeat(sine(48000, 20, 1000, -33.0)[:, None], 2, axis=1),
-    ])
+    x = np.concatenate(
+        [
+            np.repeat(sine(48000, 20, 1000, -23.0)[:, None], 2, axis=1),
+            np.repeat(sine(48000, 20, 1000, -33.0)[:, None], 2, axis=1),
+        ]
+    )
     r = measure(x)
     assert r.lra == pytest.approx(10.0, abs=1.0)
     steady = np.repeat(sine(48000, 20, 1000, -23.0)[:, None], 2, axis=1)

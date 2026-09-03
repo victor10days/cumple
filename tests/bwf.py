@@ -6,13 +6,25 @@ import struct
 from pathlib import Path
 
 
-def bext_chunk(loudness_value: int = 0x7FFF, loudness_range: int = 0x7FFF, max_true_peak: int = 0x7FFF, description: str = "cumple test", originator: str = "cumple") -> bytes:
+def bext_chunk(
+    loudness_value: int = 0x7FFF,
+    loudness_range: int = 0x7FFF,
+    max_true_peak: int = 0x7FFF,
+    description: str = "cumple test",
+    originator: str = "cumple",
+) -> bytes:
     def fixed(s: str, n: int) -> bytes:
         return s.encode("ascii")[:n].ljust(n, b"\x00")
 
     body = (
-        fixed(description, 256) + fixed(originator, 32) + fixed("cumple-test", 32) + fixed("2026-09-04", 10) + fixed("12:00:00", 8)
-        + struct.pack("<II", 0, 0) + struct.pack("<H", 2) + b"\x00" * 64
+        fixed(description, 256)
+        + fixed(originator, 32)
+        + fixed("cumple-test", 32)
+        + fixed("2026-09-04", 10)
+        + fixed("12:00:00", 8)
+        + struct.pack("<II", 0, 0)
+        + struct.pack("<H", 2)
+        + b"\x00" * 64
         + struct.pack("<hhhhh", loudness_value, loudness_range, max_true_peak, 0x7FFF, 0x7FFF)
         + b"\x00" * 180
         + b"A=PCM,F=48000,W=24,M=stereo,T=cumple\r\n"

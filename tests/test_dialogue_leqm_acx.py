@@ -55,7 +55,9 @@ def test_dialogue_gated_reads_the_speech_not_the_music(tmp_path):
     m = measure(tmp_path / "prog.wav")
     reference = measure(tmp_path / "speech-only.wav").loudness.integrated_ungated
     assert 0.5 < m.speech_fraction < 0.8
-    assert m.loudness.dialogue_gated == pytest.approx(reference, abs=1.0)  # reads the dialogue, not the music (boundary blocks carry a little music)
+    assert m.loudness.dialogue_gated == pytest.approx(
+        reference, abs=1.0
+    )  # reads the dialogue, not the music (boundary blocks carry a little music)
     assert m.loudness.integrated > m.loudness.dialogue_gated + 3  # the music pulls the integrated value up
     assert -29 < m.loudness.dialogue_gated < -25  # inside Netflix's window, by construction
     r = evaluate(get("netflix-2.0"), m)
@@ -78,7 +80,7 @@ def test_m_weighting_response_is_inside_the_tasa_tolerances():
     h = m_weighting_fir(FS)
     freqs = [f for f, _, _ in TASA_M_WEIGHTING if f < FS / 2]
     _, resp = freqz(h, worN=freqs, fs=FS)
-    for (f, target, tol), r in zip([t for t in TASA_M_WEIGHTING if t[0] < FS / 2], resp):
+    for (f, target, tol), r in zip([t for t in TASA_M_WEIGHTING if t[0] < FS / 2], resp, strict=True):
         got = 20 * np.log10(abs(r))
         assert abs(got - target) <= max(tol, 0.15), (f, got, target, tol)
 
@@ -134,7 +136,11 @@ def test_acx_rms_and_noise_floor(tmp_path):
     assert m.noise_floor_dbfs < -60
     r = evaluate(get("acx"), m)
     f = {x.code: x for x in r.findings}
-    assert f["rms.level"].status is Status.PASS and f["rms.noise_floor"].status is Status.PASS and f["duration.max"].status is Status.PASS
+    assert (
+        f["rms.level"].status is Status.PASS
+        and f["rms.noise_floor"].status is Status.PASS
+        and f["duration.max"].status is Status.PASS
+    )
     loud = (voice * 10 ** (6 / 20) + floor)[:, None]
     sf.write(str(tmp_path / "loud.wav"), loud, 44100, subtype="PCM_16")
     r = evaluate(get("acx"), measure(tmp_path / "loud.wav"))
@@ -143,6 +149,7 @@ def test_acx_rms_and_noise_floor(tmp_path):
 
 def test_bext_loudness_metadata_is_checked_against_the_measurement(tmp_path):
     from tests.test_engine import tone_file
+
     honest = tone_file(tmp_path / "honest.wav", dbfs=-23.0)
     add_bext(honest, loudness_value=-2300, loudness_range=0)
     meta = read_metadata(honest)

@@ -14,7 +14,18 @@ from cumple.specs import get
 runner = CliRunner()
 
 
-def tone_file(path, dbfs=-23.0, sr=48000, channels=2, seconds=8.0, subtype="PCM_24", freq=1000.0, head_silence=0.0, tail_silence=0.0, invert_right=False):
+def tone_file(
+    path,
+    dbfs=-23.0,
+    sr=48000,
+    channels=2,
+    seconds=8.0,
+    subtype="PCM_24",
+    freq=1000.0,
+    head_silence=0.0,
+    tail_silence=0.0,
+    invert_right=False,
+):
     n = int(sr * seconds)
     t = np.arange(n) / sr
     x = 10 ** (dbfs / 20) * np.sin(2 * np.pi * freq * t)
@@ -25,7 +36,9 @@ def tone_file(path, dbfs=-23.0, sr=48000, channels=2, seconds=8.0, subtype="PCM_
     data = np.repeat(x[:, None], channels, axis=1)
     if invert_right and channels == 2:
         data[:, 1] *= -1
-    data = np.concatenate([np.zeros((int(sr * head_silence), channels)), data, np.zeros((int(sr * tail_silence), channels))])
+    data = np.concatenate(
+        [np.zeros((int(sr * head_silence), channels)), data, np.zeros((int(sr * tail_silence), channels))]
+    )
     sf.write(str(path), data, sr, subtype=subtype)
     return path
 

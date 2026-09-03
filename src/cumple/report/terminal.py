@@ -21,7 +21,9 @@ def print_report(report: Report, console: Console | None = None, show_clauses: b
     console = console or Console()
     m, p = report.measurement, report.profile
     kind = "package" if m.is_package else "file"
-    console.print(f"[bold]{m.path.name}[/]  [dim]{kind}, {m.layout}, {m.samplerate / 1000:g} kHz, {m.duration_s:.1f} s[/]")
+    console.print(
+        f"[bold]{m.path.name}[/]  [dim]{kind}, {m.layout}, {m.samplerate / 1000:g} kHz, {m.duration_s:.1f} s[/]"
+    )
     console.print(f"against [bold]{p.name}[/] [dim]({p.id}, sources graded {p.grade.value})[/]")
     table = Table(box=box.SIMPLE_HEAD, show_edge=False, pad_edge=False)
     table.add_column("")

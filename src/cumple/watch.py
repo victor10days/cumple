@@ -13,10 +13,10 @@ from __future__ import annotations
 
 import csv
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Callable
 
 from .checks import Status, evaluate
 from .io.reader import AUDIO_SUFFIXES
@@ -25,7 +25,18 @@ from .report import report_to_dict, write_sheet
 from .specs.schema import Profile
 
 PARTIAL_SUFFIXES = {".part", ".partial", ".tmp", ".crdownload", ".download"}
-CSV_FIELDS = ["time", "file", "profile", "verdict", "integrated_lufs", "true_peak_dbtp", "lra_lu", "duration_s", "failed", "sheet"]
+CSV_FIELDS = [
+    "time",
+    "file",
+    "profile",
+    "verdict",
+    "integrated_lufs",
+    "true_peak_dbtp",
+    "lra_lu",
+    "duration_s",
+    "failed",
+    "sheet",
+]
 
 
 @dataclass
@@ -61,18 +72,20 @@ def process(p: Path, profile: Profile, out_dir: Path | None, pdf: bool, log_csv:
             w = csv.DictWriter(fh, fieldnames=CSV_FIELDS)
             if new:
                 w.writeheader()
-            w.writerow({
-                "time": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                "file": p.name,
-                "profile": profile.id,
-                "verdict": report.verdict,
-                "integrated_lufs": f"{m.loudness.integrated:.2f}",
-                "true_peak_dbtp": f"{m.peaks.true_peak_dbtp:.2f}",
-                "lra_lu": f"{m.loudness.lra:.2f}",
-                "duration_s": f"{m.duration_s:.3f}",
-                "failed": ";".join(f.code for f in report.findings if f.status is Status.FAIL),
-                "sheet": str(pdf_path or html_path),
-            })
+            w.writerow(
+                {
+                    "time": datetime.now(UTC).isoformat(timespec="seconds"),
+                    "file": p.name,
+                    "profile": profile.id,
+                    "verdict": report.verdict,
+                    "integrated_lufs": f"{m.loudness.integrated:.2f}",
+                    "true_peak_dbtp": f"{m.peaks.true_peak_dbtp:.2f}",
+                    "lra_lu": f"{m.loudness.lra:.2f}",
+                    "duration_s": f"{m.duration_s:.3f}",
+                    "failed": ";".join(f.code for f in report.findings if f.status is Status.FAIL),
+                    "sheet": str(pdf_path or html_path),
+                }
+            )
     return report, html_path, pdf_path
 
 
@@ -80,7 +93,17 @@ class Watcher:
     """Folder state between polls. Call poll() as often as you like; files are measured once
     they have held still for stable_s seconds."""
 
-    def __init__(self, folder: Path, profile: Profile, stable_s: float = 5.0, pdf: bool = False, out_dir: Path | None = None, log_csv: Path | None = None, redo: bool = False, clock: Callable[[], float] = time.time):
+    def __init__(
+        self,
+        folder: Path,
+        profile: Profile,
+        stable_s: float = 5.0,
+        pdf: bool = False,
+        out_dir: Path | None = None,
+        log_csv: Path | None = None,
+        redo: bool = False,
+        clock: Callable[[], float] = time.time,
+    ):
         self.folder = Path(folder)
         self.profile = profile
         self.stable_s = stable_s
@@ -143,7 +166,9 @@ def watch(
     measured or has held still (a file still growing keeps the pass alive)."""
     w = Watcher(folder, profile, stable_s=stable_s, pdf=pdf, out_dir=out_dir, log_csv=log_csv, redo=redo, clock=clock)
     if on_status:
-        on_status(f"watching {folder} against {profile.name}; files are measured {stable_s:g} s after they stop growing")
+        on_status(
+            f"watching {folder} against {profile.name}; files are measured {stable_s:g} s after they stop growing"
+        )
     reported_errors = 0
     while True:
         for p, report, html_path, pdf_path in w.poll():

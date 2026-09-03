@@ -73,7 +73,7 @@ class LoudnessRule(Strict):
     notes: str | None = None
 
     @model_validator(mode="after")
-    def _derive_bounds(self) -> "LoudnessRule":
+    def _derive_bounds(self) -> LoudnessRule:
         if self.target is not None and self.tolerance is not None:
             if self.min is None:
                 self.min = self.target - self.tolerance

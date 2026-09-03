@@ -87,7 +87,9 @@ def _timeline_svg(report: Report) -> str:
         v = max(min(v, hi), lo)
         return top + (hi - v) / (hi - lo) * (h - top - bottom)
 
-    parts = [f'<svg viewBox="0 0 {w} {h}" role="img" aria-label="Short-term loudness over time with the target window" style="width:100%;height:auto;font-family:inherit">']
+    parts = [
+        f'<svg viewBox="0 0 {w} {h}" role="img" aria-label="Short-term loudness over time with the target window" style="width:100%;height:auto;font-family:inherit">'
+    ]
     # target window from the first primary loudness rule
     band = None
     if report.profile.loudness:
@@ -96,25 +98,41 @@ def _timeline_svg(report: Report) -> str:
                 band = (r.min, r.max)
                 break
     if band:
-        parts.append(f'<rect x="{left}" y="{Y(band[1]):.1f}" width="{w-left-right}" height="{Y(band[0])-Y(band[1]):.1f}" fill="#0F6E8C" fill-opacity="0.10"/>')
-        parts.append(f'<text x="{w-right-4}" y="{Y(band[1])-3:.1f}" text-anchor="end" font-size="10" fill="#0F6E8C">target {band[0]:g} to {band[1]:g}</text>')
+        parts.append(
+            f'<rect x="{left}" y="{Y(band[1]):.1f}" width="{w - left - right}" height="{Y(band[0]) - Y(band[1]):.1f}" fill="#0F6E8C" fill-opacity="0.10"/>'
+        )
+        parts.append(
+            f'<text x="{w - right - 4}" y="{Y(band[1]) - 3:.1f}" text-anchor="end" font-size="10" fill="#0F6E8C">target {band[0]:g} to {band[1]:g}</text>'
+        )
     for g in np.arange(lo, hi + 0.1, 10):
-        parts.append(f'<line x1="{left}" x2="{w-right}" y1="{Y(g):.1f}" y2="{Y(g):.1f}" stroke="#D7DBD8" stroke-width="1"/>')
-        parts.append(f'<text x="{left-6}" y="{Y(g)+3.5:.1f}" text-anchor="end" font-size="10" fill="#5C6663">{g:g}</text>')
-    pts = " ".join(f"{X(a):.1f},{Y(b if np.isfinite(b) else lo):.1f}" for a, b in zip(t, st))
+        parts.append(
+            f'<line x1="{left}" x2="{w - right}" y1="{Y(g):.1f}" y2="{Y(g):.1f}" stroke="#D7DBD8" stroke-width="1"/>'
+        )
+        parts.append(
+            f'<text x="{left - 6}" y="{Y(g) + 3.5:.1f}" text-anchor="end" font-size="10" fill="#5C6663">{g:g}</text>'
+        )
+    pts = " ".join(f"{X(a):.1f},{Y(b if np.isfinite(b) else lo):.1f}" for a, b in zip(t, st, strict=True))
     parts.append(f'<polyline points="{pts}" fill="none" stroke="#1E2321" stroke-width="1.6"/>')
     if np.isfinite(m.loudness.integrated):
         yi = Y(m.loudness.integrated)
-        parts.append(f'<line x1="{left}" x2="{w-right}" y1="{yi:.1f}" y2="{yi:.1f}" stroke="#0F6E8C" stroke-width="1.4" stroke-dasharray="5 4"/>')
-        parts.append(f'<text x="{left+4}" y="{max(yi-4, top+10):.1f}" font-size="10" fill="#0F6E8C">integrated {m.loudness.integrated:.1f}</text>')
+        parts.append(
+            f'<line x1="{left}" x2="{w - right}" y1="{yi:.1f}" y2="{yi:.1f}" stroke="#0F6E8C" stroke-width="1.4" stroke-dasharray="5 4"/>'
+        )
+        parts.append(
+            f'<text x="{left + 4}" y="{max(yi - 4, top + 10):.1f}" font-size="10" fill="#0F6E8C">integrated {m.loudness.integrated:.1f}</text>'
+        )
     if finite.size:
         i = int(np.nanargmax(np.where(np.isfinite(st), st, -np.inf)))
         ys = Y(st[i])
         parts.append(f'<circle cx="{X(t[i]):.1f}" cy="{ys:.1f}" r="3.5" fill="#B26E15"/>')
         label_y = ys + 14 if ys < top + 24 else ys - 6
-        parts.append(f'<text x="{min(X(t[i])+6, w-right-120):.1f}" y="{label_y:.1f}" font-size="10" fill="#B26E15">max S {st[i]:.1f} at {t[i]:.0f}s</text>')
+        parts.append(
+            f'<text x="{min(X(t[i]) + 6, w - right - 120):.1f}" y="{label_y:.1f}" font-size="10" fill="#B26E15">max S {st[i]:.1f} at {t[i]:.0f}s</text>'
+        )
     for sec in np.linspace(x0, x1, 6):
-        parts.append(f'<text x="{X(sec):.1f}" y="{h-8}" text-anchor="middle" font-size="10" fill="#5C6663">{sec:.0f}s</text>')
+        parts.append(
+            f'<text x="{X(sec):.1f}" y="{h - 8}" text-anchor="middle" font-size="10" fill="#5C6663">{sec:.0f}s</text>'
+        )
     parts.append("</svg>")
     return "".join(parts)
 
@@ -129,21 +147,38 @@ def render_html(report: Report) -> str:
         ("Loudness range", _fmt(m.loudness.lra, ""), "LU"),
         ("Max short-term", _fmt(m.loudness.short_term_max, ""), "LUFS"),
         ("Duration", f"{int(m.duration_s // 60)}:{m.duration_s % 60:04.1f}", "min:s"),
-        ("Format", f"{m.samplerate/1000:g} kHz" + (f" / {m.info.bit_depth}-bit" if m.info and m.info.bit_depth else ""), m.layout),
+        (
+            "Format",
+            f"{m.samplerate / 1000:g} kHz" + (f" / {m.info.bit_depth}-bit" if m.info and m.info.bit_depth else ""),
+            m.layout,
+        ),
     ]
     rows = []
     for f in report.findings:
         note = _esc(f.note)
-        rows.append(f'<tr><td><span class="st {f.status.value}">{STATUS_LABEL[f.status]}</span></td><td>{_esc(f.what)}</td><td class="num">{_esc(f.measured)}</td><td class="num">{_esc(f.limit)}</td><td class="note">{note}</td></tr>')
+        rows.append(
+            f'<tr><td><span class="st {f.status.value}">{STATUS_LABEL[f.status]}</span></td><td>{_esc(f.what)}</td><td class="num">{_esc(f.measured)}</td><td class="num">{_esc(f.limit)}</td><td class="note">{note}</td></tr>'
+        )
     fixes = "".join(f"<li>{_esc(x)}</li>" for x in report.fixes())
     clause_rows = "".join(f"<tr><td>{_esc(code)}</td><td>{_esc(text)}</td></tr>" for code, text in p.clauses.items())
     sources = "".join(
-        f"<li><strong>{_esc(s.grade.value)}</strong> {_esc(s.title)}" + (f", {_esc(s.version)}" if s.version else "") + (f" ({_esc(s.published)})" if s.published else "") + f" — {_esc(s.publisher)}" + (f' <a href="{_esc(s.url)}">{_esc(s.url)}</a>' if s.url else "") + f" · retrieved {s.retrieved.isoformat()}" + (f" <em>{_esc(s.notes)}</em>" if s.notes else "") + "</li>"
+        f"<li><strong>{_esc(s.grade.value)}</strong> {_esc(s.title)}"
+        + (f", {_esc(s.version)}" if s.version else "")
+        + (f" ({_esc(s.published)})" if s.published else "")
+        + f" — {_esc(s.publisher)}"
+        + (f' <a href="{_esc(s.url)}">{_esc(s.url)}</a>' if s.url else "")
+        + f" · retrieved {s.retrieved.isoformat()}"
+        + (f" <em>{_esc(s.notes)}</em>" if s.notes else "")
+        + "</li>"
         for s in p.provenance
     )
     verbatim = "verbatim" if p.clauses_verbatim else "paraphrased pending verbatim quotes"
     svg = _timeline_svg(report)
-    timeline = f'<h2>Short-term loudness</h2><figure>{svg}<figcaption>3 s short-term loudness (EBU Tech 3341) every 100 ms; dashed line is the integrated value; shaded band is the destination\'s window; the dot marks the loudest 3 s.</figcaption></figure>' if svg else ""
+    timeline = (
+        f"<h2>Short-term loudness</h2><figure>{svg}<figcaption>3 s short-term loudness (EBU Tech 3341) every 100 ms; dashed line is the integrated value; shaded band is the destination's window; the dot marks the loudest 3 s.</figcaption></figure>"
+        if svg
+        else ""
+    )
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>QC sheet: {_esc(m.path.name)}</title><style>{CSS}</style></head>
 <body><div class="sheet">
@@ -151,16 +186,16 @@ def render_html(report: Report) -> str:
   <div>
     <h1>Audio delivery QC sheet</h1>
     <div class="file">{_esc(m.path.name)}</div>
-    <div class="meta">{kind}, {_esc(m.layout)}, {m.samplerate/1000:g} kHz{(', ' + str(m.info.bit_depth) + '-bit ' + _esc(m.info.container)) if m.info and m.info.bit_depth else ''}, {m.duration_s:.1f} s</div>
-    <div class="meta">Destination: <strong>{_esc(p.name)}</strong> ({_esc(p.id)}) · sources graded <strong>{_esc(p.grade.value)}</strong>{' · includes tool defaults' if p.has_defaults else ''}</div>
+    <div class="meta">{kind}, {_esc(m.layout)}, {m.samplerate / 1000:g} kHz{(", " + str(m.info.bit_depth) + "-bit " + _esc(m.info.container)) if m.info and m.info.bit_depth else ""}, {m.duration_s:.1f} s</div>
+    <div class="meta">Destination: <strong>{_esc(p.name)}</strong> ({_esc(p.id)}) · sources graded <strong>{_esc(p.grade.value)}</strong>{" · includes tool defaults" if p.has_defaults else ""}</div>
     <div class="meta">{now} · cumple {__version__}</div>
   </div>
-  <div class="verdict {'pass' if report.passed else 'fail'}">{report.verdict}</div>
+  <div class="verdict {"pass" if report.passed else "fail"}">{report.verdict}</div>
 </header>
 <div class="tiles">{"".join(f'<div class="tile"><div class="k">{_esc(k)}</div><div class="v">{_esc(v)}</div><div class="u">{_esc(u)}</div></div>' for k, v, u in tiles)}</div>
 <h2>Findings</h2>
 <table><thead><tr><th></th><th>Check</th><th>Measured</th><th>Limit</th><th>Note</th></tr></thead><tbody>{"".join(rows)}</tbody></table>
-{('<h2>What would fix it</h2><ul class="fixes">' + fixes + '</ul>') if fixes else ''}
+{('<h2>What would fix it</h2><ul class="fixes">' + fixes + "</ul>") if fixes else ""}
 {timeline}
 <h2>In the source's words <span class="note">({verbatim})</span></h2>
 <table class="clauses"><tbody>{clause_rows}</tbody></table>
@@ -205,7 +240,14 @@ def to_pdf(html_path: Path, pdf_path: Path) -> bool:
     chrome = find_chrome()
     if chrome is None:
         return False
-    cmd = [chrome, "--headless", "--disable-gpu", "--no-pdf-header-footer", f"--print-to-pdf={pdf_path}", html_path.resolve().as_uri()]
+    cmd = [
+        chrome,
+        "--headless",
+        "--disable-gpu",
+        "--no-pdf-header-footer",
+        f"--print-to-pdf={pdf_path}",
+        html_path.resolve().as_uri(),
+    ]
     try:
         subprocess.run(cmd, check=True, capture_output=True, timeout=60)
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):

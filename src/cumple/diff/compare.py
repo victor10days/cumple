@@ -13,7 +13,38 @@ from ..meters.bs1770 import LoudnessMeter
 from ..meters.truepeak import PeakMeter
 from .align import Alignment, align, overlap_slice
 
-THIRD_OCTAVE_CENTERS = [25, 31.5, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000, 12500, 16000, 20000]
+THIRD_OCTAVE_CENTERS = [
+    25,
+    31.5,
+    40,
+    50,
+    63,
+    80,
+    100,
+    125,
+    160,
+    200,
+    250,
+    315,
+    400,
+    500,
+    630,
+    800,
+    1000,
+    1250,
+    1600,
+    2000,
+    2500,
+    3150,
+    4000,
+    5000,
+    6300,
+    8000,
+    10000,
+    12500,
+    16000,
+    20000,
+]
 MAX_SECONDS_IN_MEMORY = 40 * 60
 
 
@@ -67,7 +98,13 @@ def levels(x: np.ndarray, fs: int) -> Levels:
         pm.feed(blk)
     lr, pr = lm.result(), pm.result()
     rms = float(np.sqrt(np.mean(x * x))) if x.size else 0.0
-    return Levels(integrated=lr.integrated, lra=lr.lra, true_peak=pr.true_peak_dbtp, sample_peak=pr.sample_peak_dbfs, rms_dbfs=_db(rms))
+    return Levels(
+        integrated=lr.integrated,
+        lra=lr.lra,
+        true_peak=pr.true_peak_dbtp,
+        sample_peak=pr.sample_peak_dbfs,
+        rms_dbfs=_db(rms),
+    )
 
 
 def band_levels(x: np.ndarray, fs: int) -> np.ndarray:
@@ -90,12 +127,22 @@ def band_levels(x: np.ndarray, fs: int) -> np.ndarray:
 def load(path: Path) -> tuple[np.ndarray, int]:
     info = sf.info(str(path))
     if info.duration > MAX_SECONDS_IN_MEMORY:
-        raise ValueError(f"{path.name} is {info.duration / 60:.0f} minutes long; diff loads whole files and stops at {MAX_SECONDS_IN_MEMORY // 60} minutes")
+        raise ValueError(
+            f"{path.name} is {info.duration / 60:.0f} minutes long; diff loads whole files and stops at {MAX_SECONDS_IN_MEMORY // 60} minutes"
+        )
     x, fs = sf.read(str(path), dtype="float64", always_2d=True)
     return x, fs
 
 
-def diff_arrays(a: np.ndarray, b: np.ndarray, fs: int, a_name: str = "A", b_name: str = "B", max_offset_s: float = 10.0, fit_gain: bool = True) -> DiffResult:
+def diff_arrays(
+    a: np.ndarray,
+    b: np.ndarray,
+    fs: int,
+    a_name: str = "A",
+    b_name: str = "B",
+    max_offset_s: float = 10.0,
+    fit_gain: bool = True,
+) -> DiffResult:
     """Compare B with A. fit_gain=False reports the level difference but does not remove it
     from the residual (stems must match the printmaster at level, so a level change is a fault)."""
     if a.shape[1] != b.shape[1]:
@@ -108,7 +155,11 @@ def diff_arrays(a: np.ndarray, b: np.ndarray, fs: int, a_name: str = "A", b_name
     # Gain = the median band-level change: a broadband level change moves every band by the
     # same amount, while an EQ change moves a few. Least squares would confuse the two.
     ba, bb = band_levels(a_r, fs), band_levels(b_r, fs)
-    valid = [(c, float(y - x)) for c, x, y in zip(THIRD_OCTAVE_CENTERS, ba, bb) if np.isfinite(x) and np.isfinite(y) and max(x, y) > -90]
+    valid = [
+        (c, float(y - x))
+        for c, x, y in zip(THIRD_OCTAVE_CENTERS, ba, bb, strict=True)
+        if np.isfinite(x) and np.isfinite(y) and max(x, y) > -90
+    ]
     gain_db = float(np.median([d for _, d in valid])) if valid else 0.0
     alignment.gain_db = gain_db
     b_corr = b_r / 10 ** (gain_db / 20) if fit_gain else b_r
@@ -123,12 +174,21 @@ def diff_arrays(a: np.ndarray, b: np.ndarray, fs: int, a_name: str = "A", b_name
     if alignment.correlation < 0.3:
         notes.append("the two files barely correlate; they may not be the same material")
     return DiffResult(
-        a=Path(a_name), b=Path(b_name), fs=fs, channels=a.shape[1],
-        duration_a_s=len(a) / fs, duration_b_s=len(b) / fs,
-        alignment=alignment, identical=identical,
-        residual_dbfs=_db(r_rms), residual_rel_db=(_db(r_rms) - _db(a_rms)) if a_rms > 0 and r_rms > 0 else -np.inf,
+        a=Path(a_name),
+        b=Path(b_name),
+        fs=fs,
+        channels=a.shape[1],
+        duration_a_s=len(a) / fs,
+        duration_b_s=len(b) / fs,
+        alignment=alignment,
+        identical=identical,
+        residual_dbfs=_db(r_rms),
+        residual_rel_db=(_db(r_rms) - _db(a_rms)) if a_rms > 0 and r_rms > 0 else -np.inf,
         residual_peak_dbfs=_db(float(np.abs(resid).max())) if resid.size else -np.inf,
-        levels_a=la, levels_b=lb, band_deltas=deltas, notes=notes,
+        levels_a=la,
+        levels_b=lb,
+        band_deltas=deltas,
+        notes=notes,
     )
 
 
@@ -144,7 +204,7 @@ def diff_files(a: Path, b: Path, max_offset_s: float = 10.0) -> DiffResult:
 
 def sum_stems_against(stems: list[Path], printmaster: Path, max_offset_s: float = 2.0) -> DiffResult:
     """Sum the stems sample by sample and diff the sum against the printmaster."""
-    xs, fss = zip(*(load(Path(s)) for s in stems))
+    xs, fss = zip(*(load(Path(s)) for s in stems), strict=True)
     fs = fss[0]
     if len(set(fss)) != 1:
         raise ValueError(f"stems have different sample rates: {sorted(set(fss))}")
@@ -156,7 +216,9 @@ def sum_stems_against(stems: list[Path], printmaster: Path, max_offset_s: float 
     pm, fpm = load(Path(printmaster))
     if fpm != fs:
         raise ValueError(f"printmaster sample rate {fpm} differs from the stems' {fs}")
-    r = diff_arrays(pm, total, fs, a_name=str(printmaster), b_name="sum of stems", max_offset_s=max_offset_s, fit_gain=False)
+    r = diff_arrays(
+        pm, total, fs, a_name=str(printmaster), b_name="sum of stems", max_offset_s=max_offset_s, fit_gain=False
+    )
     r.a = Path(printmaster)
     r.stems = [Path(s) for s in stems]
     return r
