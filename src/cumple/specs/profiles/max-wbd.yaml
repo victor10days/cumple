@@ -1,0 +1,46 @@
+id: max-wbd
+name: Warner Bros. Discovery / Max component audio
+family: streaming
+summary: WBD Content Partner Hub audio ingest. -24 LKFS ±2 (dialog-gated or overall, both accepted), -2 dBTP, LRA max 20 LU, 48 kHz / 24-bit, head padding at most 5 s, no tail padding.
+loudness:
+  policy: any
+  rules:
+    - method: dialogue_gated
+      standard: bs1770-4
+      target: -24.0
+      tolerance: 2.0
+    - method: integrated
+      standard: bs1770-4
+      target: -24.0
+      tolerance: 2.0
+peaks:
+  true_peak_max: -2.0
+dynamics:
+  lra_max: 20.0
+format:
+  sample_rates: [48000]
+  bit_depths: [24]
+  layouts: [stereo, lt-rt, "5.1"]
+  channel_order: smpte
+  containers: [bwf, rf64, mxf]
+padding:
+  head_max_s: 5.0
+  tail_max_s: 0.0
+clauses:
+  loudness.integrated: "-24 LKFS/LUFS (plus or minus 2 dB) via ITU-R BS.1770-3 and BS.1770-4; either dialog-gated or overall target average loudness is accepted; 5.1 measured minus LFE. (paraphrase of Content Partner Hub Audio v1.3)"
+  loudness.dialogue_gated: "Dialog-gated target average loudness of -24 LKFS ±2 dB is accepted as an alternative to the overall measurement. (paraphrase of Content Partner Hub Audio v1.3)"
+  peak.true: "Maximum true peak -2 dBTP. (paraphrase of Content Partner Hub Audio v1.3)"
+  dynamics.lra: "Loudness range maximum 20 LU. (paraphrase of Content Partner Hub Audio v1.3)"
+  format.sample_rate: "48 kHz, 24-bit linear PCM, MBWF/RF64 or MXF. (paraphrase of Content Partner Hub Audio v1.3)"
+  format.layout: "2.0 as L, R or Lt, Rt, M1, M2; 5.1 as L, R, C, LFE, Ls, Rs; one soundfield group per file; 5.1 must be accompanied by a separate 2.0. (paraphrase of Content Partner Hub Audio v1.3)"
+  padding.head: "Head padding at most 5 seconds. (paraphrase of Content Partner Hub Audio v1.3)"
+  padding.tail: "Tail padding not permitted; timecode aligned to the OV master. (paraphrase of Content Partner Hub Audio v1.3)"
+clauses_verbatim: false
+provenance:
+  - title: "Content Partner Hub, Ingest Specifications, Component Delivery: Audio"
+    publisher: Warner Bros. Discovery
+    version: "v1.3"
+    published: "2 December 2025"
+    url: https://partnerhub.warnermediagroup.com/ingest-specifications/component-delivery/audio
+    retrieved: 2026-09-03
+    grade: READ

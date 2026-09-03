@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+
+# Logs and generated outputs
+*.log
+*.qc.html
+*.qc.pdf
+*.qc.json
+cumple-log.csv
+
+# Audio fixtures generated at test time and the cached EBU test set
+tests/fixtures/generated/
+.cache/
+*.zip
+
+# Never commit client audio
+deliverables/
+bounces/

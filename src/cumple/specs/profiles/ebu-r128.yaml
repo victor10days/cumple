@@ -1,0 +1,40 @@
+id: ebu-r128
+name: EBU R 128 broadcast programme
+family: broadcast
+summary: European broadcast loudness. -23.0 LUFS integrated, -1 dBTP. The reference most other specs are compared against.
+loudness:
+  policy: all
+  rules:
+    - method: integrated
+      standard: bs1770-4
+      target: -23.0
+      tolerance: 1.0
+      notes: "R 128 v5.0 allows ±1.0 LU where exact normalisation is not practical (live); for file-based QC the deviation should be within ±0.2 LU. cumple uses ±1.0 as the pass window and reports the ±0.2 window as a note."
+peaks:
+  true_peak_max: -1.0
+format:
+  sample_rates: [48000]
+  bit_depths: [16, 24]
+  containers: [wav, bwf, rf64, mxf]
+checks:
+  metadata_must_match: true
+clauses:
+  loudness.integrated: "Programme Loudness Level shall be normalised to a Target Level of -23.0 LUFS; permitted deviation ±1.0 LU where exact normalisation is not practical, ±0.2 LU for file-based QC. (paraphrase of R 128 v5.0)"
+  peak.true: "Maximum Permitted True Peak Level: -1 dBTP, measured with a meter compliant with Tech 3341. (paraphrase of R 128 v5.0)"
+  metadata.bext_loudness: "Loudness metadata carried with the programme (BWF bext LoudnessValue, LoudnessRange) must reflect the measured values. (paraphrase of R 128 v5.0 and Tech 3285 v2)"
+clauses_verbatim: false
+provenance:
+  - title: "EBU R 128: Loudness normalisation and permitted maximum level of audio signals"
+    publisher: EBU
+    version: "v5.0"
+    published: "November 2023"
+    url: https://tech.ebu.ch/docs/r/r128.pdf
+    retrieved: 2026-09-03
+    grade: READ
+  - title: "EBU Tech 3285: Specification of the Broadcast Wave Format (BWF)"
+    publisher: EBU
+    version: "v2"
+    published: "May 2011"
+    url: https://tech.ebu.ch/docs/tech/tech3285.pdf
+    retrieved: 2026-09-03
+    grade: READ

@@ -1,0 +1,49 @@
+id: apple-tv
+name: Apple TV+ / Apple TV app
+family: streaming
+summary: Apple Video and Audio Asset Guide. A permitted range rather than a target. Dialogue-anchored -31 to -10 LKFS (ideally -30 to -18), non-dialogue -31 to -5 LKFS, true peak at most -1 dBTP, 48 kHz / 24-bit, no full-band content in the LFE.
+loudness:
+  policy: all
+  rules:
+    - method: dialogue_gated
+      standard: bs1770-4
+      min: -31.0
+      max: -10.0
+      when: speech_at_or_above_15pct
+      notes: "Apple measures BS.1770 with Dialogue Intelligence on the 5.1 render, integrated across the full duration. Ideal range -30 to -18 LKFS is reported as a note, not enforced."
+    - method: integrated
+      standard: bs1770-4
+      min: -31.0
+      max: -5.0
+      when: speech_below_15pct
+peaks:
+  true_peak_max: -1.0
+format:
+  sample_rates: [48000]
+  bit_depths: [24]
+  layouts: [stereo, "5.1", "7.1", atmos-adm]
+  channel_order: smpte
+  containers: [wav, bwf, rf64, adm-bwf]
+  lfe_lowpass_hz: 120.0
+clauses:
+  loudness.dialogue_gated: "Dialogue-anchored programs: -31 to -10 LKFS permitted, ideally -30 to -18 LKFS, measured with BS.1770 and Dialogue Intelligence on the 5.1 render, integrated across the full duration. (paraphrase of the Asset Guide v5.3.18)"
+  loudness.integrated: "Programs that are not dialogue-anchored: -31 to -5 LKFS, BS.1770-4 (or -3), full program. (paraphrase of the Asset Guide v5.3.18)"
+  peak.true: "True peak at most -1 dB TP, measured per ITU-R BS.1770-4. (paraphrase of the Immersive Audio Source Profile)"
+  format.sample_rate: "All audio must be 24-bit linear PCM at 48 kHz. (paraphrase of the Immersive Audio Source Profile)"
+  format.lfe_band: "Full-frequency content should not be present in the LFE channel. cumple treats content above 120 Hz in the LFE as full-frequency; Apple does not state a corner frequency. (paraphrase of the Immersive Audio Source Profile)"
+  format.layout: "5.1 as L, R, C, LFE, Ls, Rs; 7.1 as L, R, C, LFE, Ls, Rs, Lrs, Rrs. (paraphrase of the Asset Guide v5.3.18)"
+clauses_verbatim: false
+provenance:
+  - title: "Apple Video and Audio Asset Guide"
+    publisher: Apple
+    version: "5.3.18"
+    published: "October 13, 2025"
+    url: https://help.apple.com/itc/videoaudioassetguide/en.lproj/static.html
+    retrieved: 2026-09-03
+    grade: READ
+  - title: "LFE corner frequency"
+    publisher: cumple
+    retrieved: 2026-09-03
+    grade: TOOL_DEFAULT
+    role: default
+    notes: "Apple gives no corner frequency for 'full-frequency content'; 120 Hz is the tool's choice, matching common bass-management practice."
