@@ -59,10 +59,15 @@ def _profile_or_exit(profile_id: str) -> Profile:
 def specs(
     family: str | None = typer.Option(None, "--family", "-f", help="streaming, broadcast, cinema, music, podcast, audiobook, standard"),
     as_json: bool = typer.Option(False, "--json", help="Machine-readable output."),
+    ids: bool = typer.Option(False, "--ids", help="Only the profile ids, one per line (for scripts and the macOS app)."),
 ) -> None:
     """List the destinations cumple knows, with the grade of their sources."""
     profiles = [p for p in load_all().values() if family is None or p.family == family]
     profiles.sort(key=lambda p: (p.family, p.id))
+    if ids:
+        for p in profiles:
+            print(p.id)
+        return
     if as_json:
         rows = [
             {
