@@ -14,6 +14,8 @@ from rich.table import Table
 from . import __version__
 from .checks import evaluate
 from .diff import describe, diff_files, diff_to_dict, sum_stems_against
+from .fix import fix_file
+from .watch import watch as run_watch
 from .io import load_package, probe
 from .meters.measure import measure
 from .report import print_report, report_to_dict, write_sheet
@@ -28,10 +30,7 @@ app = typer.Typer(
 )
 console = Console()
 
-NOT_YET = {
-    "watch": "watch folder",
-    "fix": "gain-only fix",
-}
+NOT_YET: dict[str, str] = {}
 
 
 def _version(value: bool) -> None:
@@ -267,17 +266,55 @@ def diff(
 
 
 @app.command()
-def watch(folder: Path = typer.Argument(..., exists=True), spec: str = typer.Option(..., "--spec", "-s")) -> None:
-    """Sit on a bounce folder and QC every file that lands in it."""
-    _profile_or_exit(spec)
-    _not_yet("watch")
+def watch(
+    folder: Path = typer.Argument(..., exists=True, file_okay=False, help="The bounce or delivery folder to watch."),
+    spec: str = typer.Option(..., "--spec", "-s", help="Destination profile id."),
+    pdf: bool = typer.Option(False, "--pdf", help="Also print each sheet to PDF."),
+    out: Path | None = typer.Option(None, "--out", help="Write sheets and the log here instead of next to the files."),
+    interval: float = typer.Option(2.0, "--interval", help="Seconds between folder scans."),
+    stable: float = typer.Option(5.0, "--stable", help="Seconds a file must stop growing before it is measured."),
+    once: bool = typer.Option(False, "--once", help="One pass over the folder, then exit."),
+    redo: bool = typer.Option(False, "--redo", help="Measure files that already have a sheet."),
+) -> None:
+    """Sit on a folder and QC every audio file that lands in it. Never touches the sources."""
+    profile = _profile_or_exit(spec)
+    log_csv = (out or folder) / "cumple-log.csv"
+
+    def on_result(p, report, html_path, pdf_path):
+        colour = "green" if report.passed else "red"
+        fails = ", ".join(f.what for f in report.findings if f.status.value == "fail")
+        console.print(f"[bold {colour}]{report.verdict}[/] {p.name}  [dim]{report.measurement.loudness.integrated:.1f} LUFS, {report.measurement.peaks.true_peak_dbtp:+.1f} dBTP[/]" + (f"  [red]{fails}[/]" if fails else "") + f"  [dim]→ {(pdf_path or html_path).name}[/]")
+
+    try:
+        n = run_watch(folder, profile, interval_s=interval, stable_s=stable, pdf=pdf, out_dir=out, log_csv=log_csv, once=once, redo=redo, on_result=on_result, on_status=lambda msg: console.print(f"[dim]{msg}[/]"))
+    except KeyboardInterrupt:
+        console.print("[dim]stopped[/]")
+        raise typer.Exit(0)
+    if once:
+        console.print(f"[dim]{n} file(s) measured; log at {log_csv}[/]")
 
 
 @app.command()
-def fix(path: Path = typer.Argument(..., exists=True), spec: str = typer.Option(..., "--spec", "-s")) -> None:
+def fix(
+    path: Path = typer.Argument(..., exists=True, dir_okay=False),
+    spec: str = typer.Option(..., "--spec", "-s"),
+    gain_only: bool = typer.Option(True, "--gain-only", help="The only kind of fix cumple does; kept explicit on purpose."),
+    out: Path | None = typer.Option(None, "--out", help="Output file (default: <name>.<spec>.wav next to the source)."),
+) -> None:
     """Write a gain-corrected copy when gain alone can make a file comply. Never limits."""
-    _profile_or_exit(spec)
-    _not_yet("fix")
+    profile = _profile_or_exit(spec)
+    fp, dst, after = fix_file(path, profile, out)
+    if fp.gain_db is None:
+        console.print(f"[red]no fix written:[/] {fp.reason}")
+        raise typer.Exit(1)
+    if dst is None:
+        console.print(f"[green]{fp.reason}[/]")
+        raise typer.Exit(0)
+    console.print(f"wrote [bold]{dst}[/]: {fp.reason}  [dim](loudness {fp.loudness_before:.1f} → {after.loudness.integrated:.1f} LUFS, true peak {fp.true_peak_before:+.1f} → {after.peaks.true_peak_dbtp:+.1f} dBTP)[/]")
+    console.print("[dim]note: the copy carries no bext/iXML metadata; re-embed it in your DAW if the destination requires it[/]")
+    report = evaluate(profile, after)
+    console.print(f"re-check: [bold {'green' if report.passed else 'yellow'}]{report.verdict}[/]" + ("" if report.passed else "  (other rules still fail; see `cumple check`)"))
+    raise typer.Exit(0 if report.passed else 1)
 
 
 if __name__ == "__main__":
