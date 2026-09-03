@@ -104,12 +104,15 @@ def _timeline_svg(report: Report) -> str:
     pts = " ".join(f"{X(a):.1f},{Y(b if np.isfinite(b) else lo):.1f}" for a, b in zip(t, st))
     parts.append(f'<polyline points="{pts}" fill="none" stroke="#1E2321" stroke-width="1.6"/>')
     if np.isfinite(m.loudness.integrated):
-        parts.append(f'<line x1="{left}" x2="{w-right}" y1="{Y(m.loudness.integrated):.1f}" y2="{Y(m.loudness.integrated):.1f}" stroke="#0F6E8C" stroke-width="1.4" stroke-dasharray="5 4"/>')
-        parts.append(f'<text x="{left+4}" y="{Y(m.loudness.integrated)-4:.1f}" font-size="10" fill="#0F6E8C">integrated {m.loudness.integrated:.1f}</text>')
+        yi = Y(m.loudness.integrated)
+        parts.append(f'<line x1="{left}" x2="{w-right}" y1="{yi:.1f}" y2="{yi:.1f}" stroke="#0F6E8C" stroke-width="1.4" stroke-dasharray="5 4"/>')
+        parts.append(f'<text x="{left+4}" y="{max(yi-4, top+10):.1f}" font-size="10" fill="#0F6E8C">integrated {m.loudness.integrated:.1f}</text>')
     if finite.size:
         i = int(np.nanargmax(np.where(np.isfinite(st), st, -np.inf)))
-        parts.append(f'<circle cx="{X(t[i]):.1f}" cy="{Y(st[i]):.1f}" r="3.5" fill="#B26E15"/>')
-        parts.append(f'<text x="{X(t[i])+6:.1f}" y="{Y(st[i])-6:.1f}" font-size="10" fill="#B26E15">max S {st[i]:.1f} at {t[i]:.0f}s</text>')
+        ys = Y(st[i])
+        parts.append(f'<circle cx="{X(t[i]):.1f}" cy="{ys:.1f}" r="3.5" fill="#B26E15"/>')
+        label_y = ys + 14 if ys < top + 24 else ys - 6
+        parts.append(f'<text x="{min(X(t[i])+6, w-right-120):.1f}" y="{label_y:.1f}" font-size="10" fill="#B26E15">max S {st[i]:.1f} at {t[i]:.0f}s</text>')
     for sec in np.linspace(x0, x1, 6):
         parts.append(f'<text x="{X(sec):.1f}" y="{h-8}" text-anchor="middle" font-size="10" fill="#5C6663">{sec:.0f}s</text>')
     parts.append("</svg>")

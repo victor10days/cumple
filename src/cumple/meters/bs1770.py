@@ -29,9 +29,16 @@ ABSOLUTE_GATE_LKFS = -70.0
 RELATIVE_GATE_LU = -10.0
 LRA_RELATIVE_GATE_LU = -20.0
 LOUDNESS_OFFSET = -0.691
+# Energies are kept on a 10 ms grid. The standard's 400 ms blocks with 75 % overlap (a
+# 100 ms hop) are taken from that grid for gating and for the timelines; the maximum
+# momentary and short-term values are searched on the full 10 ms grid, because EBU
+# Tech 3341 tests them with bursts placed at 20 ms offsets and a 100 ms grid can miss
+# up to 50 ms of a 400 ms burst (0.6 dB).
+SUB_HOP_S = 0.01
 HOP_S = 0.1
-MOMENTARY_HOPS = 4  # 400 ms
-SHORT_TERM_HOPS = 30  # 3 s
+STEP = 10  # sub-hops per standard hop
+MOMENTARY_HOPS = 40  # 400 ms in sub-hops
+SHORT_TERM_HOPS = 300  # 3 s in sub-hops
 
 # Design parameters behind the printed 48 kHz coefficients (pre-filter and RLB filter).
 _SHELF_F0 = 1681.974450955533
@@ -131,10 +138,10 @@ class LoudnessResult:
     duration_s: float = 0.0
 
     def momentary_times(self) -> np.ndarray:
-        return (np.arange(len(self.momentary)) + MOMENTARY_HOPS) * self.hop_s
+        return np.arange(len(self.momentary)) * self.hop_s + MOMENTARY_HOPS * SUB_HOP_S
 
     def short_term_times(self) -> np.ndarray:
-        return (np.arange(len(self.short_term)) + SHORT_TERM_HOPS) * self.hop_s
+        return np.arange(len(self.short_term)) * self.hop_s + SHORT_TERM_HOPS * SUB_HOP_S
 
 
 class LoudnessMeter:
@@ -152,7 +159,7 @@ class LoudnessMeter:
         self.channels = int(channels)
         self.weights = np.asarray(weights, dtype=np.float64) if weights is not None else channel_weights(channels, roles)
         self.relative_gate = relative_gate
-        self.hop = int(round(self.fs * HOP_S))
+        self.hop = int(round(self.fs * SUB_HOP_S))
         self._stages = k_weighting(self.fs)
         self._zi = [np.zeros((2, self.channels)) for _ in self._stages]
         self._pending = np.empty((0, self.channels))
@@ -182,19 +189,19 @@ class LoudnessMeter:
             return np.empty((0, self.channels))
         return np.vstack(self._hop_energy)
 
-    def _windowed(self, hops: int) -> np.ndarray:
-        """Weighted energy of every window of `hops` consecutive hops (sliding by one hop)."""
+    def _windowed(self, hops: int, step: int = STEP) -> np.ndarray:
+        """Weighted energy of every window of `hops` sub-hops, evaluated every `step` sub-hops."""
         e = self._hop_energies() @ self.weights
         if len(e) < hops:
             return np.empty(0)
         c = np.concatenate([[0.0], np.cumsum(e)])
-        return (c[hops:] - c[:-hops]) / hops
+        return ((c[hops:] - c[:-hops]) / hops)[::step]
 
-    def momentary_energies(self) -> np.ndarray:
-        return self._windowed(MOMENTARY_HOPS)
+    def momentary_energies(self, fine: bool = False) -> np.ndarray:
+        return self._windowed(MOMENTARY_HOPS, 1 if fine else STEP)
 
-    def short_term_energies(self) -> np.ndarray:
-        return self._windowed(SHORT_TERM_HOPS)
+    def short_term_energies(self, fine: bool = False) -> np.ndarray:
+        return self._windowed(SHORT_TERM_HOPS, 1 if fine else STEP)
 
     def integrated(self, relative_gate: bool | None = None) -> tuple[float, int, int]:
         """(integrated loudness, blocks total, blocks that passed the gates).
@@ -238,17 +245,19 @@ class LoudnessMeter:
     def result(self) -> LoudnessResult:
         momentary = loudness_from_energy(self.momentary_energies())
         short_term = loudness_from_energy(self.short_term_energies())
+        m_fine = self.momentary_energies(fine=True)
+        s_fine = self.short_term_energies(fine=True)
         integrated, total, gated = self.integrated()
         ungated, _, _ = self.integrated(relative_gate=False)
         return LoudnessResult(
             integrated=float(integrated),
             integrated_ungated=float(ungated),
-            momentary_max=float(momentary.max()) if momentary.size else -np.inf,
-            short_term_max=float(short_term.max()) if short_term.size else -np.inf,
+            momentary_max=float(loudness_from_energy(m_fine.max())) if m_fine.size else -np.inf,
+            short_term_max=float(loudness_from_energy(s_fine.max())) if s_fine.size else -np.inf,
             lra=self.loudness_range(),
             momentary=np.asarray(momentary),
             short_term=np.asarray(short_term),
-            hop_s=self.hop / self.fs,
+            hop_s=self.hop * STEP / self.fs,
             relative_gate=self.relative_gate,
             blocks_total=total,
             blocks_gated=gated,
