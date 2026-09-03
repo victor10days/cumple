@@ -19,6 +19,7 @@ from .watch import watch as run_watch
 from .io import load_package, probe
 from .meters.measure import measure
 from .report import print_report, report_to_dict, write_sheet
+from .report.specs_md import render_specs_markdown
 from .specs import ProfileNotFound, get, load_all
 from .specs.schema import GRADE_LABEL, Profile
 
@@ -30,7 +31,6 @@ app = typer.Typer(
 )
 console = Console()
 
-NOT_YET: dict[str, str] = {}
 
 
 def _version(value: bool) -> None:
@@ -60,10 +60,14 @@ def specs(
     family: str | None = typer.Option(None, "--family", "-f", help="streaming, broadcast, cinema, music, podcast, audiobook, standard"),
     as_json: bool = typer.Option(False, "--json", help="Machine-readable output."),
     ids: bool = typer.Option(False, "--ids", help="Only the profile ids, one per line (for scripts and the macOS app)."),
+    markdown: bool = typer.Option(False, "--markdown", help="The full matrix with clauses and sources as Markdown (docs/SPECS.md)."),
 ) -> None:
     """List the destinations cumple knows, with the grade of their sources."""
     profiles = [p for p in load_all().values() if family is None or p.family == family]
     profiles.sort(key=lambda p: (p.family, p.id))
+    if markdown:
+        print(render_specs_markdown(profiles))
+        return
     if ids:
         for p in profiles:
             print(p.id)
@@ -177,7 +181,11 @@ def explain(profile_id: str = typer.Argument(..., help="A profile id from `cumpl
 def info(path: Path = typer.Argument(..., exists=True, help="An audio file or a directory of discrete channel files.")) -> None:
     """What the file is: container, rate, depth, channels, duration, embedded metadata."""
     if path.is_dir():
-        pkg = load_package(path)
+        try:
+            pkg = load_package(path)
+        except Exception as e:
+            console.print(f"[red]cannot read package {path}:[/] {e}")
+            raise typer.Exit(2)
         table = Table(box=box.SIMPLE_HEAD, title=f"package {path.name}: {pkg.layout_guess}", title_justify="left")
         for col in ("role", "file", "rate", "depth", "channels", "duration"):
             table.add_column(col)
@@ -187,7 +195,11 @@ def info(path: Path = typer.Argument(..., exists=True, help="An audio file or a 
         for problem in pkg.consistent():
             console.print(f"[red]problem:[/] {problem}")
         return
-    i = probe(path)
+    try:
+        i = probe(path)
+    except Exception as e:
+        console.print(f"[red]cannot read {path}:[/] {e}")
+        raise typer.Exit(2)
     table = Table(box=box.SIMPLE_HEAD, show_header=False, title=str(path), title_justify="left")
     table.add_column("field", style="bold")
     table.add_column("value")
@@ -207,11 +219,6 @@ def info(path: Path = typer.Argument(..., exists=True, help="An audio file or a 
     console.print(table)
 
 
-def _not_yet(name: str) -> None:
-    console.print(f"[yellow]cumple {name}[/] is not in this build yet ({NOT_YET[name]}).")
-    raise typer.Exit(3)
-
-
 @app.command()
 def check(
     path: Path = typer.Argument(..., exists=True, help="An audio file, or a directory of discrete channel files."),
@@ -226,7 +233,7 @@ def check(
     profile = _profile_or_exit(spec)
     try:
         m = measure(path, leqm=profile.leqm is not None)
-    except ValueError as e:
+    except Exception as e:  # unreadable file, inconsistent package, libsndfile errors
         console.print(f"[red]cannot measure {path}:[/] {e}")
         raise typer.Exit(2)
     report = evaluate(profile, m)
@@ -260,7 +267,7 @@ def diff(
                 console.print("[red]diff needs exactly two files, or stems with --against[/]")
                 raise typer.Exit(2)
             r = diff_files(paths[0], paths[1], max_offset_s=max_offset)
-    except ValueError as e:
+    except Exception as e:
         console.print(f"[red]cannot compare:[/] {e}")
         raise typer.Exit(2)
     if as_json:
@@ -308,7 +315,11 @@ def fix(
 ) -> None:
     """Write a gain-corrected copy when gain alone can make a file comply. Never limits."""
     profile = _profile_or_exit(spec)
-    fp, dst, after = fix_file(path, profile, out)
+    try:
+        fp, dst, after = fix_file(path, profile, out)
+    except Exception as e:
+        console.print(f"[red]cannot fix {path}:[/] {e}")
+        raise typer.Exit(2)
     if fp.gain_db is None:
         console.print(f"[red]no fix written:[/] {fp.reason}")
         raise typer.Exit(1)
