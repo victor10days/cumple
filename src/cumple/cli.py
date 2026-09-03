@@ -13,6 +13,7 @@ from rich.table import Table
 
 from . import __version__
 from .checks import evaluate
+from .diff import describe, diff_files, diff_to_dict, sum_stems_against
 from .io import load_package, probe
 from .meters.measure import measure
 from .report import print_report, report_to_dict, write_sheet
@@ -28,7 +29,6 @@ app = typer.Typer(
 console = Console()
 
 NOT_YET = {
-    "diff": "audio diff",
     "watch": "watch folder",
     "fix": "gain-only fix",
 }
@@ -241,9 +241,29 @@ def check(
 
 
 @app.command()
-def diff(a: Path = typer.Argument(..., exists=True), b: Path = typer.Argument(..., exists=True)) -> None:
-    """Say in words how two audio files differ."""
-    _not_yet("diff")
+def diff(
+    paths: list[Path] = typer.Argument(..., exists=True, help="Two files to compare, or the stems to sum when --against is given."),
+    against: Path | None = typer.Option(None, "--against", exists=True, help="Printmaster to compare the sum of the stems with."),
+    as_json: bool = typer.Option(False, "--json"),
+    max_offset: float = typer.Option(10.0, "--max-offset", help="Largest time offset to search, in seconds."),
+) -> None:
+    """Say in words how two audio files differ, or whether stems sum to a printmaster."""
+    try:
+        if against is not None:
+            r = sum_stems_against(paths, against, max_offset_s=min(max_offset, 10.0))
+        else:
+            if len(paths) != 2:
+                console.print("[red]diff needs exactly two files, or stems with --against[/]")
+                raise typer.Exit(2)
+            r = diff_files(paths[0], paths[1], max_offset_s=max_offset)
+    except ValueError as e:
+        console.print(f"[red]cannot compare:[/] {e}")
+        raise typer.Exit(2)
+    if as_json:
+        console.print_json(json.dumps(diff_to_dict(r)))
+    else:
+        console.print(describe(r))
+    raise typer.Exit(0 if (r.identical or r.residual_dbfs < -60) else 1)
 
 
 @app.command()
