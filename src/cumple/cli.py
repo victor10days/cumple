@@ -16,7 +16,7 @@ from .checks import evaluate
 from .diff import describe, diff_files, diff_to_dict, sum_stems_against
 from .fix import fix_file
 from .io import load_package, probe
-from .meters.measure import measure
+from .meters.measure import measure, measure_args
 from .report import print_report, report_to_dict, write_sheet
 from .report.specs_md import render_specs_markdown
 from .specs import ProfileNotFound, get, load_all
@@ -287,7 +287,7 @@ def check(
     """Measure a file or package against a destination. Exit 0 on PASS, 1 on FAIL."""
     profile = _profile_or_exit(spec)
     try:
-        m = measure(path, leqm=profile.leqm is not None)
+        m = measure(path, **measure_args(profile))
     except Exception as e:  # unreadable file, inconsistent package, libsndfile errors
         console.print(f"[red]cannot measure {path}:[/] {e}")
         raise typer.Exit(2) from None
@@ -298,7 +298,11 @@ def check(
         print_report(report, console, show_clauses=clauses)
     if sheet or pdf or out is not None:
         base_dir = out if out is not None else (path if path.is_dir() else path.parent)
-        base_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            base_dir.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            console.print(f"[red]cannot write to {base_dir}:[/] {e}")
+            raise typer.Exit(2) from None
         stem = path.name if path.is_dir() else path.stem
         html_path, pdf_path = write_sheet(report, base_dir / f"{stem}.qc.html", pdf=pdf)
         (base_dir / f"{stem}.qc.json").write_text(json.dumps(report_to_dict(report), indent=2))
@@ -327,7 +331,7 @@ def diff(
     """Say in words how two audio files differ, or whether stems sum to a printmaster."""
     try:
         if against is not None:
-            r = sum_stems_against(paths, against, max_offset_s=min(max_offset, 10.0))
+            r = sum_stems_against(paths, against, max_offset_s=max_offset)
         else:
             if len(paths) != 2:
                 console.print("[red]diff needs exactly two files, or stems with --against[/]")
@@ -392,9 +396,6 @@ def watch(
 def fix(
     path: Path = typer.Argument(..., exists=True, dir_okay=False),
     spec: str = typer.Option(..., "--spec", "-s"),
-    gain_only: bool = typer.Option(
-        True, "--gain-only", help="The only kind of fix cumple does; kept explicit on purpose."
-    ),
     out: Path | None = typer.Option(None, "--out", help="Output file (default: <name>.<spec>.wav next to the source)."),
 ) -> None:
     """Write a gain-corrected copy when gain alone can make a file comply. Never limits."""

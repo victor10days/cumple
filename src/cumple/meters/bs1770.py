@@ -70,6 +70,11 @@ ROLE_WEIGHT: dict[str, float] = {
     "Rss": 1.41,
     "Lrs": 1.41,
     "Rrs": 1.41,
+    "Cs": 1.0,  # rear centre (6.1): outside the 60 to 120 degree band
+    "Ltf": 1.0,  # height channels carry unit weight in BS.1770-4 Table 1
+    "Rtf": 1.0,
+    "Ltr": 1.0,
+    "Rtr": 1.0,
 }
 
 
@@ -82,9 +87,18 @@ def default_roles(channels: int) -> list[str]:
         4: ["L", "R", "Ls", "Rs"],
         5: ["L", "R", "C", "Ls", "Rs"],
         6: ["L", "R", "C", "LFE", "Ls", "Rs"],
+        7: ["L", "R", "C", "LFE", "Ls", "Rs", "Cs"],
         8: ["L", "R", "C", "LFE", "Ls", "Rs", "Lrs", "Rrs"],
+        10: ["L", "R", "C", "LFE", "Ls", "Rs", "Lrs", "Rrs", "Ltf", "Rtf"],
+        12: ["L", "R", "C", "LFE", "Ls", "Rs", "Lrs", "Rrs", "Ltf", "Rtf", "Ltr", "Rtr"],
     }
-    return table.get(channels, ["L"] * channels)
+    if channels in table:
+        return table[channels]
+    if channels < 6:
+        return ["L"] * channels
+    # Unknown bed sizes: SMPTE order with the LFE in slot four (BS.1770 excludes it) and unit
+    # weight elsewhere. A labelled guess beats weighting an LFE like a screen channel.
+    return ["L", "R", "C", "LFE", "Ls", "Rs"] + [f"X{i}" for i in range(6, channels)]
 
 
 def channel_weights(channels: int, roles: list[str] | None = None) -> np.ndarray:

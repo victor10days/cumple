@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 
 import numpy as np
+import pytest
 import soundfile as sf
 
 from cumple.checks import evaluate
@@ -78,3 +79,32 @@ def test_fix_raises_a_quiet_file_and_refuses_when_headroom_is_missing(tmp_path):
     sf.write(str(tmp_path / "spiky.wav"), np.repeat(x[:, None], 2, axis=1), sr, subtype="PCM_24")
     fp2 = plan(get("ebu-r128"), measure(tmp_path / "spiky.wav"))
     assert fp2.gain_db is None and "headroom" in fp2.reason
+
+
+def test_fix_refuses_to_overwrite_the_source(tmp_path):
+    src = tone_file(tmp_path / "mix.wav", dbfs=-30.0, seconds=3)
+    size = src.stat().st_size
+    with pytest.raises(ValueError, match="refusing to overwrite"):
+        fix_file(src, get("ebu-r128"), src)
+    assert src.stat().st_size == size
+
+
+def test_fix_leaves_no_temp_file_behind(tmp_path):
+    src = tone_file(tmp_path / "mix.wav", dbfs=-30.0, seconds=3)
+    fp, dst, after = fix_file(src, get("ebu-r128"), tmp_path / "out.wav")
+    assert dst == tmp_path / "out.wav" and dst.exists() and fp.gain_db is not None
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["mix.wav", "out.wav"]
+
+
+def test_watch_survives_a_file_that_vanishes(tmp_path):
+    folder = tmp_path / "bounces"
+    folder.mkdir()
+    gone = tone_file(folder / "gone.wav", dbfs=-23.0, seconds=2)
+    clock = {"t": 1000.0}
+    w = Watcher(folder, get("ebu-r128"), stable_s=5.0, clock=lambda: clock["t"])
+    assert w.poll() == [] and w.pending() == [gone]
+    gone.unlink()  # moved away before it was measured
+    clock["t"] += 6
+    assert w.poll() == [] and w.pending() == [] and w.errors == []
+    n = watch(folder, get("ebu-r128"), once=True, clock=lambda: clock["t"], sleep=lambda s: None)
+    assert n == 0

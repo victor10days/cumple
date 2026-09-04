@@ -146,20 +146,55 @@ def _package_blocks(pkg: Package, roles: list[str], block_frames: int) -> Iterat
             h.close()
 
 
+def measure_args(profile) -> dict:
+    """Keyword arguments for measure() that depend on the destination: the cinema meter with the
+    profile's calibration, and the LFE corner for the layout check, one octave above the profile's
+    low-pass (where a 24 dB/octave filter leaves -24 dB, so a compliant LFE passes with margin)."""
+    args: dict = {}
+    if profile.leqm is not None:
+        args["leqm"] = {
+            "calibration_dbfs": profile.leqm.calibration_dbfs,
+            "calibration_db": profile.leqm.calibration_spl_db,
+            "surround_offset_db": profile.leqm.surround_offset_db,
+        }
+    if profile.format.lfe_lowpass_hz:
+        args["lfe_corner_hz"] = 2.0 * profile.format.lfe_lowpass_hz
+    return args
+
+
 def measure(
-    path: str | Path, roles: list[str] | None = None, block_frames: int = DEFAULT_BLOCK_FRAMES, leqm: bool = False
+    path: str | Path,
+    roles: list[str] | None = None,
+    block_frames: int = DEFAULT_BLOCK_FRAMES,
+    leqm: bool | dict = False,
+    lfe_corner_hz: float | None = None,
 ) -> Measurement:
     """Measure a file. For a directory, measure it as a package of discrete channel files.
-    leqm=True also runs the cinema Leq(m) meter (an 8k-tap FIR per channel; only when asked)."""
+    leqm=True (or a dict of LeqmMeter calibration arguments) also runs the cinema Leq(m) meter,
+    an 8k-tap FIR per channel, only when asked. lfe_corner_hz sets where the LFE band check looks."""
     path = Path(path)
     if path.is_dir():
-        return measure_package(path, block_frames=block_frames, leqm=leqm)
+        return measure_package(path, block_frames=block_frames, leqm=leqm, lfe_corner_hz=lfe_corner_hz)
     info = probe(path)
     roles = roles or default_roles(info.channels)
-    return _run(path, info.samplerate, info.channels, roles, iter_blocks(path, block_frames), info=info, leqm=leqm)
+    return _run(
+        path,
+        info.samplerate,
+        info.channels,
+        roles,
+        iter_blocks(path, block_frames),
+        info=info,
+        leqm=leqm,
+        lfe_corner_hz=lfe_corner_hz,
+    )
 
 
-def measure_package(directory: str | Path, block_frames: int = DEFAULT_BLOCK_FRAMES, leqm: bool = False) -> Measurement:
+def measure_package(
+    directory: str | Path,
+    block_frames: int = DEFAULT_BLOCK_FRAMES,
+    leqm: bool | dict = False,
+    lfe_corner_hz: float | None = None,
+) -> Measurement:
     from ..io.reader import load_package
 
     pkg = load_package(directory)
@@ -174,7 +209,14 @@ def measure_package(directory: str | Path, block_frames: int = DEFAULT_BLOCK_FRA
         raise ValueError("no recognised channel files in package")
     fs = next(iter(pkg.infos.values())).samplerate
     return _run(
-        Path(directory), fs, len(present), present, _package_blocks(pkg, present, block_frames), package=pkg, leqm=leqm
+        Path(directory),
+        fs,
+        len(present),
+        present,
+        _package_blocks(pkg, present, block_frames),
+        package=pkg,
+        leqm=leqm,
+        lfe_corner_hz=lfe_corner_hz,
     )
 
 
@@ -186,15 +228,16 @@ def _run(
     blocks: Iterator[np.ndarray],
     info: AudioInfo | None = None,
     package: Package | None = None,
-    leqm: bool = False,
+    leqm: bool | dict = False,
+    lfe_corner_hz: float | None = None,
 ) -> Measurement:
     loud = LoudnessMeter(fs, channels, roles=roles)
     peak = PeakMeter(fs, channels)
     stats = _Stats(fs, channels)
     speech = SpeechDetector(fs, channels, roles=roles)
     fold = LoudnessMeter(fs, 1) if channels == 2 else None
-    layout = LayoutMeter(fs, channels) if channels >= 3 else None
-    leqm_meter = LeqmMeter(fs, channels, roles=roles) if leqm else None
+    layout = LayoutMeter(fs, channels, corner_hz=lfe_corner_hz or 250.0) if channels >= 3 else None
+    leqm_meter = LeqmMeter(fs, channels, roles=roles, **(leqm if isinstance(leqm, dict) else {})) if leqm else None
     for block in blocks:
         loud.feed(block)
         peak.feed(block)

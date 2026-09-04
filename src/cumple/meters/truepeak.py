@@ -107,7 +107,9 @@ class PeakResult:
 class PeakMeter:
     """Streaming sample-peak and true-peak meter."""
 
-    def __init__(self, samplerate: int, channels: int, phases: np.ndarray | None = None, clip_threshold: float = 0.999):
+    def __init__(
+        self, samplerate: int, channels: int, phases: np.ndarray | None = None, clip_threshold: float = 0.9999
+    ):
         self.fs = int(samplerate)
         self.channels = int(channels)
         self.phases = BS1770_PHASES if phases is None else np.asarray(phases, dtype=np.float64)
@@ -156,10 +158,11 @@ class PeakMeter:
 
     def result(self) -> PeakResult:
         pending = int((self._clip_run_open >= 3).sum())
+        true = np.maximum(self._true, self._sample)  # every sample is a true peak too (libebur128 does the same)
         return PeakResult(
-            true_peak_dbtp=float(to_db(self._true.max())) if self.channels else -np.inf,
+            true_peak_dbtp=float(to_db(true.max())) if self.channels else -np.inf,
             sample_peak_dbfs=float(to_db(self._sample.max())) if self.channels else -np.inf,
-            true_peak_per_channel=to_db(self._true),
+            true_peak_per_channel=to_db(true),
             sample_peak_per_channel=to_db(self._sample),
             clipped_runs=self._clip_runs + pending,
         )

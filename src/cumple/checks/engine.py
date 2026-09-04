@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -112,9 +113,9 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
                         "loudness.speech",
                         Status.INFO,
                         "speech share",
-                        "not measured",
+                        "not measurable",
                         "switches at 15 %",
-                        note="assumed dialogue-led",
+                        note="too short for the speech detector (it needs 1.3 s); assumed dialogue-led",
                     )
                 )
             else:
@@ -153,6 +154,18 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
                 note = None
             results.append((r, value, _in_window(value, r), note))
 
+        if not results:
+            out.append(
+                Finding(
+                    "loudness.skipped",
+                    Status.WARN,
+                    "loudness",
+                    f"speech share {100 * speech:.0f} %",
+                    "no rule applies",
+                    note="none of this destination's loudness rules applies at this speech share, so loudness was not judged; check the profile's `when` conditions",
+                    value=speech,
+                )
+            )
         primary_results = [x for x in results if x[0].role == "primary"]
         policy_ok = (
             (
@@ -434,6 +447,11 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
     if f.lfe_lowpass_hz is not None and "LFE" in m.roles and ls is not None:
         i = m.roles.index("LFE")
         ratio = ls.hf_ratio_db[i]
+        corner_note = (
+            f"checked above {ls.corner_hz:g} Hz, one octave over the {f.lfe_lowpass_hz:g} Hz corner, where a 24 dB/octave low-pass leaves -24 dB"
+            if abs(ls.corner_hz - 2 * f.lfe_lowpass_hz) < 1
+            else f"checked above {ls.corner_hz:g} Hz (the destination's corner is {f.lfe_lowpass_hz:g} Hz)"
+        )
         if ls.silent(i):
             out.append(
                 Finding(
@@ -456,9 +474,10 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
                     "LFE content",
                     f"{ratio:+.1f} dB of its energy above {ls.corner_hz:g} Hz",
                     f"below {LFE_FULL_RANGE_DB:g} dB (tool default)",
-                    note=None
+                    note=corner_note
                     if ok
-                    else "the LFE channel carries full-range programme; either a full-range channel sits in the LFE slot or the LFE was never low-passed",
+                    else "the LFE channel carries full-range programme; either a full-range channel sits in the LFE slot or the LFE was never low-passed; "
+                    + corner_note,
                     clause=clause("format.lfe_band"),
                     fix=None if ok else f"low-pass the LFE at {f.lfe_lowpass_hz:g} Hz, or check the channel order",
                     value=ratio,
@@ -686,7 +705,7 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
             )
         else:
             v = m.leqm.leqm_db
-            ok = np.isfinite(v) and round(v) <= p.leqm.max_db  # TASA: pass or fail to the nearest 1 dB
+            ok = np.isfinite(v) and math.floor(v + 0.5) <= p.leqm.max_db  # TASA: nearest 1 dB, halves round up
             out.append(
                 Finding(
                     "leqm.level",

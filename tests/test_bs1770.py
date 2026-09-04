@@ -121,3 +121,13 @@ def test_timelines_have_the_right_length_and_times():
     assert r.momentary_times()[0] == pytest.approx(0.4)
     assert r.short_term_times()[0] == pytest.approx(3.0)
     assert r.duration_s == pytest.approx(10.0)
+
+
+def test_default_roles_keep_the_lfe_out_of_every_bed_size():
+    from cumple.meters.bs1770 import channel_weights, default_roles
+
+    for n in (6, 7, 8, 10, 12, 16):
+        roles = default_roles(n)
+        assert len(roles) == n and roles[3] == "LFE"
+        w = channel_weights(n)
+        assert w[3] == 0.0 and np.all(np.isfinite(w)) and np.all(w[np.arange(n) != 3] >= 1.0)

@@ -115,3 +115,25 @@ def test_clipping_runs_are_counted_across_block_boundaries():
     x[5000:5002, 0] = 1.0  # two samples: not a run
     assert run(x).clipped_runs == 1
     assert run(x, block=1005).clipped_runs == 1  # the run straddles a block boundary
+
+
+def test_true_peak_is_never_below_the_sample_peak():
+    x = np.zeros((4800, 1))
+    x[2400, 0] = 1.0  # a lone full-scale sample: the interpolator's centre tap is below unity
+    m = PeakMeter(48000, 1)
+    m.feed(x)
+    r = m.result()
+    assert r.sample_peak_dbfs == pytest.approx(0.0, abs=1e-9)
+    assert r.true_peak_dbtp >= r.sample_peak_dbfs - 1e-9
+
+
+def test_a_loud_bass_sine_is_not_reported_as_clipping():
+    fs = 48000
+    t = np.arange(fs) / fs
+    x = (10 ** (-0.005 / 20) * np.sin(2 * np.pi * 50 * t))[:, None]
+    m = PeakMeter(fs, 1)
+    m.feed(x)
+    assert m.result().clipped_runs == 0
+    m2 = PeakMeter(fs, 1)
+    m2.feed(np.clip(1.5 * x, -1.0, 1.0))  # the same sine driven into the rail
+    assert m2.result().clipped_runs >= 50

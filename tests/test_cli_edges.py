@@ -193,3 +193,11 @@ def test_every_profile_evaluates_a_real_programme_without_error(tmp_path):
         assert not unknown, (profile.id, unknown)
         for f in report.findings:
             assert f.status in Status and f.measured and f.limit, (profile.id, f.code)
+
+
+def test_check_out_pointing_at_a_file_exits_cleanly(tmp_path):
+    f = tone_file(tmp_path / "t.wav", seconds=2)
+    blocker = tmp_path / "notadir.txt"
+    blocker.write_text("x")
+    r = run("check", f, "--spec", "ebu-r128", "--out", blocker)
+    assert r.exit_code == 2 and "cannot" in r.output

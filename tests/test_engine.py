@@ -134,3 +134,13 @@ def test_package_of_mono_files_is_measured_as_one_deliverable(tmp_path):
     # five weighted channels at -30 dBFS: L, R, C at 1.0 and Ls, Rs at 1.41; LFE excluded
     expected = -0.691 + 10 * np.log10((3 + 2 * 1.41) * 10 ** (-3.0) / 2) + 0.691
     assert abs(m.loudness.integrated - expected) < 0.15
+
+
+def test_a_profile_whose_rules_do_not_apply_warns_instead_of_passing_silently(tmp_path):
+    p = get("netflix-2.0").model_copy(deep=True)
+    p.loudness.rules = [r for r in p.loudness.rules if r.when == "speech_at_or_above_15pct"]
+    f = tone_file(tmp_path / "tone.wav", dbfs=-18.0, seconds=4)  # no speech, and 6 LU hot
+    r = evaluate(p, measure(f))
+    codes = {x.code: x for x in r.findings}
+    assert codes["loudness.skipped"].status is Status.WARN
+    assert not any(x.code in ("loudness.integrated", "loudness.dialogue_gated") for x in r.findings)

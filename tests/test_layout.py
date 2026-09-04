@@ -84,3 +84,25 @@ def test_silent_lfe_is_reported_not_failed(tmp_path):
     c = {f.code: f for f in r.findings}
     assert c["format.lfe_band"].status is Status.INFO
     assert c["signal.silent_channels"].status is Status.WARN and "LFE" in c["signal.silent_channels"].measured
+
+
+def test_lfe_band_check_follows_the_profile_corner(tmp_path):
+    from scipy.signal import butter, sosfilt
+
+    from cumple.meters.measure import measure_args
+
+    rng = np.random.default_rng(3)
+    n = FS * 6
+    beds = [band_noise(6, 80, 12000, -30.0, k) for k in range(5)]
+    lfe = sosfilt(butter(8, 130, btype="low", fs=FS, output="sos"), rng.normal(size=n))
+    lfe *= 10 ** (-20 / 20) / np.sqrt(np.mean(lfe * lfe))  # an LFE low-passed at 130 Hz, 48 dB/octave
+    x = np.stack([beds[0], beds[1], beds[2], lfe, beds[3], beds[4]], axis=1)
+    p = tmp_path / "mix51.wav"
+    sf.write(str(p), x, FS, subtype="PCM_24")
+    netflix = get("netflix-5.1")  # 120 Hz corner: the check looks above 240 Hz
+    r = evaluate(netflix, measure(p, **measure_args(netflix)))
+    assert {f.code: f.status for f in r.findings}["format.lfe_band"] is Status.PASS
+    strict = netflix.model_copy(deep=True)
+    strict.format.lfe_lowpass_hz = 60.0  # now the check looks above 120 Hz, where this LFE is still busy
+    r2 = evaluate(strict, measure(p, **measure_args(strict)))
+    assert {f.code: f.status for f in r2.findings}["format.lfe_band"] is Status.FAIL

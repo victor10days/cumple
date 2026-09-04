@@ -165,3 +165,51 @@ def test_bext_loudness_metadata_is_checked_against_the_measurement(tmp_path):
     add_bext(unset)  # 7FFFh everywhere
     r = evaluate(get("ebu-r128"), measure(unset))
     assert {x.code: x for x in r.findings}["metadata.bext_loudness"].status is Status.INFO
+
+
+def test_json_output_survives_bwf_metadata_bytes(tmp_path):
+    import json
+
+    from cumple.report import report_to_dict
+
+    p = tmp_path / "bwf.wav"
+    sf.write(str(p), stereo(music_like(3, -23)), FS, subtype="PCM_24")
+    add_bext(p, loudness_value=-2300)
+    m = measure(p)
+    assert m.info is not None and m.info.bext  # wavinfo hands the UMID back as bytes
+    text = json.dumps(report_to_dict(evaluate(get("ebu-r128"), m)))
+    assert '"bext"' in text
+
+
+def test_a_file_too_short_for_the_speech_detector_says_so(tmp_path):
+    p = tmp_path / "sting.wav"
+    sf.write(str(p), stereo(speech_like(1.0, -27)), FS, subtype="PCM_24")
+    m = measure(p)
+    assert m.speech_fraction is None
+    r = evaluate(get("netflix-2.0"), m)
+    speech = next(f for f in r.findings if f.code == "loudness.speech")
+    assert "not measurable" in speech.measured
+    longer = tmp_path / "long.wav"
+    sf.write(str(longer), stereo(speech_like(3.0, -27)), FS, subtype="PCM_24")
+    assert measure(longer).speech_fraction > 0.8
+
+
+def test_leqm_weighs_a_partial_second_by_its_length():
+    t1 = np.arange(FS) / FS
+    quiet = 10 ** (-40 / 20) * np.sin(2 * np.pi * 2000 * t1)
+    loud = 10 ** (-20 / 20) * np.sin(2 * np.pi * 2000 * t1[: FS // 2])
+    short = np.concatenate([quiet, loud])[:, None]  # 1.0 s quiet + 0.5 s loud
+    same_mix_no_partial = np.concatenate([quiet, quiet, loud, loud])[:, None]  # 2 s + 1 s: whole seconds only
+    a, b = LeqmMeter(FS, 1, roles=["L"]), LeqmMeter(FS, 1, roles=["L"])
+    a.feed(short)
+    b.feed(same_mix_no_partial)
+    ra, rb = a.result(), b.result()
+    assert ra.leqm_db == pytest.approx(rb.leqm_db, abs=0.1)  # the half second must not count as a whole one
+    assert len(ra.per_second_db) == 2 and len(rb.per_second_db) == 3
+
+
+def test_leqm_reports_the_calibration_it_was_given():
+    m = LeqmMeter(FS, 1, roles=["L"], calibration_dbfs=-18.0, calibration_db=82.0)
+    m.feed(np.zeros((FS, 1)))
+    r = m.result()
+    assert (r.calibration_dbfs, r.calibration_db) == (-18.0, 82.0)

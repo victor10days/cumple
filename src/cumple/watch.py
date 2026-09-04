@@ -20,7 +20,7 @@ from pathlib import Path
 
 from .checks import Status, evaluate
 from .io.reader import AUDIO_SUFFIXES
-from .meters.measure import measure
+from .meters.measure import measure, measure_args
 from .report import report_to_dict, write_sheet
 from .specs.schema import Profile
 
@@ -56,11 +56,14 @@ def is_candidate(p: Path) -> bool:
 
 def already_done(p: Path, out_dir: Path | None) -> bool:
     target = (out_dir or p.parent) / f"{p.stem}.qc.json"
-    return target.exists() and target.stat().st_mtime >= p.stat().st_mtime
+    try:
+        return target.exists() and target.stat().st_mtime >= p.stat().st_mtime
+    except OSError:
+        return False
 
 
 def process(p: Path, profile: Profile, out_dir: Path | None, pdf: bool, log_csv: Path | None):
-    m = measure(p, leqm=profile.leqm is not None)
+    m = measure(p, **measure_args(profile))
     report = evaluate(profile, m)
     base = out_dir or p.parent
     base.mkdir(parents=True, exist_ok=True)
@@ -123,13 +126,18 @@ class Watcher:
     def poll(self) -> list[tuple[Path, object, Path, Path | None]]:
         now = self.clock()
         results = []
+        present: set[Path] = set()
         for p in sorted(self.folder.iterdir()):
-            if not is_candidate(p) or p in self.done:
+            try:
+                if not is_candidate(p) or p in self.done:
+                    continue
+                if not self.redo and already_done(p, self.out_dir):
+                    self.done.add(p)
+                    continue
+                st = p.stat()
+            except OSError:  # renamed or removed between the listing and the stat: not ours any more
                 continue
-            if not self.redo and already_done(p, self.out_dir):
-                self.done.add(p)
-                continue
-            st = p.stat()
+            present.add(p)
             prev = self.seen.get(p)
             if prev is None or prev.size != st.st_size or prev.mtime != st.st_mtime:
                 self.seen[p] = Seen(st.st_size, st.st_mtime, first_stable=now)
@@ -144,6 +152,10 @@ class Watcher:
                 self.done.add(p)
                 self.processed += 1
                 results.append((p, report, html_path, pdf_path))
+        # A file that vanished before it was measured (moved away, renamed) is forgotten, so it
+        # cannot keep a --once pass waiting for ever.
+        for p in [p for p in self.seen if p not in present]:
+            del self.seen[p]
         return results
 
 

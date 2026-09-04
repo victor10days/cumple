@@ -137,6 +137,12 @@ def _timeline_svg(report: Report) -> str:
     return "".join(parts)
 
 
+def _mmss(seconds: float) -> str:
+    """m:ss.s with the rounding done first, so 59.97 s reads 1:00.0 and never 0:60.0."""
+    tenths = int(round(max(seconds, 0.0) * 10))
+    return f"{tenths // 600}:{(tenths % 600) / 10:04.1f}"
+
+
 def render_html(report: Report) -> str:
     m, p = report.measurement, report.profile
     now = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M %Z")
@@ -146,7 +152,7 @@ def render_html(report: Report) -> str:
         ("True peak", _fmt(m.peaks.true_peak_dbtp, "", signed=True), "dBTP"),
         ("Loudness range", _fmt(m.loudness.lra, ""), "LU"),
         ("Max short-term", _fmt(m.loudness.short_term_max, ""), "LUFS"),
-        ("Duration", f"{int(m.duration_s // 60)}:{m.duration_s % 60:04.1f}", "min:s"),
+        ("Duration", _mmss(m.duration_s), "min:s"),
         (
             "Format",
             f"{m.samplerate / 1000:g} kHz" + (f" / {m.info.bit_depth}-bit" if m.info and m.info.bit_depth else ""),

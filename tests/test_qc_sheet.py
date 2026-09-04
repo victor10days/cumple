@@ -17,3 +17,12 @@ def test_sheet_renders_findings_timeline_and_sources(tmp_path):
     assert "partnerhelp.netflixstudios.com" in html
     out, pdf = write_sheet(report, tmp_path / "hot.qc.html")
     assert out.exists() and out.stat().st_size > 5000 and pdf is None
+
+
+def test_duration_rounds_before_splitting_minutes():
+    from cumple.report.qc_sheet import _mmss
+
+    assert _mmss(59.97) == "1:00.0"
+    assert _mmss(119.98) == "2:00.0"
+    assert _mmss(12.0) == "0:12.0"
+    assert _mmss(0.04) == "0:00.0"

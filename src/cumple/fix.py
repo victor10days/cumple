@@ -8,6 +8,7 @@ nothing.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -15,7 +16,7 @@ import numpy as np
 import soundfile as sf
 
 from .checks.engine import SPEECH_ASSUMED_FRACTION
-from .meters.measure import Measurement, measure
+from .meters.measure import Measurement, measure, measure_args
 from .specs.schema import LoudnessRule, Profile
 
 
@@ -46,6 +47,8 @@ def _applicable_rule(p: Profile, m: Measurement) -> LoudnessRule | None:
 
 
 def _value_for(rule: LoudnessRule, m: Measurement) -> float:
+    if rule.method == "dialogue_gated" and m.loudness.dialogue_blocks > 0 and np.isfinite(m.loudness.dialogue_gated):
+        return m.loudness.dialogue_gated
     return m.loudness.integrated if rule.gated_relative else m.loudness.integrated_ungated
 
 
@@ -108,10 +111,22 @@ def apply(src: Path, dst: Path, gain_db: float, block: int = 1 << 18) -> None:
 
 
 def fix_file(src: Path, profile: Profile, dst: Path | None = None) -> tuple[FixPlan, Path | None, Measurement | None]:
-    m = measure(src, leqm=profile.leqm is not None)
+    m = measure(src, **measure_args(profile))
     fp = plan(profile, m)
     if fp.gain_db is None or fp.gain_db == 0.0:
         return fp, None, None
     dst = dst or src.with_name(f"{src.stem}.{profile.id}{src.suffix}")
-    apply(src, dst, fp.gain_db)
-    return fp, dst, measure(dst, leqm=profile.leqm is not None)
+    if dst.exists() and dst.resolve() == src.resolve():
+        raise ValueError(f"refusing to overwrite the source file {src}; give --out a different path")
+    if dst.is_dir():
+        raise ValueError(f"{dst} is a directory; give --out a file path")
+    # Write next to the destination under a temporary name and move it into place only once the
+    # whole copy succeeded, so a failure half-way never leaves a truncated deliverable behind.
+    tmp = dst.with_name(f".{dst.name}.cumple-tmp")
+    try:
+        apply(src, tmp, fp.gain_db)
+        os.replace(tmp, dst)
+    finally:
+        if tmp.exists():
+            tmp.unlink()
+    return fp, dst, measure(dst, **measure_args(profile))

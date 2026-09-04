@@ -104,6 +104,10 @@ class LeqmMeter:
         self.interval = int(self.fs * INTERVAL_S)
         self._pending = np.empty((0, self.channels))
         self._interval_energy: list[float] = []
+        self._sum_energy = 0.0  # weighted energy summed over every sample, so a partial second weighs what it lasts
+        self._samples = 0
+        self.calibration_dbfs = float(calibration_dbfs)
+        self.calibration_db = float(calibration_db)
         self.offset_db = calibration_db - calibration_dbfs  # dB per dBFS of M-weighted RMS
         self.channel_weights_db = {}
         w = np.ones(self.channels)
@@ -131,15 +135,26 @@ class LeqmMeter:
             whole = y[: n * self.interval].reshape(n, self.interval, self.channels)
             e = np.mean(whole * whole, axis=1) @ self.weights  # summed detector outputs, per second
             self._interval_energy.extend(e)
+            self._sum_energy += float(e.sum()) * self.interval
+            self._samples += n * self.interval
         self._pending = y[n * self.interval :]
 
     def result(self) -> LeqmResult:
         energies = list(self._interval_energy)
+        sum_energy, samples = self._sum_energy, self._samples
+        # Drain the filter's group delay so the response to the last input samples is counted too.
+        delay = (len(self.h) - 1) // 2
+        drained = fftconvolve(
+            np.concatenate([self._tail, np.zeros((delay, self.channels))]), self.h[:, None], mode="full", axes=0
+        )[len(self._tail) : len(self._tail) + delay]
+        tail_y = np.concatenate([self._pending, drained]) if self._pending.size else drained
+        sum_energy += float(((tail_y * tail_y) @ self.weights).sum())
+        samples += len(self._pending)  # the drained samples belong to input already counted
         if self._pending.size:
             energies.append(float(np.mean(self._pending * self._pending, axis=0) @ self.weights))
         e = np.asarray(energies)
         with np.errstate(divide="ignore"):
             per_second = np.where(e > 0, 10 * np.log10(np.maximum(e, 1e-30)) + self.offset_db, -np.inf)
-        mean_e = float(e.mean()) if e.size else 0.0
+        mean_e = sum_energy / samples if samples else 0.0
         leqm = 10 * np.log10(mean_e) + self.offset_db if mean_e > 0 else -np.inf
-        return LeqmResult(float(leqm), per_second, CALIBRATION_DBFS, CALIBRATION_DB, self.channel_weights_db)
+        return LeqmResult(float(leqm), per_second, self.calibration_dbfs, self.calibration_db, self.channel_weights_db)

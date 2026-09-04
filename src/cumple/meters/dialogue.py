@@ -30,6 +30,7 @@ MODULATION_BAND_HZ = (2.0, 8.0)
 MODULATION_WINDOW_S = 1.0
 CONTEXT_S = 1.0  # a pause inside dialogue is still dialogue: dilate over this context
 CONTEXT_MIN_DENSITY = 0.3
+MIN_FRAMES = 64  # 1.28 s: below this the 2 to 8 Hz modulation filter has nothing to judge
 
 
 @dataclass
@@ -38,7 +39,7 @@ class SpeechResult:
     mask: np.ndarray  # bool per frame: speech-like
     active: np.ndarray  # bool per frame: above the floor
     level_db: np.ndarray  # per frame
-    fraction: float  # share of active frames that are speech-like (0 if nothing is active)
+    fraction: float | None  # share of active frames that are speech-like; None when the file is too short to tell
 
     def mask_at(self, step_s: float, n: int) -> np.ndarray:
         """The mask resampled onto another grid (e.g. the meter's 10 ms sub-hops)."""
@@ -84,9 +85,12 @@ class SpeechDetector:
     def result(self) -> SpeechResult:
         e = np.asarray(self._energy)
         if e.size == 0:
-            return SpeechResult(FRAME_S, np.zeros(0, bool), np.zeros(0, bool), np.zeros(0), 0.0)
+            return SpeechResult(FRAME_S, np.zeros(0, bool), np.zeros(0, bool), np.zeros(0), None)
         with np.errstate(divide="ignore"):
             level = np.where(e > 0, 10 * np.log10(np.maximum(e, 1e-30)), -np.inf)
+        if e.size < MIN_FRAMES:
+            # Shorter than the modulation filter can judge: the share is unknown, not zero.
+            return SpeechResult(FRAME_S, np.zeros(e.size, bool), level > SILENCE_DBFS, level, None)
         finite = level[np.isfinite(level) & (level > SILENCE_DBFS)]
         floor = max(SILENCE_DBFS, float(np.percentile(finite, 5))) if finite.size else SILENCE_DBFS
         active = (level > SILENCE_DBFS) & (level > floor + ACTIVE_ABOVE_FLOOR_DB)
@@ -113,7 +117,7 @@ class SpeechDetector:
         n = len(level)
         env = np.where(np.isfinite(level), level, SILENCE_DBFS)
         env = np.maximum(env, SILENCE_DBFS)
-        if n < 64:
+        if n < MIN_FRAMES:
             return np.zeros(n)
         fs_env = 1.0 / FRAME_S
         sos = butter(2, MODULATION_BAND_HZ, btype="bandpass", fs=fs_env, output="sos")

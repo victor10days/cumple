@@ -17,6 +17,21 @@ def _num(x: float | None) -> float | None:
     return x if math.isfinite(x) else None
 
 
+def _jsonable(v: Any) -> Any:
+    """Metadata as wavinfo hands it back: a UMID is bytes, dates may be objects. Keep the JSON valid."""
+    if isinstance(v, bytes):
+        return v.hex()
+    if isinstance(v, dict):
+        return {str(k): _jsonable(x) for k, x in v.items()}
+    if isinstance(v, (list, tuple)):
+        return [_jsonable(x) for x in v]
+    if isinstance(v, bool) or v is None or isinstance(v, (str, int)):
+        return v
+    if isinstance(v, float):
+        return _num(v)
+    return str(v)
+
+
 def report_to_dict(report: Report) -> dict[str, Any]:
     m, p = report.measurement, report.profile
     return {
@@ -46,7 +61,7 @@ def report_to_dict(report: Report) -> dict[str, Any]:
             "phase_correlation": _num(m.phase_correlation),
             "mono_fold_lufs": _num(m.mono_fold_loudness),
             "speech_fraction": _num(m.speech_fraction),
-            "bext": (m.info.bext if m.info else {}),
+            "bext": _jsonable(m.info.bext if m.info else {}),
         },
         "findings": [
             {
