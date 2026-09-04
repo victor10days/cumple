@@ -30,7 +30,10 @@ uv tool install --python 3.12 git+https://github.com/victor10days/cumple
 cumple check master.wav --spec netflix-2.0
 ```
 
-From a clone, `uv tool install --python 3.12 .` does the same. What you get:
+From a clone, `uv tool install --python 3.12 .` does the same. No audio at
+hand? `uv run python scripts/make_demo.py ~/cumple-demo` writes a seeded set of
+synthetic bounces, stems, a 5.1 package and two mix versions to try every
+command on. What you get:
 
 ```
 cumple-hot.wav  file, stereo, 48 kHz, 12.0 s

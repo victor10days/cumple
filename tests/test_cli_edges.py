@@ -201,3 +201,29 @@ def test_check_out_pointing_at_a_file_exits_cleanly(tmp_path):
     blocker.write_text("x")
     r = run("check", f, "--spec", "ebu-r128", "--out", blocker)
     assert r.exit_code == 2 and "cannot" in r.output
+
+
+def test_make_demo_writes_a_usable_set(tmp_path):
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    script = Path(__file__).resolve().parents[1] / "scripts" / "make_demo.py"
+    demo = tmp_path / "demo"
+    subprocess.run([sys.executable, str(script), str(demo)], check=True, capture_output=True)
+    for rel in ("hot.wav", "r128-ok.wav", "v12.wav", "v13.wav", "spiky.wav", "stems/PM.wav", "EP101_delivery"):
+        assert (demo / rel).exists()
+    assert run("check", demo / "r128-ok.wav", "--spec", "ebu-r128").exit_code == 0
+    assert run("check", demo / "hot.wav", "--spec", "netflix-2.0").exit_code == 1
+    assert (
+        run(
+            "diff",
+            demo / "stems/DX.wav",
+            demo / "stems/MX.wav",
+            demo / "stems/FX.wav",
+            "--against",
+            demo / "stems/PM.wav",
+        ).exit_code
+        == 0
+    )
+    assert run("fix", demo / "spiky.wav", "--spec", "ebu-r128", "--out", demo / "spiky.r128.wav").exit_code == 1
