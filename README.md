@@ -34,7 +34,7 @@ From a clone, `uv tool install --python 3.12 .` does the same. What you get:
 
 ```
 cumple-hot.wav  file, stereo, 48 kHz, 12.0 s
-against Netflix stereo (2.0) printmaster (netflix-2.0, sources graded SE)
+against Netflix stereo (2.0) printmaster (netflix-2.0, sources graded READ)
        check                   measured                limit                  note
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 info   speech share            0 % of active           switches at 15 %       heuristic speech
@@ -43,24 +43,32 @@ info   speech share            0 % of active           switches at 15 %       he
                                                                               Dialogue Intelligence
 FAIL   integrated loudness     -0.4 LUFS               -24 ±2 LUFS,
                                                        BS.1770-4
-info   integrated loudness     -0.4 LUFS               -27 ±2 LUFS,
+info   integrated loudness     -0.4 LUFS               -24 ±3 LUFS,
        (fallback)                                      BS.1770-4
 FAIL   true peak               -0.4 dBTP               ≤ -2 dBTP
+PASS   loudness range          0.0 LU                  guide ≤ 18 LU
 PASS   sample rate             48 kHz                  48 kHz
 PASS   bit depth               24-bit                  24-bit
 PASS   channels                2                       2
 PASS   layout                  stereo                  stereo, lt-rt          a 2-channel file may
                                                                               be L/R or Lt/Rt; both
                                                                               accepted
+FAIL   packaging               interleaved             discrete
 PASS   container               WAV                     wav, bwf, rf64
+PASS   mono compatibility      correlation +1.00,      correlation ≥ 0
+                               mono fold +3.0 LU
+                               quieter
 FAIL  Netflix stereo (2.0) printmaster
   fix: lower the whole file by 23.6 dB (true peak would become -24.0 dBTP)
   fix: lower by 1.6 dB, or limit at -2 dBTP and re-check loudness
+  fix: split into one mono file per channel
 ```
 
-Exit code 0 on PASS, 1 on FAIL, 2 when the file could not be read. Add
-`--clauses` to print the source's words under each finding, `--sheet` for the
-QC sheet, `--json` for machines.
+The packaging line is a real Netflix clause: original-language masters go up
+as one mono file per channel, so an interleaved stereo bounce fails there even
+when the numbers are right. Exit code 0 on PASS, 1 on FAIL, 2 when the file
+could not be read. Add `--clauses` to print the source's words under each
+finding, `--sheet` for the QC sheet, `--json` for machines.
 
 ## What it measures
 
@@ -111,23 +119,29 @@ package EP101_delivery: 5.1
 
 $ cumple check ./EP101_delivery --spec amazon-5.1-package
 EP101_delivery  package, 5.1, 48 kHz, 20.0 s
-against Amazon MGM Studios 5.1 (discrete mono files) (amazon-5.1-package, sources graded GATED)
-       check                   measured                limit                  note
+against Amazon MGM Studios 5.1 (discrete mono files) (amazon-5.1-package, sources graded READ)
+       check                   measured                limit                   note
 ────────────────────────────────────────────────────────────────────────────────────────────────────
-info   speech share            100 % of active         switches at 15 %       heuristic speech
-                               programme                                      detector, ...
-FAIL   dialogue-gated          -19.9 LKFS              -27 ±2 LKFS,           approximation of
-       loudness                                        BS.1770-1              Dialogue Intelligence:
-                                                                              heuristic speech gate,
-                                                                              143 speech blocks,
-                                                                              BS.1770-1 (no relative
-                                                                              gate)
+info   speech share            100 % of active         switches at 15 %        heuristic speech
+                               programme                                       detector, ...
+FAIL   dialogue-gated          -19.9 LKFS              -27 ±2 LKFS,            approximation of
+       loudness                                        BS.1770-1               Dialogue Intelligence:
+                                                                               heuristic speech gate,
+                                                                               143 speech blocks,
+                                                                               BS.1770-1 (no relative
+                                                                               gate)
 PASS   true peak               -4.2 dBTP               ≤ -2 dBTP
 PASS   sample rate             48 kHz                  48 kHz
 PASS   channels                6                       6
 PASS   layout                  5.1 (L, R, C, LFE,      5.1
                                Ls, Rs)
 PASS   packaging               discrete                discrete
+PASS   LFE content             -39.3 dB of its         below -15 dB (tool      checked above 240 Hz,
+                               energy above 240 Hz     default)                one octave over the
+                                                                               120 Hz corner, where
+                                                                               a 24 dB/octave
+                                                                               low-pass leaves -24 dB
+PASS   head padding            0.00 s                  ≤ 2 s
 FAIL  Amazon MGM Studios 5.1 (discrete mono files)
   fix: lower the whole file by 7.1 dB (true peak would become -11.3 dBTP)
 ```
@@ -149,9 +163,9 @@ sources with their grades and retrieval dates.
 $ cumple watch ~/Bounces --spec netflix-2.0
 watching /Users/me/Bounces against Netflix stereo (2.0) printmaster; files are measured 5 s after
 they stop growing
-FAIL cumple-hot.wav  -0.4 LUFS, -0.4 dBTP  integrated loudness, true peak  → cumple-hot.qc.html
-PASS cumple-ok.wav  -26.5 LUFS, -26.5 dBTP  → cumple-ok.qc.html
-FAIL cumple-v12.wav  -16.0 LUFS, -7.5 dBTP  integrated loudness  → cumple-v12.qc.html
+FAIL cumple-hot.wav  -0.4 LUFS, -0.4 dBTP  integrated loudness, true peak, packaging  → cumple-hot.qc.html
+FAIL cumple-ok.wav  -26.5 LUFS, -26.5 dBTP  packaging  → cumple-ok.qc.html
+FAIL cumple-v12.wav  -16.0 LUFS, -7.5 dBTP  integrated loudness, packaging  → cumple-v12.qc.html
 ```
 
 Every file that lands gets a sheet next to it and a line in `cumple-log.csv`
@@ -234,15 +248,17 @@ calls the same `cumple check --sheet --pdf`; no terminal involved.
 | id | destination | loudness | peak | grade |
 |---|---|---|---|---|
 | `aes-td1008-speech` | AES TD1008 streaming, speech-anchored | -19 to -17 dialogue-gated | -1 dBTP | READ |
-| `amazon-5.1-package` | Amazon MGM Studios 5.1 (discrete mono files) | -27 ±2 dialogue-gated | -2 dBTP | GATED* |
+| `amazon-2.0-package` | Amazon MGM Studios 2.0 (discrete mono files) | -27 ±2 dialogue-gated | -2 dBTP | READ* |
+| `amazon-5.1-package` | Amazon MGM Studios 5.1 (discrete mono files) | -27 ±2 dialogue-gated | -2 dBTP | READ* |
 | `amazon-pvd` | Prime Video Direct mezzanine audio | -24 ±2 integrated | -2 dBTP | READ |
 | `apple-tv` | Apple TV+ / Apple TV app | -31 to -10 dialogue-gated; -31 to -5 integrated (speech < 15 %) | -1 dBTP | READ* |
 | `atsc-a85-streaming` | ATSC A/85:2026 Annex L streaming range | -27 to -23 dialogue-gated or -27 to -23 integrated (speech < 15 %) | -2 dBTP | READ |
-| `disney-plus` | Disney+ near-field mix | -27 ±2 dialogue-gated or -24 ±2 integrated (speech < 15 %) | -2 dBTP | SE* |
+| `disney-plus-2.0` | Disney+ near-field 2.0 stereo | -24 ±0.4 integrated | -2 dBTP | READ |
+| `disney-plus-5.1` | Disney+ near-field 5.1, 7.1 and Atmos | -27 ±0.4 dialogue-gated; -24 ±0.4 integrated (speech < 15 %); ≤ -20 integrated | -2 dBTP | READ |
 | `hulu-2018` | Hulu content partner guidebook (2018, stale) | -24 ±2 integrated | -2 dBFS sample | READ |
 | `max-wbd` | Warner Bros. Discovery / Max component audio | -24 ±2 dialogue-gated or -24 ±2 integrated | -2 dBTP | READ |
-| `netflix-2.0` | Netflix stereo (2.0) printmaster | -27 ±2 dialogue-gated or -24 ±2 integrated (speech < 15 %) | -2 dBTP | SE* |
-| `netflix-5.1` | Netflix 5.1 near-field printmaster | -27 ±2 dialogue-gated or -24 ±2 integrated (speech < 15 %) | -2 dBTP | SE* |
+| `netflix-2.0` | Netflix stereo (2.0) printmaster | -27 ±2 dialogue-gated or -24 ±2 integrated (speech < 15 %) | -2 dBTP | READ* |
+| `netflix-5.1` | Netflix 5.1 near-field printmaster | -27 ±2 dialogue-gated or -24 ±2 integrated (speech < 15 %) | -2 dBTP | READ* |
 | `paramount-pluto` | Paramount Global content delivery (Pluto TV ingest) | -24 ±2 integrated | -2 dBFS sample | READ* |
 | `arib-tr-b32` | ARIB TR-B32 (Japan television) | -24 ±1 integrated | -1 dBTP | SECONDARY |
 | `atsc-a85-2026` | ATSC A/85:2026 television (US) | -24 ±2 dialogue-gated or -24 ±2 integrated (speech < 15 %) | -2 dBTP | READ |
@@ -322,7 +338,7 @@ silent the profile says so.
   side by side. [docs/BENCHMARK.md](docs/BENCHMARK.md).
 - **Performance**: a 60-minute stereo file and a 30-minute 5.1 file, wall time
   and peak memory. [docs/PERF.md](docs/PERF.md).
-- **Tests**: 112, 92 % line coverage on `src/`, run with `uv run pytest`. The
+- **Tests**: 126, 92 % line coverage on `src/`, run with `uv run pytest`. The
   EBU cases run when the test set is in `~/.cache/cumple/` (it is free but not
   redistributed; see CONTRIBUTING).
 - **Manual QA** on real bounces is logged in [docs/QA.md](docs/QA.md).
@@ -334,10 +350,13 @@ silent the profile says so.
   differ from a Dolby meter by more than the ±2 LU window. The speech share and
   the number of speech blocks are printed next to every dialogue-gated value
   so you can judge, and the full-programme value is always shown beside it.
-- Netflix, Disney+ and Amazon Studios specs live behind partner portals or
-  JavaScript apps. Their profiles are graded SE or GATED and their clauses are
-  paraphrases until a verbatim reading is possible. Treat the grade as part of
-  the result.
+- The Netflix, Disney+ and Amazon MGM Studios pages are JavaScript apps that
+  refuse command-line fetchers; they were read in a browser on 2026-09-04 and
+  their clauses are quoted verbatim. Weaker grades remain where the source is
+  weaker: ARIB TR-B32 (SECONDARY, from an AES summary table), YouTube
+  (COMMUNITY, the platform publishes nothing), Hulu (a 2018 document), and
+  every profile with an asterisk carries a tool default. Treat the grade as
+  part of the result.
 - No Dolby Atmos or ADM checks yet: cumple reads BWF metadata but does not
   validate beds, objects or `chna` track mappings.
 - Reads what libsndfile reads: WAV, BWF, RF64, AIFF, FLAC, and others. It does

@@ -1,6 +1,6 @@
 # Conformance report for cumple 0.1.0
 
-Generated 2026-09-03. Tolerances are the published ones: EBU Tech 3341 ±0.1 LU for loudness and +0.2/−0.4 dB for true peak; EBU Tech 3342 ±1 LU for loudness range; TASA Standard §1.4.2 per-frequency tolerances for the M-weighting. The EBU Loudness Test Set v5.0 is free from tech.ebu.ch and is not redistributed here.
+Generated 2026-09-04. Tolerances are the published ones: EBU Tech 3341 ±0.1 LU for loudness and +0.2/−0.4 dB for true peak; EBU Tech 3342 ±1 LU for loudness range; TASA Standard §1.4.2 per-frequency tolerances for the M-weighting. The EBU Loudness Test Set v5.0 is free from tech.ebu.ch and is not redistributed here.
 
 ## EBU Tech 3341: loudness and true peak
 
@@ -63,12 +63,12 @@ Generated 2026-09-03. Tolerances are the published ones: EBU Tech 3341 ±0.1 LU 
 | 3341-13 | seq-3341-13-8-24bit.wav.wav | max M | -23.0 | -22.99 | ✓ |
 | 3341-13 | seq-3341-13-9-24bit.wav.wav | max M | -23.0 | -22.99 | ✓ |
 | 3341-14 | seq-3341-14-24bit.wav.wav | max M | -19.0 | -18.99 | ✓ |
-| 3341-15 | seq-3341-15-24bit.wav.wav | true peak | -6.0 dBTP | -6.20 | ✓ |
+| 3341-15 | seq-3341-15-24bit.wav.wav | true peak | -6.0 dBTP | -6.00 | ✓ |
 | 3341-16 | seq-3341-16-24bit.wav.wav | true peak | -6.0 dBTP | -5.96 | ✓ |
 | 3341-17 | seq-3341-17-24bit.wav.wav | true peak | -6.0 dBTP | -6.30 | ✓ |
 | 3341-18 | seq-3341-18-24bit.wav.wav | true peak | -6.0 dBTP | -6.01 | ✓ |
 | 3341-19 | seq-3341-19-24bit.wav.wav | true peak | +3.0 dBTP | +3.05 | ✓ |
-| 3341-20 | seq-3341-20-24bit.wav.wav | true peak | +0.0 dBTP | -0.15 | ✓ |
+| 3341-20 | seq-3341-20-24bit.wav.wav | true peak | +0.0 dBTP | -0.13 | ✓ |
 | 3341-21 | seq-3341-21-24bit.wav.wav | true peak | +0.0 dBTP | -0.08 | ✓ |
 | 3341-22 | seq-3341-22-24bit.wav.wav | true peak | +0.0 dBTP | -0.20 | ✓ |
 | 3341-23 | seq-3341-23-24bit.wav.wav | true peak | +0.0 dBTP | -0.08 | ✓ |
@@ -94,12 +94,12 @@ Full-scale tones with 50 ms fades, sampled so the peak falls between samples. Th
 
 | tone | sample peak dBFS | ITU filter dBTP | Kaiser-512 dBTP | ideal |
 |---|---|---|---|---|
-| 0.5 kHz | +0.00 | +0.01 | -0.00 | 0.00 |
-| 1 kHz | +0.00 | +0.01 | -0.00 | 0.00 |
-| 2 kHz | +0.00 | -0.01 | -0.00 | 0.00 |
+| 0.5 kHz | +0.00 | +0.01 | +0.00 | 0.00 |
+| 1 kHz | +0.00 | +0.01 | +0.00 | 0.00 |
+| 2 kHz | +0.00 | +0.00 | +0.00 | 0.00 |
 | 8 kHz | -1.25 | -0.30 | -0.07 | 0.00 |
 | 12 kHz | -3.01 | +0.04 | -0.17 | 0.00 |
-| 20 kHz | +0.00 | -0.14 | -0.02 | 0.00 |
+| 20 kHz | +0.00 | +0.00 | +0.00 | 0.00 |
 
 ## Leq(m): M-weighting response against the TASA table
 

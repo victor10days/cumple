@@ -49,13 +49,18 @@ says the same.
   Hulu, NBCUniversal, Spotify, SoundCloud, Apple Podcasts and ACX pages) and
   a survey of what already exists in open source and in commercial QC tools.
   Every profile records where each number came from and how good that access
-  was, with a grade from READ to COMMUNITY.
+  was, with a grade from READ to COMMUNITY. The first pass could reach the
+  Netflix, Disney+ and Amazon MGM Studios pages only through search extraction
+  (graded SE and GATED); a browser session the next day read all three
+  directly, and their clauses are now quoted verbatim (grade READ), which
+  changed real numbers: Disney's tolerance is ±0.4 LU, not the assumed ±2, and
+  Netflix requires one mono file per channel.
 - **Code.** The BS.1770-5 meter with K-weighting re-derived at any sample
   rate, the true-peak filter from the ITU table, loudness range, the speech
   detector, Leq(m) from the TASA response table, the rules engine with
   either/or rules and the speech switch, the audio diff, the watch folder,
-  the gain-only fix, the QC sheet, the macOS droplet, 28 profiles.
-- **Tests and benchmarks.** 112 tests, including synthetic signals with
+  the gain-only fix, the QC sheet, the macOS droplet, 30 profiles.
+- **Tests and benchmarks.** 126 tests, including synthetic signals with
   analytic answers and the official EBU cases; cross-checks against ffmpeg's
   `ebur128` filter, pyloudnorm and an independently designed interpolator;
   the scripts that regenerate `docs/CONFORMANCE.md`, `docs/BENCHMARK.md` and
@@ -90,6 +95,22 @@ dialogue in music-heavy programmes (now the 5th percentile plus 3 dB, with a
 one-second dilation); the metadata reader reports an unset BWF loudness
 field as 327.67, which had to be recognised as "unset" rather than as a
 loudness value.
+
+## A second pair of eyes, also a model
+
+Before the repository went public, a separate Claude agent reviewed the source
+tree read-only, with instructions to confirm every finding by running the code
+and to drop anything it could not confirm. It reported seventeen findings,
+three of them serious: `fix --out` pointed at the source file truncated the
+source; a Broadcast WAV whose metadata carries a UMID crashed the JSON output,
+which also made the watch folder skip such files silently; and 7-, 10- and
+12-channel files weighted the LFE like a screen channel, a 2.5 LU error on a
+7.1.2 bed. The rest ranged from a watcher that died when a bounce was moved
+away mid-poll to a duration that could print as 0:60.0. All seventeen were
+fixed in one commit; fourteen carry a test that pins the corrected behaviour,
+and the other three were one-line changes (a rounding rule, an inert option,
+a clamped option). Victor did not find these; the process did, and the
+process is part of how the tool was built.
 
 ## The day-to-day pattern
 
