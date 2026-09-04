@@ -1,7 +1,8 @@
-"""Compare cumple with ffmpeg's ebur128 filter on the official EBU test signals.
+"""Compare cumple with ffmpeg's ebur128 filter and pyloudnorm on the official EBU test signals.
 
 Run: uv run python scripts/benchmark_ffmpeg.py > docs/BENCHMARK.md
-Needs the EBU Loudness Test Set unpacked under ~/.cache/cumple (see tests/test_ebu_conformance.py).
+Needs the EBU Loudness Test Set unpacked under ~/.cache/cumple (see tests/test_ebu_conformance.py),
+ffmpeg on PATH, and the dev dependency group (pyloudnorm).
 """
 
 from __future__ import annotations
@@ -11,6 +12,11 @@ import os
 import re
 import subprocess
 from datetime import date
+from importlib.metadata import version as dist_version
+
+import numpy as np
+import pyloudnorm
+import soundfile as sf
 
 from cumple import __version__
 from cumple.meters.measure import measure
@@ -51,6 +57,18 @@ def ffmpeg_summary(path: str) -> tuple[float, float, float]:
     return tuple(float(x.group(1)) if x else float("nan") for x in (i, tp, lra))
 
 
+def pyloudnorm_integrated(path: str) -> float:
+    """Whole-file integrated loudness from pyloudnorm.
+
+    pyloudnorm takes at most five channels in L R C Ls Rs order, so a six-channel
+    L R C LFE Ls Rs file has its LFE removed first (BS.1770 excludes it anyway).
+    """
+    data, rate = sf.read(path, always_2d=True, dtype="float64")
+    if data.shape[1] == 6:
+        data = np.delete(data, 3, axis=1)
+    return float(pyloudnorm.Meter(rate).integrated_loudness(data))
+
+
 def fmt(x, expected=None, kind="I"):
     """kind: I (±0.1 LU), TP (+0.2/−0.4 dBTP per Tech 3341), LRA (±1 LU per Tech 3342)."""
     if x is None:
@@ -69,18 +87,21 @@ def fmt(x, expected=None, kind="I"):
 
 def main() -> None:
     ff = subprocess.run(["ffmpeg", "-version"], capture_output=True, text=True).stdout.split("\n")[0]
-    print("# cumple vs ffmpeg ebur128 on the EBU Loudness Test Set v5.0\n")
+    print("# cumple vs ffmpeg ebur128 and pyloudnorm on the EBU Loudness Test Set v5.0\n")
     print(
-        f"Generated {date.today().isoformat()} with cumple {__version__} and `{ff}`. Expected values from EBU Tech 3341 Table 1 (±0.1 LU; true peak +0.2/−0.4 dBTP) and Tech 3342 (±1 LU). ✓ means inside the published tolerance.\n"
+        f"Generated {date.today().isoformat()} with cumple {__version__}, `{ff}` and pyloudnorm {dist_version('pyloudnorm')}. "
+        "Expected values from EBU Tech 3341 Table 1 (±0.1 LU; true peak +0.2/−0.4 dBTP) and Tech 3342 (±1 LU). "
+        "✓ means inside the published tolerance. pyloudnorm measures integrated loudness only (no true peak, no loudness range), so it has one column.\n"
     )
-    print("| file | expected | cumple I | ffmpeg I | cumple TP | ffmpeg TP | cumple LRA | ffmpeg LRA |")
-    print("|---|---|---|---|---|---|---|---|")
+    print("| file | expected | cumple I | ffmpeg I | pyloudnorm I | cumple TP | ffmpeg TP | cumple LRA | ffmpeg LRA |")
+    print("|---|---|---|---|---|---|---|---|---|")
     for name, ei, etp, elra in CASES:
         hits = glob.glob(f"{ROOT}/**/{name}", recursive=True)
         if not hits:
             continue
         m = measure(hits[0])
         fi, ftp, flra = ffmpeg_summary(hits[0])
+        pi = pyloudnorm_integrated(hits[0])
         exp = " ".join(
             x
             for x in [
@@ -91,11 +112,15 @@ def main() -> None:
             if x
         )
         print(
-            f"| {name} | {exp} | {fmt(m.loudness.integrated, ei)} | {fmt(fi, ei)} | {fmt(m.peaks.true_peak_dbtp, etp, 'TP')} | {fmt(ftp, etp, 'TP')} | {fmt(m.loudness.lra, elra, 'LRA')} | {fmt(flra, elra, 'LRA')} |"
+            f"| {name} | {exp} | {fmt(m.loudness.integrated, ei)} | {fmt(fi, ei)} | {fmt(pi, ei)} | {fmt(m.peaks.true_peak_dbtp, etp, 'TP')} | {fmt(ftp, etp, 'TP')} | {fmt(m.loudness.lra, elra, 'LRA')} | {fmt(flra, elra, 'LRA')} |"
         )
     print(
-        "\nNotes: ffmpeg's ebur128 is an independent implementation with no published conformance report. On the five- and six-channel case 6 files it reports a true peak of −28 dBFS where the centre channel sits at −24 dBFS; cumple reports the centre channel. On the true-peak burst files ffmpeg reports a loudness range of about 20 LU for what is a single steady tone; those files carry no LRA expectation in Tech 3342, so this is noted, not scored."
+        "\nNotes: ffmpeg's ebur128 is an independent implementation with no published conformance report. "
+        "On the five- and six-channel case 6 files it reports a true peak of −28 dBFS where the centre channel sits at −24 dBFS; cumple reports the centre channel. "
+        "On the true-peak burst files ffmpeg reports a loudness range of about 20 LU for what is a single steady tone; those files carry no LRA expectation in Tech 3342, so this is noted, not scored. "
+        "pyloudnorm reads the whole file into memory and takes at most five channels, so the six-channel case 6 file was passed to it without its LFE channel; cumple and ffmpeg read the file as delivered."
     )
+    print("\nSpeed and memory on long programmes are in [PERF.md](PERF.md).")
 
 
 if __name__ == "__main__":
