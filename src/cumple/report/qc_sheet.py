@@ -165,7 +165,7 @@ def render_html(report: Report) -> str:
         f"<li><strong>{_esc(s.grade.value)}</strong> {_esc(s.title)}"
         + (f", {_esc(s.version)}" if s.version else "")
         + (f" ({_esc(s.published)})" if s.published else "")
-        + f" — {_esc(s.publisher)}"
+        + f" · {_esc(s.publisher)}"
         + (f' <a href="{_esc(s.url)}">{_esc(s.url)}</a>' if s.url else "")
         + f" · retrieved {s.retrieved.isoformat()}"
         + (f" <em>{_esc(s.notes)}</em>" if s.notes else "")
@@ -202,7 +202,7 @@ def render_html(report: Report) -> str:
 <h2>Sources</h2>
 <ul class="sources">{sources}</ul>
 <footer>Grades: {"; ".join(f"{g.value} = {_esc(label)}" for g, label in GRADE_LABEL.items())}.<br>
-Measured with cumple {__version__}: ITU-R BS.1770-5 K-weighting and gating, EBU Tech 3341/3342 short-term and loudness range, 4x oversampled true peak per BS.1770 Annex 2. Dialogue-gated rules are approximated as full-programme BS.1770-1 until the speech gate lands, and say so above.</footer>
+Measured with cumple {__version__}: ITU-R BS.1770-5 K-weighting and gating, EBU Tech 3341/3342 short-term and loudness range, 4x oversampled true peak per BS.1770 Annex 2. Dialogue-gated rules use a heuristic speech detector, an approximation of Dolby Dialogue Intelligence, and say so above.</footer>
 </div></body></html>
 """
 

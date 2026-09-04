@@ -1,6 +1,6 @@
 # Destinations known to cumple 0.1.0
 
-Generated 2026-09-03 from `src/cumple/specs/profiles/*.yaml`. Every number is traceable to the sources listed under each destination, and the grade says how good that trace is:
+Generated 2026-09-04 from `src/cumple/specs/profiles/*.yaml`. Every number is traceable to the sources listed under each destination, and the grade says how good that trace is:
 
 - **READ**: primary document read directly
 - **SE**: primary page exists (JavaScript app); values recovered via search extraction
@@ -57,7 +57,7 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **READ** (primary) ACX Audio Submission Requirements — ACX (Audible) — <https://www.acx.com/help/acx-audio-submission-requirements/200013520> — retrieved 2026-09-03. The live page redirected during research; values are from the ACX document text.
+- **READ** (primary) ACX Audio Submission Requirements · ACX (Audible) · <https://www.acx.com/help/acx-audio-submission-requirements/200013520> · retrieved 2026-09-03. The live page redirected during research; values are from the ACX document text.
 
 ## ARIB TR-B32 (Japan television) (`arib-tr-b32`)
 
@@ -74,8 +74,8 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **SECONDARY** (primary) ARIB TR-B32: Operational Guidelines for Loudness of Digital Television Programmes — ARIB — <https://www.arib.or.jp/english/std_tr/broadcasting/desc/tr-b32.html> — retrieved 2026-09-03. Values taken from AES TD1006 (Oct 2017) Table 1, not read from the ARIB document.
-- **READ** (supporting) AES TD1006: Recommendations for loudness of audio for OTT and OVD, AESTD1006.1.17-10 (October 2017) — AES — <https://aes2.org/wp-content/uploads/2024/01/AESTD1006_1_17_10.pdf> — retrieved 2026-09-03
+- **SECONDARY** (primary) ARIB TR-B32: Operational Guidelines for Loudness of Digital Television Programmes · ARIB · <https://www.arib.or.jp/english/std_tr/broadcasting/desc/tr-b32.html> · retrieved 2026-09-03. Values taken from AES TD1006 (Oct 2017) Table 1, not read from the ARIB document.
+- **READ** (supporting) AES TD1006: Recommendations for loudness of audio for OTT and OVD, AESTD1006.1.17-10 (October 2017) · AES · <https://aes2.org/wp-content/uploads/2024/01/AESTD1006_1_17_10.pdf> · retrieved 2026-09-03
 
 ## ATSC A/85:2026 television (US) (`atsc-a85-2026`)
 
@@ -83,8 +83,8 @@ US television loudness under the CALM Act. -24 LKFS with about ±2 dB tolerance;
 
 Loudness rules (any one applicable rule may pass):
 
-- -24 ±2 LKFS dialogue-gated, BS.1770-1, if speech ≥ 15 % — Long-form content: dialogue level, BS.1770-1 without the relative gate, plus a dialogue-gating algorithm, over the entire duration.
-- -24 ±2 LUFS integrated, BS.1770-4, if speech < 15 % — Full-program mix only when the content contains no dialogue whatsoever (A/85 §5.2.4); short-form content uses this method too.
+- -24 ±2 LKFS dialogue-gated, BS.1770-1, if speech ≥ 15 % · Long-form content: dialogue level, BS.1770-1 without the relative gate, plus a dialogue-gating algorithm, over the entire duration.
+- -24 ±2 LUFS integrated, BS.1770-4, if speech < 15 % · Full-program mix only when the content contains no dialogue whatsoever (A/85 §5.2.4); short-form content uses this method too.
 
 In the source's words:
 
@@ -94,7 +94,7 @@ In the source's words:
 
 Sources:
 
-- **READ** (primary) ATSC A/85: Techniques for Establishing and Maintaining Audio Loudness for Digital Television, A/85:2026-07 (8 July 2026) — ATSC — <https://www.atsc.org/wp-content/uploads/2026/07/A85-2026-07.pdf> — retrieved 2026-09-03
+- **READ** (primary) ATSC A/85: Techniques for Establishing and Maintaining Audio Loudness for Digital Television, A/85:2026-07 (8 July 2026) · ATSC · <https://www.atsc.org/wp-content/uploads/2026/07/A85-2026-07.pdf> · retrieved 2026-09-03
 
 ## UK DPP / AS-11 programme delivery (`dpp-as11`)
 
@@ -102,7 +102,7 @@ UK broadcaster file delivery (DPP, restated in Channel 4's v5.2 spec). -23.0 LUF
 
 Loudness rules:
 
-- -23 ±0.5 LUFS integrated, BS.1770-4 — ±1.0 LU applies to live programmes.
+- -23 ±0.5 LUFS integrated, BS.1770-4 · ±1.0 LU applies to live programmes.
 
 In the source's words (paraphrased; verbatim quotes pending):
 
@@ -114,8 +114,8 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **READ** (primary) Programme Delivery Specification File: DPP / Channel 4, v5.2 (2022) — Channel 4 (DPP member) — <https://assets-corporate.channel4.com/_flysystem/s3/documents/2023-03/ProgrammeDeliverySpecificationFile_DPP-Channel4_v5.2.pdf> — retrieved 2026-09-03. thedpp.com is login-gated; Channel 4 publishes the DPP figures.
-- **READ** (supporting) AMWA AS-11 UK DPP HD — AMWA — <https://amwa-tv.github.io/AS-11_UK_DPP_HD/AMWA_AS_11_UK_DPP_HD.html> — retrieved 2026-09-03
+- **READ** (primary) Programme Delivery Specification File: DPP / Channel 4, v5.2 (2022) · Channel 4 (DPP member) · <https://assets-corporate.channel4.com/_flysystem/s3/documents/2023-03/ProgrammeDeliverySpecificationFile_DPP-Channel4_v5.2.pdf> · retrieved 2026-09-03. thedpp.com is login-gated; Channel 4 publishes the DPP figures.
+- **READ** (supporting) AMWA AS-11 UK DPP HD · AMWA · <https://amwa-tv.github.io/AS-11_UK_DPP_HD/AMWA_AS_11_UK_DPP_HD.html> · retrieved 2026-09-03
 
 ## EBU R 128 broadcast programme (`ebu-r128`)
 
@@ -123,7 +123,7 @@ European broadcast loudness. -23.0 LUFS integrated, -1 dBTP. The reference most 
 
 Loudness rules:
 
-- -23 ±1 LUFS integrated, BS.1770-4 — R 128 permits ±1.0 LU where the target is not practically attainable (live); for QC workflows it allows ±0.2 LU for measurement error. cumple passes at ±1.0 and reports the ±0.2 window in the note.
+- -23 ±1 LUFS integrated, BS.1770-4 · R 128 permits ±1.0 LU where the target is not practically attainable (live); for QC workflows it allows ±0.2 LU for measurement error. cumple passes at ±1.0 and reports the ±0.2 window in the note.
 
 In the source's words:
 
@@ -134,9 +134,9 @@ In the source's words:
 
 Sources:
 
-- **READ** (primary) EBU R 128: Loudness normalisation and permitted maximum level of audio signals, v5.0 (November 2023) — EBU — <https://tech.ebu.ch/docs/r/r128.pdf> — retrieved 2026-09-03
-- **READ** (primary) EBU Tech 3285: Specification of the Broadcast Wave Format (BWF), v2 (May 2011) — EBU — <https://tech.ebu.ch/docs/tech/tech3285.pdf> — retrieved 2026-09-03
-- **TOOL_DEFAULT** (default) Metadata match tolerance — cumple — retrieved 2026-09-03. R 128 says loudness metadata must reflect the measured values but gives no tolerance; cumple flags a mismatch above 0.5 LU.
+- **READ** (primary) EBU R 128: Loudness normalisation and permitted maximum level of audio signals, v5.0 (November 2023) · EBU · <https://tech.ebu.ch/docs/r/r128.pdf> · retrieved 2026-09-03
+- **READ** (primary) EBU Tech 3285: Specification of the Broadcast Wave Format (BWF), v2 (May 2011) · EBU · <https://tech.ebu.ch/docs/tech/tech3285.pdf> · retrieved 2026-09-03
+- **TOOL_DEFAULT** (default) Metadata match tolerance · cumple · retrieved 2026-09-03. R 128 says loudness metadata must reflect the measured values but gives no tolerance; cumple flags a mismatch above 0.5 LU.
 
 ## EBU R 128 s1 short-form (adverts, promos) (`ebu-r128-s1-short`)
 
@@ -154,7 +154,7 @@ In the source's words:
 
 Sources:
 
-- **READ** (primary) EBU R 128 s1: Loudness parameters for short-form content (adverts, promos, etc.), v3 (August 2020) — EBU — <https://tech.ebu.ch/docs/r/r128s1.pdf> — retrieved 2026-09-03
+- **READ** (primary) EBU R 128 s1: Loudness parameters for short-form content (adverts, promos, etc.), v3 (August 2020) · EBU · <https://tech.ebu.ch/docs/r/r128s1.pdf> · retrieved 2026-09-03
 
 ## NBCUniversal linear commercial (`nbcu-commercial`)
 
@@ -171,7 +171,7 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **READ** (primary) Linear NBCU Commercial Guidelines (February 2024) — NBCUniversal — <https://together.nbcuni.com/wp-content/uploads/sites/3/2024/01/Linear-NBCU-Commercial-Guidelines-Feb-24.pdf> — retrieved 2026-09-03. Short-form commercial guidelines; NBCU's long-form delivery spec is not public.
+- **READ** (primary) Linear NBCU Commercial Guidelines (February 2024) · NBCUniversal · <https://together.nbcuni.com/wp-content/uploads/sites/3/2024/01/Linear-NBCU-Commercial-Guidelines-Feb-24.pdf> · retrieved 2026-09-03. Short-form commercial guidelines; NBCU's long-form delivery spec is not public.
 
 ## Free TV Australia OP-59 (`op-59`)
 
@@ -188,7 +188,7 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **READ** (primary) OP-59: Measurement and Management of Loudness for TV Broadcasting, Issue 4 (October 2018) — Free TV Australia — <https://www.freetv.com.au/wp-content/uploads/2019/08/OP-59-Measurement-and-Managemnt-of-Loudness-for-TV-Broadcasting-Issue-4-October-2018.pdf> — retrieved 2026-09-03
+- **READ** (primary) OP-59: Measurement and Management of Loudness for TV Broadcasting, Issue 4 (October 2018) · Free TV Australia · <https://www.freetv.com.au/wp-content/uploads/2019/08/OP-59-Measurement-and-Managemnt-of-Loudness-for-TV-Broadcasting-Issue-4-October-2018.pdf> · retrieved 2026-09-03
 
 ## DCP 5.1 audio (ISDCF channel order) (`dcp-5.1`)
 
@@ -201,8 +201,8 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **READ** (primary) ISDCF Doc 4: Audio channel recommendations for DCPs (29 June 2017) — ISDCF — <https://files.isdcf.com/papers/ISDCF-Doc4-Audio-channel-recommendations.pdf> — retrieved 2026-09-03
-- **GATED** (supporting) SMPTE ST 428-2 (sample rate and bit depth) — SMPTE — retrieved 2026-09-03
+- **READ** (primary) ISDCF Doc 4: Audio channel recommendations for DCPs (29 June 2017) · ISDCF · <https://files.isdcf.com/papers/ISDCF-Doc4-Audio-channel-recommendations.pdf> · retrieved 2026-09-03
+- **GATED** (supporting) SMPTE ST 428-2 (sample rate and bit depth) · SMPTE · retrieved 2026-09-03
 
 ## Cinema advertising (SAWA) (`sawa-ad`)
 
@@ -214,8 +214,8 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **READ** (primary) Screen Advertising Guide to Sound in Cinema — SAWA — <https://www.sawa.com/wp-content/uploads/2010/10/sound_in_cinema.pdf> — retrieved 2026-09-03
-- **READ** (supporting) TASA Standard for Trailer Loudness — Trailer Audio Standards Association — <https://www.tasatrailers.org/TASAStandard.pdf> — retrieved 2026-09-03
+- **READ** (primary) Screen Advertising Guide to Sound in Cinema · SAWA · <https://www.sawa.com/wp-content/uploads/2010/10/sound_in_cinema.pdf> · retrieved 2026-09-03
+- **READ** (supporting) TASA Standard for Trailer Loudness · Trailer Audio Standards Association · <https://www.tasatrailers.org/TASAStandard.pdf> · retrieved 2026-09-03
 
 ## Cinema trailer (TASA) (`tasa-trailer`)
 
@@ -230,9 +230,9 @@ In the source's words:
 
 Sources:
 
-- **READ** (primary) ISDCF Doc 11: Trailer loudness history and the TASA standard (Ioan Allen) (15 March 2016) — ISDCF — retrieved 2026-09-03. Source of the numeric limit: 87 dB Leq(m) in 1999, lowered to 85 dB in 2001 and unchanged since.
-- **READ** (primary) TASA Standard for Trailer Loudness (annex dated 15 January 2015) — Trailer Audio Standards Association — <https://www.tasatrailers.org/TASAStandard.pdf> — retrieved 2026-09-03
-- **GATED** (supporting) ISO 21727:2016 Cinematography: Method of measurement of perceived loudness of short duration motion-picture audio material, 2016 — ISO — <https://www.iso.org/standard/69744.html> — retrieved 2026-09-03. Paywalled. The measurement method used here follows the freely published TASA description.
+- **READ** (primary) ISDCF Doc 11: Trailer loudness history and the TASA standard (Ioan Allen) (15 March 2016) · ISDCF · retrieved 2026-09-03. Source of the numeric limit: 87 dB Leq(m) in 1999, lowered to 85 dB in 2001 and unchanged since.
+- **READ** (primary) TASA Standard for Trailer Loudness (annex dated 15 January 2015) · Trailer Audio Standards Association · <https://www.tasatrailers.org/TASAStandard.pdf> · retrieved 2026-09-03
+- **GATED** (supporting) ISO 21727:2016 Cinematography: Method of measurement of perceived loudness of short duration motion-picture audio material, 2016 · ISO · <https://www.iso.org/standard/69744.html> · retrieved 2026-09-03. Paywalled. The measurement method used here follows the freely published TASA description.
 
 ## AES TD1008 streaming, music (`aes-td1008-music`)
 
@@ -249,7 +249,7 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **READ** (primary) AES TD1008: Recommendations for Loudness of Internet Audio Streaming and On-Demand Distribution, AESTD1008.1.21-9 (24 September 2021) — AES — <https://aes2.org/wp-content/uploads/2024/01/20210924_TD1008_v3.13.pdf> — retrieved 2026-09-03
+- **READ** (primary) AES TD1008: Recommendations for Loudness of Internet Audio Streaming and On-Demand Distribution, AESTD1008.1.21-9 (24 September 2021) · AES · <https://aes2.org/wp-content/uploads/2024/01/20210924_TD1008_v3.13.pdf> · retrieved 2026-09-03
 
 ## Apple Digital Masters (`apple-digital-masters`)
 
@@ -262,8 +262,8 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **READ** (primary) Apple Digital Masters: Technology Overview — Apple — <https://www.apple.com/apple-music/apple-digital-masters/docs/apple-digital-masters.pdf> — retrieved 2026-09-03
-- **TOOL_DEFAULT** (default) Peak headroom default — cumple — retrieved 2026-09-03
+- **READ** (primary) Apple Digital Masters: Technology Overview · Apple · <https://www.apple.com/apple-music/apple-digital-masters/docs/apple-digital-masters.pdf> · retrieved 2026-09-03
+- **TOOL_DEFAULT** (default) Peak headroom default · cumple · retrieved 2026-09-03
 
 ## SoundCloud master (`soundcloud`)
 
@@ -271,7 +271,7 @@ SoundCloud normalizes to -14 LUFS integrated. Keep true peaks at or below -1 dBT
 
 Loudness rules:
 
-- -14 ±1 LUFS integrated, BS.1770-4 — ±1 LU is cumple's window around the published normalization level.
+- -14 ±1 LUFS integrated, BS.1770-4 · ±1 LU is cumple's window around the published normalization level.
 
 In the source's words (paraphrased; verbatim quotes pending):
 
@@ -280,8 +280,8 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **READ** (primary) Will SoundCloud play my track at the level it's mastered? — SoundCloud — <https://help.soundcloud.com/hc/en-us/articles/360053660014> — retrieved 2026-09-03
-- **TOOL_DEFAULT** (default) Tolerance window — cumple — retrieved 2026-09-03
+- **READ** (primary) Will SoundCloud play my track at the level it's mastered? · SoundCloud · <https://help.soundcloud.com/hc/en-us/articles/360053660014> · retrieved 2026-09-03
+- **TOOL_DEFAULT** (default) Tolerance window · cumple · retrieved 2026-09-03
 
 ## Spotify music master (`spotify`)
 
@@ -289,7 +289,7 @@ Spotify normalizes playback to -14 LUFS (Loud -11, Quiet -19). Masters at -14 LU
 
 Loudness rules:
 
-- -14 ±1 LUFS integrated, BS.1770-4 — Spotify publishes the normalization level, not a delivery tolerance; ±1 LU is cumple's window. A quieter master is fine and is simply turned up (limited to available headroom); a louder one is turned down.
+- -14 ±1 LUFS integrated, BS.1770-4 · Spotify publishes the normalization level, not a delivery tolerance; ±1 LU is cumple's window. A quieter master is fine and is simply turned up (limited to available headroom); a louder one is turned down.
 
 In the source's words (paraphrased; verbatim quotes pending):
 
@@ -298,8 +298,8 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **READ** (primary) Loudness normalization — Spotify for Artists — <https://support.spotify.com/us/artists/article/loudness-normalization/> — retrieved 2026-09-03
-- **TOOL_DEFAULT** (default) Tolerance window — cumple — retrieved 2026-09-03
+- **READ** (primary) Loudness normalization · Spotify for Artists · <https://support.spotify.com/us/artists/article/loudness-normalization/> · retrieved 2026-09-03
+- **TOOL_DEFAULT** (default) Tolerance window · cumple · retrieved 2026-09-03
 
 ## YouTube (community-measured) (`youtube`)
 
@@ -316,7 +316,7 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **COMMUNITY** (primary) Community measurements of YouTube playback normalization — various — retrieved 2026-09-03. No primary document exists. Treat a PASS here as 'consistent with what people have measured', not as compliance.
+- **COMMUNITY** (primary) Community measurements of YouTube playback normalization · various · retrieved 2026-09-03. No primary document exists. Treat a PASS here as 'consistent with what people have measured', not as compliance.
 
 ## Apple Podcasts (`apple-podcasts`)
 
@@ -334,7 +334,7 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **READ** (primary) Audio requirements, Apple Podcasts for Creators — Apple — <https://podcasters.apple.com/support/893-audio-requirements> — retrieved 2026-09-03
+- **READ** (primary) Audio requirements, Apple Podcasts for Creators · Apple · <https://podcasters.apple.com/support/893-audio-requirements> · retrieved 2026-09-03
 
 ## AES TD1008 streaming, speech-anchored (`aes-td1008-speech`)
 
@@ -342,7 +342,7 @@ AES recommendation for internet streaming and on-demand distribution, speech con
 
 Loudness rules:
 
-- -19 to -17 LKFS dialogue-gated, BS.1770-4 — Dialog Integrated Loudness preferred; TD1008 states +1 LU as the tolerance. cumple uses a symmetric ±1 window.
+- -19 to -17 LKFS dialogue-gated, BS.1770-4 · Dialog Integrated Loudness preferred; TD1008 states +1 LU as the tolerance. cumple uses a symmetric ±1 window.
 
 In the source's words (paraphrased; verbatim quotes pending):
 
@@ -351,7 +351,7 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **READ** (primary) AES TD1008: Recommendations for Loudness of Internet Audio Streaming and On-Demand Distribution, AESTD1008.1.21-9 (24 September 2021) — AES — <https://aes2.org/wp-content/uploads/2024/01/20210924_TD1008_v3.13.pdf> — retrieved 2026-09-03
+- **READ** (primary) AES TD1008: Recommendations for Loudness of Internet Audio Streaming and On-Demand Distribution, AESTD1008.1.21-9 (24 September 2021) · AES · <https://aes2.org/wp-content/uploads/2024/01/20210924_TD1008_v3.13.pdf> · retrieved 2026-09-03
 
 ## Amazon MGM Studios 5.1 (discrete mono files) (`amazon-5.1-package`)
 
@@ -370,8 +370,8 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **GATED** (primary) Amazon Studios Asset Technical Specifications — Amazon MGM Studios — <https://portal.amazonstudios.com/hc/en-us/articles/15986845319323-Asset-Technical-Specifications> — retrieved 2026-09-03. Partner portal returns 403 without a login; values come from search extraction.
-- **TOOL_DEFAULT** (default) Stem residual default — cumple — retrieved 2026-09-03
+- **GATED** (primary) Amazon Studios Asset Technical Specifications · Amazon MGM Studios · <https://portal.amazonstudios.com/hc/en-us/articles/15986845319323-Asset-Technical-Specifications> · retrieved 2026-09-03. Partner portal returns 403 without a login; values come from search extraction.
+- **TOOL_DEFAULT** (default) Stem residual default · cumple · retrieved 2026-09-03
 
 ## Prime Video Direct mezzanine audio (`amazon-pvd`)
 
@@ -390,7 +390,7 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **READ** (primary) Prime Video Central: Delivery experience, Audio — Amazon — <https://videocentral.amazon.com/support/delivery-experience/audio> — retrieved 2026-09-03
+- **READ** (primary) Prime Video Central: Delivery experience, Audio · Amazon · <https://videocentral.amazon.com/support/delivery-experience/audio> · retrieved 2026-09-03
 
 ## Apple TV+ / Apple TV app (`apple-tv`)
 
@@ -398,7 +398,7 @@ Apple Video and Audio Asset Guide. A permitted range rather than a target. Dialo
 
 Loudness rules:
 
-- -31 to -10 LKFS dialogue-gated, BS.1770-4, if speech ≥ 15 % — Apple measures BS.1770 with Dialogue Intelligence, integrated over the full duration. The ideal window -30 to -18 LKFS is reported, not enforced.
+- -31 to -10 LKFS dialogue-gated, BS.1770-4, if speech ≥ 15 % · Apple measures BS.1770 with Dialogue Intelligence, integrated over the full duration. The ideal window -30 to -18 LKFS is reported, not enforced.
 - -31 to -5 LUFS integrated, BS.1770-4, if speech < 15 %
 
 In the source's words:
@@ -413,8 +413,8 @@ In the source's words:
 
 Sources:
 
-- **READ** (primary) Apple Video and Audio Asset Guide, 5.3.18 (October 13, 2025) — Apple — <https://help.apple.com/itc/videoaudioassetguide/en.lproj/static.html> — retrieved 2026-09-03
-- **TOOL_DEFAULT** (default) LFE corner frequency — cumple — retrieved 2026-09-03. Apple gives no corner frequency for 'full-frequency content'; 120 Hz is the tool's choice, matching common bass-management practice.
+- **READ** (primary) Apple Video and Audio Asset Guide, 5.3.18 (October 13, 2025) · Apple · <https://help.apple.com/itc/videoaudioassetguide/en.lproj/static.html> · retrieved 2026-09-03
+- **TOOL_DEFAULT** (default) LFE corner frequency · cumple · retrieved 2026-09-03. Apple gives no corner frequency for 'full-frequency content'; 120 Hz is the tool's choice, matching common bass-management practice.
 
 ## ATSC A/85:2026 Annex L streaming range (`atsc-a85-streaming`)
 
@@ -433,7 +433,7 @@ In the source's words:
 
 Sources:
 
-- **READ** (primary) ATSC A/85:2026-07, Annex L: Guidelines for Establishing and Maintaining Audio Loudness of Internet-delivered Content, A/85:2026-07 (8 July 2026) — ATSC — <https://www.atsc.org/wp-content/uploads/2026/07/A85-2026-07.pdf> — retrieved 2026-09-03
+- **READ** (primary) ATSC A/85:2026-07, Annex L: Guidelines for Establishing and Maintaining Audio Loudness of Internet-delivered Content, A/85:2026-07 (8 July 2026) · ATSC · <https://www.atsc.org/wp-content/uploads/2026/07/A85-2026-07.pdf> · retrieved 2026-09-03
 
 ## Disney+ near-field mix (`disney-plus`)
 
@@ -441,8 +441,8 @@ Disney media tech specs for home audio. -27 LKFS dialogue anchor; -24 LKFS progr
 
 Loudness rules (any one applicable rule may pass):
 
-- -27 ±2 LKFS dialogue-gated, BS.1770-4, if speech ≥ 15 % — Disney states the -27 LKFS dialogue anchor; the ±2 tolerance is cumple's assumption pending a direct read of the page.
-- -24 ±2 LUFS integrated, BS.1770-4, if speech < 15 % — A ±0.4 tolerance was reported by search extraction; it is unusually tight and unverified, so ±2 is used until the page is read directly.
+- -27 ±2 LKFS dialogue-gated, BS.1770-4, if speech ≥ 15 % · Disney states the -27 LKFS dialogue anchor; the ±2 tolerance is cumple's assumption pending a direct read of the page.
+- -24 ±2 LUFS integrated, BS.1770-4, if speech < 15 % · A ±0.4 tolerance was reported by search extraction; it is unusually tight and unverified, so ±2 is used until the page is read directly.
 
 In the source's words (paraphrased; verbatim quotes pending):
 
@@ -452,8 +452,8 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **SE** (primary) Disney Media Tech Specs: Production Audio — Disney — <https://mediatechspecs.disney.com/production/audio/production-audio> — retrieved 2026-09-03. The site is a JavaScript app; values were recovered via search extraction.
-- **TOOL_DEFAULT** (default) Tolerance assumption — cumple — retrieved 2026-09-03
+- **SE** (primary) Disney Media Tech Specs: Production Audio · Disney · <https://mediatechspecs.disney.com/production/audio/production-audio> · retrieved 2026-09-03. The site is a JavaScript app; values were recovered via search extraction.
+- **TOOL_DEFAULT** (default) Tolerance assumption · cumple · retrieved 2026-09-03
 
 ## Hulu content partner guidebook (2018, stale) (`hulu-2018`)
 
@@ -470,7 +470,7 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **READ** (primary) Hulu Content Partner Guidebook, v5.0 (2018) — Hulu — <http://assets.hulu.com/portaldocuments/ContentPartnerGuidebook_v5.0.pdf> — retrieved 2026-09-03. Stale: the newest public version is from 2018.
+- **READ** (primary) Hulu Content Partner Guidebook, v5.0 (2018) · Hulu · <http://assets.hulu.com/portaldocuments/ContentPartnerGuidebook_v5.0.pdf> · retrieved 2026-09-03. Stale: the newest public version is from 2018.
 
 ## Warner Bros. Discovery / Max component audio (`max-wbd`)
 
@@ -494,7 +494,7 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **READ** (primary) Content Partner Hub, Ingest Specifications, Component Delivery: Audio, v1.3 (2 December 2025) — Warner Bros. Discovery — <https://partnerhub.warnermediagroup.com/ingest-specifications/component-delivery/audio> — retrieved 2026-09-03
+- **READ** (primary) Content Partner Hub, Ingest Specifications, Component Delivery: Audio, v1.3 (2 December 2025) · Warner Bros. Discovery · <https://partnerhub.warnermediagroup.com/ingest-specifications/component-delivery/audio> · retrieved 2026-09-03
 
 ## Netflix stereo (2.0) printmaster (`netflix-2.0`)
 
@@ -502,9 +502,9 @@ Netflix near-field stereo mix. -27 LKFS ±2 dialogue-gated (BS.1770-1 with Dialo
 
 Loudness rules (any one applicable rule may pass):
 
-- -27 ±2 LKFS dialogue-gated, BS.1770-1, if speech ≥ 15 % — Netflix measures with Dolby Dialogue Intelligence. cumple approximates that gate with an open speech detector and says so on every sheet.
-- -24 ±2 LUFS integrated, BS.1770-4, if speech < 15 % — Content measuring under 15 % dialogue switches to a full-program target.
-- -27 ±2 LUFS integrated, BS.1770-4 (fallback) — Netflix QC rule: if the dialogue-gated measurement fails, re-measure BS.1770-4 full program and do not flag if that passes. The fallback window is taken as the same -27 ±2; to be verified against the live page.
+- -27 ±2 LKFS dialogue-gated, BS.1770-1, if speech ≥ 15 % · Netflix measures with Dolby Dialogue Intelligence. cumple approximates that gate with an open speech detector and says so on every sheet.
+- -24 ±2 LUFS integrated, BS.1770-4, if speech < 15 % · Content measuring under 15 % dialogue switches to a full-program target.
+- -27 ±2 LUFS integrated, BS.1770-4 (fallback) · Netflix QC rule: if the dialogue-gated measurement fails, re-measure BS.1770-4 full program and do not flag if that passes. The fallback window is taken as the same -27 ±2; to be verified against the live page.
 
 In the source's words (paraphrased; verbatim quotes pending):
 
@@ -516,10 +516,10 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **SE** (primary) Netflix Sound Mix Specifications & Best Practices, v1.6 — Netflix — <https://partnerhelp.netflixstudios.com/hc/en-us/articles/360001794307> — retrieved 2026-09-03. The Partner Help Center moved behind studiopartner.netflix.net, a JavaScript app; values were recovered via search extraction of the live page and must be re-read directly.
-- **READ** (primary) Netflix Originals Delivery Specifications OC-3-3, OC-3-3 (July 2019) — Netflix — retrieved 2026-09-03. Historical: read from a re-hosted copy. Used only for stems, M&E and channel-order clauses.
-- **SE** (primary) Loudness and True Peaks: How to Measure and When to Flag — Netflix — <https://partnerhelp.netflixstudios.com/hc/en-us/articles/360050414014> — retrieved 2026-09-03
-- **TOOL_DEFAULT** (default) Stem residual default — cumple — retrieved 2026-09-03. Netflix publishes no null-test tolerance; -60 dBFS residual after alignment is the tool's choice.
+- **SE** (primary) Netflix Sound Mix Specifications & Best Practices, v1.6 · Netflix · <https://partnerhelp.netflixstudios.com/hc/en-us/articles/360001794307> · retrieved 2026-09-03. The Partner Help Center moved behind studiopartner.netflix.net, a JavaScript app; values were recovered via search extraction of the live page and must be re-read directly.
+- **READ** (primary) Netflix Originals Delivery Specifications OC-3-3, OC-3-3 (July 2019) · Netflix · retrieved 2026-09-03. Historical: read from a re-hosted copy. Used only for stems, M&E and channel-order clauses.
+- **SE** (primary) Loudness and True Peaks: How to Measure and When to Flag · Netflix · <https://partnerhelp.netflixstudios.com/hc/en-us/articles/360050414014> · retrieved 2026-09-03
+- **TOOL_DEFAULT** (default) Stem residual default · cumple · retrieved 2026-09-03. Netflix publishes no null-test tolerance; -60 dBFS residual after alignment is the tool's choice.
 
 ## Netflix 5.1 near-field printmaster (`netflix-5.1`)
 
@@ -529,7 +529,7 @@ Loudness rules (any one applicable rule may pass):
 
 - -27 ±2 LKFS dialogue-gated, BS.1770-1, if speech ≥ 15 %
 - -24 ±2 LUFS integrated, BS.1770-4, if speech < 15 %
-- -27 ±2 LUFS integrated, BS.1770-4 (fallback) — Netflix QC rule: if the dialogue-gated measurement fails, re-measure BS.1770-4 full program and do not flag if that passes. The fallback window is taken as -27 ±2; to be verified against the live page.
+- -27 ±2 LUFS integrated, BS.1770-4 (fallback) · Netflix QC rule: if the dialogue-gated measurement fails, re-measure BS.1770-4 full program and do not flag if that passes. The fallback window is taken as -27 ±2; to be verified against the live page.
 
 In the source's words (paraphrased; verbatim quotes pending):
 
@@ -542,9 +542,9 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **SE** (primary) Netflix Sound Mix Specifications & Best Practices, v1.6 — Netflix — <https://partnerhelp.netflixstudios.com/hc/en-us/articles/360001794307> — retrieved 2026-09-03. The Partner Help Center moved behind studiopartner.netflix.net, a JavaScript app; values were recovered via search extraction and must be re-read directly.
-- **READ** (primary) Netflix Originals Delivery Specifications OC-3-3, OC-3-3 (July 2019) — Netflix — retrieved 2026-09-03. Historical, read from a re-hosted copy; used for stems, M&E and channel order only.
-- **TOOL_DEFAULT** (default) Stem residual and LFE corner defaults — cumple — retrieved 2026-09-03
+- **SE** (primary) Netflix Sound Mix Specifications & Best Practices, v1.6 · Netflix · <https://partnerhelp.netflixstudios.com/hc/en-us/articles/360001794307> · retrieved 2026-09-03. The Partner Help Center moved behind studiopartner.netflix.net, a JavaScript app; values were recovered via search extraction and must be re-read directly.
+- **READ** (primary) Netflix Originals Delivery Specifications OC-3-3, OC-3-3 (July 2019) · Netflix · retrieved 2026-09-03. Historical, read from a re-hosted copy; used for stems, M&E and channel order only.
+- **TOOL_DEFAULT** (default) Stem residual and LFE corner defaults · cumple · retrieved 2026-09-03
 
 ## Paramount Global content delivery (Pluto TV ingest) (`paramount-pluto`)
 
@@ -552,7 +552,7 @@ Paramount's public Global Content Delivery Guide v2.2, which covers Pluto TV ing
 
 Loudness rules:
 
-- -24 ±2 LUFS integrated, BS.1770-4 — The guide says loudness should approximate -24 LKFS; the ±2 window is cumple's reading of 'approximate'.
+- -24 ±2 LUFS integrated, BS.1770-4 · The guide says loudness should approximate -24 LKFS; the ±2 window is cumple's reading of 'approximate'.
 
 In the source's words (paraphrased; verbatim quotes pending):
 
@@ -562,6 +562,6 @@ In the source's words (paraphrased; verbatim quotes pending):
 
 Sources:
 
-- **READ** (primary) Paramount Global Content Delivery Guide, V2.2 — Paramount — <https://www.paramount.com/sites/g/files/dxjhpe356/files/2024-07/Global_Content_Delivery_Guide_V2.2.pdf> — retrieved 2026-09-03. Body text is Pluto TV FAST-channel ingest; no public Paramount+ post-production audio spec was found.
-- **TOOL_DEFAULT** (default) Tolerance reading — cumple — retrieved 2026-09-03
+- **READ** (primary) Paramount Global Content Delivery Guide, V2.2 · Paramount · <https://www.paramount.com/sites/g/files/dxjhpe356/files/2024-07/Global_Content_Delivery_Guide_V2.2.pdf> · retrieved 2026-09-03. Body text is Pluto TV FAST-channel ingest; no public Paramount+ post-production audio spec was found.
+- **TOOL_DEFAULT** (default) Tolerance reading · cumple · retrieved 2026-09-03
 

@@ -58,7 +58,7 @@ def render_specs_markdown(profiles: list[Profile]) -> str:
                 "Loudness rules" + (" (any one applicable rule may pass)" if p.loudness.policy == "any" else "") + ":\n"
             )
             for r in p.loudness.rules:
-                out.append(f"- {r.describe()}" + (f" — {_esc(r.notes)}" if r.notes else ""))
+                out.append(f"- {r.describe()}" + (f" · {_esc(r.notes)}" if r.notes else ""))
             out.append("")
         if p.clauses:
             out.append(
@@ -75,11 +75,11 @@ def render_specs_markdown(profiles: list[Profile]) -> str:
                 f"- **{s.grade.value}** ({s.role}) {_esc(s.title)}"
                 + (f", {s.version}" if s.version else "")
                 + (f" ({s.published})" if s.published else "")
-                + f" — {_esc(s.publisher)}"
+                + f" · {_esc(s.publisher)}"
             )
             if s.url:
-                line += f" — <{s.url}>"
-            line += f" — retrieved {s.retrieved.isoformat()}"
+                line += f" · <{s.url}>"
+            line += f" · retrieved {s.retrieved.isoformat()}"
             if s.notes:
                 line += f". {_esc(s.notes)}"
             out.append(line)
