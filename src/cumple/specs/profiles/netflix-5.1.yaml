@@ -1,7 +1,7 @@
 id: netflix-5.1
 name: Netflix 5.1 near-field printmaster
 family: streaming
-summary: Netflix near-field 5.1 mix. -27 LKFS ±2 dialogue-gated (BS.1770-1 with Dialogue Intelligence), -24 ±2 full program if speech is under 15 %, -2 dBTP, 48 kHz / 24-bit, L R C LFE Ls Rs; stems must sum to the printmaster.
+summary: Netflix branded near-field 5.1 original-language mix (Sound Mix Specifications & Best Practices, OC-1-6). -27 LKFS ±2 dialogue-gated per BS.1770-1 over the entire program; -24 ±2 full program when the mix measures under 15 % dialogue; -2 dBTP; 48 kHz / 24-bit discrete LPCM .wav or .bwav in L R C LFE Ls Rs order; DX, MX and FX stems must equal the 5.1 mix when combined. Netflix's QC partners flag loudness only after both the dialogue-gated and the full-program measurement fail their ±3 windows.
 loudness:
   policy: any
   rules:
@@ -10,26 +10,31 @@ loudness:
       target: -27.0
       tolerance: 2.0
       when: speech_at_or_above_15pct
+      notes: "Netflix measures with Dolby Dialogue Intelligence. cumple approximates that gate with an open speech detector and says so on every sheet. QC partners flag at ±3 LU to absorb meter differences; the delivery window is ±2."
     - method: integrated
       standard: bs1770-4
       target: -24.0
       tolerance: 2.0
       when: speech_below_15pct
+      notes: "From the Best Practices section: near field Atmos or 5.1 mixes that measure under 15 % dialogue use the program target instead."
     - method: integrated
       standard: bs1770-4
-      target: -27.0
-      tolerance: 2.0
+      target: -24.0
+      tolerance: 3.0
       role: fallback
-      notes: "Netflix QC rule: if the dialogue-gated measurement fails, re-measure BS.1770-4 full program and do not flag if that passes. The fallback window is taken as -27 ±2; to be verified against the live page."
+      notes: "Netflix's QC procedure: if the dialogue-gated analysis fails, measure full program per BS.1770-4; if that passes, do not flag. The QC windows are -27 ±3 and -24 ±3."
 peaks:
   true_peak_max: -2.0
   true_peak_recommended: -2.3
+dynamics:
+  lra_guide_max: 18.0
 format:
   sample_rates: [48000]
   bit_depths: [24]
   channel_counts: [6]
   layouts: ["5.1"]
   channel_order: smpte
+  packaging: discrete
   containers: [wav, bwf, rf64]
   lfe_lowpass_hz: 120.0
 stems:
@@ -37,30 +42,39 @@ stems:
   residual_max_dbfs: -60.0
   me_must_have_no_speech: true
 clauses:
-  loudness.dialogue_gated: "-27 LKFS ±2 LU, dialogue-gated, measured over the entire program per ITU-R BS.1770-1 with Dolby Dialogue Intelligence. (paraphrase of Sound Mix Specifications v1.6)"
-  loudness.integrated: "Near-field mixes with less than 15 % dialogue: -24 LKFS ±2 LU, BS.1770-3 or -4, full program. (paraphrase of Sound Mix Specifications v1.6)"
-  peak.true: "True peak shall not exceed -2 dBTP; a limiter at -2.3 dBFS is recommended. (paraphrase of Sound Mix Specifications v1.6)"
-  format.layout: "5.1 channel order L, R, C, LFE, Ls, Rs. (paraphrase of Originals Delivery Specifications OC-3-3)"
-  stems.sum: "The DX, MX and FX stems must equal the 5.1 mix when combined. No numeric tolerance is published; -60 dBFS residual is cumple's default. (paraphrase of Originals Delivery Specifications OC-3-3)"
-  stems.me_speech: "The M&E must be fully filled and contain no dialogue. (paraphrase of M&E Creation and Delivery Guidelines)"
-clauses_verbatim: false
+  loudness.dialogue_gated: "Meet a -27 LKFS (+/- 2 LU) dialogue loudness using ITU-R BS.1770-1 measured over entire program."
+  loudness.integrated: "When near field Atmos or 5.1 mixes measure at less than 15% dialogue, program target measurement will be used instead (-24 LKFS +/- 2 LU - ITU BS 1770-3 or -4)."
+  loudness.fallback: "If the dialogue-gated analysis FAILS, proceed with measuring the mix against the ITU-R BS. 1770-4 full program algorithm. [...] If the full program analysis PASSES, do NOT flag in the QC Request. If the full program analysis FAILS, flag the Loudness LKFS Out of Spec as an ISSUE and include both the measurements for 1770-1 and 1770-4 or 1770-2/1770-3."
+  peak.true: "Do not exceed +18dBu (-2 dBFS) maximum level (true-peak) over reference of -20 dBFS, achieved by peak limiting and not lowering the mix level. [Best Practices:] Set a True Peak limiter at -2.3 dBFS for all audio deliverables."
+  dynamics.lra: "The following loudness range (LRA) values will play best on the service: 5.1 program LRA between 4 and 18 LU [...] Dialog LRA of 10 LU or less. [Best Practices, which the page says are not technical specifications]"
+  format.sample_rate: "48kHz/24-bit for Original Language Mix or M&E Mix - applies to Stems & Mix Masters."
+  format.bit_depth: "48kHz/24-bit for Original Language Mix or M&E Mix - applies to Stems & Mix Masters."
+  format.container: "Lossy or lossless audio compression is never allowed. Audio must be standard or RF64 discrete LPCM .wav or .bwav files."
+  format.packaging: "Discrete audio is required, except in the following circumstances: When muxed audio is inherent to the source, such as audio in an IMF, Quicktime or Atmos® BWAV ADM container. Interleaved Secondary Audio .wav deliveries."
+  format.layout: "Channel Configuration: 5.1 - L,R,C,LFE,LS,RS"
+  stems.sum: "For Original Version: Provide 5.1 Dialog, Music and Effects stems that equal the 5.1 mix when combined."
+  stems.me_speech: "Provide a fully filled 5.1 surround submix containing only Music & Effects (no dialog)."
+clauses_verbatim: true
 provenance:
   - title: "Netflix Sound Mix Specifications & Best Practices"
     publisher: Netflix
-    version: "v1.6"
-    url: https://partnerhelp.netflixstudios.com/hc/en-us/articles/360001794307
-    retrieved: 2026-09-03
-    grade: SE
-    notes: "The Partner Help Center moved behind studiopartner.netflix.net, a JavaScript app; values were recovered via search extraction and must be re-read directly."
-  - title: "Netflix Originals Delivery Specifications OC-3-3"
-    publisher: Netflix
-    version: "OC-3-3"
-    published: "July 2019"
-    retrieved: 2026-09-03
+    version: "OC-1-6"
+    published: "2024-10-29"
+    url: https://studiopartner.netflix.net/studio/branded-sound-mix-spec-and-best-practices
+    retrieved: 2026-09-04
     grade: READ
-    notes: "Historical, read from a re-hosted copy; used for stems, M&E and channel order only."
+    notes: "Read directly in a browser; the page is a JavaScript app that renders nothing for command-line fetchers. The LRA values and the under-15 % dialogue rule sit in its Best Practices section, which the page says are not technical specifications."
+  - title: "Loudness and True Peaks: How to Measure and When to Flag"
+    publisher: Netflix
+    published: "2024-04-30"
+    url: https://studiopartner.netflix.net/studio/loudness-and-true-peaks-how-to-measure-and-when-to-flag
+    retrieved: 2026-09-04
+    grade: READ
+    role: supporting
+    notes: "QC-partner thresholds: -27 ±3 dialogue-gated (BS.1770-1), -24 ±3 full program (BS.1770-4), the fallback procedure, and the channel configuration. Its true-peak flag threshold is -1 dBTP; the delivery specification stays at -2 dBTP."
   - title: "Stem residual and LFE corner defaults"
     publisher: cumple
-    retrieved: 2026-09-03
+    retrieved: 2026-09-04
     grade: TOOL_DEFAULT
     role: default
+    notes: "Netflix publishes no null-test tolerance; -60 dBFS residual after alignment is the tool's choice. Netflix states no LFE low-pass for the 5.1 master (200 Hz or lower is stated for the 2.0 fold-down); the 120 Hz corner is the tool's, and the check looks one octave above it."

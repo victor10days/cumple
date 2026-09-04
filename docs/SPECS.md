@@ -33,15 +33,17 @@ An asterisk after a grade means some value is the tool's own default where the s
 | `youtube` | YouTube (community-measured) | music | -14 ±1 integrated | -1 dBTP |  | COMMUNITY |
 | `apple-podcasts` | Apple Podcasts | podcast | -16 ±1 integrated | -1 dBTP | 44.1/48/88.2/96/176.4/192 kHz | READ |
 | `aes-td1008-speech` | AES TD1008 streaming, speech-anchored | streaming | -19 to -17 dialogue-gated | -1 dBTP |  | READ |
-| `amazon-5.1-package` | Amazon MGM Studios 5.1 (discrete mono files) | streaming | -27 ±2 dialogue-gated | -2 dBTP | 48 kHz, 24-bit, discrete, stems sum | GATED* |
+| `amazon-2.0-package` | Amazon MGM Studios 2.0 (discrete mono files) | streaming | -27 ±2 dialogue-gated | -2 dBTP | 48 kHz, 24-bit, discrete, padding, stems sum | READ* |
+| `amazon-5.1-package` | Amazon MGM Studios 5.1 (discrete mono files) | streaming | -27 ±2 dialogue-gated | -2 dBTP | 48 kHz, 24-bit, discrete, padding, stems sum, LFE band | READ* |
 | `amazon-pvd` | Prime Video Direct mezzanine audio | streaming | -24 ±2 integrated | -2 dBTP | 48 kHz, 16/24-bit | READ |
 | `apple-tv` | Apple TV+ / Apple TV app | streaming | -31 to -10 dialogue-gated; -31 to -5 integrated (speech < 15 %) | -1 dBTP | 48 kHz, 24-bit, LFE band | READ* |
 | `atsc-a85-streaming` | ATSC A/85:2026 Annex L streaming range | streaming | -27 to -23 dialogue-gated or -27 to -23 integrated (speech < 15 %) | -2 dBTP | 48 kHz, 16/24-bit | READ |
-| `disney-plus` | Disney+ near-field mix | streaming | -27 ±2 dialogue-gated or -24 ±2 integrated (speech < 15 %) | -2 dBTP | 48 kHz, 24-bit | SE* |
+| `disney-plus-2.0` | Disney+ near-field 2.0 stereo | streaming | -24 ±0.4 integrated | -2 dBTP | 48 kHz, 24-bit | READ |
+| `disney-plus-5.1` | Disney+ near-field 5.1, 7.1 and Atmos | streaming | -27 ±0.4 dialogue-gated; -24 ±0.4 integrated (speech < 15 %); ≤ -20 integrated | -2 dBTP | 48 kHz, 24-bit | READ |
 | `hulu-2018` | Hulu content partner guidebook (2018, stale) | streaming | -24 ±2 integrated | -2 dBFS sample | 48 kHz, 16/24-bit, interleaved | READ |
 | `max-wbd` | Warner Bros. Discovery / Max component audio | streaming | -24 ±2 dialogue-gated or -24 ±2 integrated | -2 dBTP | LRA ≤ 20 LU, 48 kHz, 24-bit, padding | READ |
-| `netflix-2.0` | Netflix stereo (2.0) printmaster | streaming | -27 ±2 dialogue-gated or -24 ±2 integrated (speech < 15 %) | -2 dBTP | 48 kHz, 24-bit, stems sum | SE* |
-| `netflix-5.1` | Netflix 5.1 near-field printmaster | streaming | -27 ±2 dialogue-gated or -24 ±2 integrated (speech < 15 %) | -2 dBTP | 48 kHz, 24-bit, stems sum, LFE band | SE* |
+| `netflix-2.0` | Netflix stereo (2.0) printmaster | streaming | -27 ±2 dialogue-gated or -24 ±2 integrated (speech < 15 %) | -2 dBTP | 48 kHz, 24-bit, discrete, stems sum, mono fold | READ* |
+| `netflix-5.1` | Netflix 5.1 near-field printmaster | streaming | -27 ±2 dialogue-gated or -24 ±2 integrated (speech < 15 %) | -2 dBTP | 48 kHz, 24-bit, discrete, stems sum, LFE band | READ* |
 | `paramount-pluto` | Paramount Global content delivery (Pluto TV ingest) | streaming | -24 ±2 integrated | -2 dBFS sample | 48/96 kHz, 16/24-bit | READ* |
 
 ## ACX / Audible audiobook (`acx`)
@@ -353,25 +355,58 @@ Sources:
 
 - **READ** (primary) AES TD1008: Recommendations for Loudness of Internet Audio Streaming and On-Demand Distribution, AESTD1008.1.21-9 (24 September 2021) · AES · <https://aes2.org/wp-content/uploads/2024/01/20210924_TD1008_v3.13.pdf> · retrieved 2026-09-03
 
-## Amazon MGM Studios 5.1 (discrete mono files) (`amazon-5.1-package`)
+## Amazon MGM Studios 2.0 (discrete mono files) (`amazon-2.0-package`)
 
-Amazon Studios near-field 5.1 delivery. -27 LKFS ±2 dialogue-gated (BS.1770-1 with Dialogue Intelligence, Nugen VisLM2 as the reference meter), -2 dBTP, 48 kHz / 24-bit, one mono .wav per channel; interleaved files are not accepted.
+Amazon MGM Studios near-field 2.0 printmaster. True stereo Lo/Ro only; -27 LKFS ±2 LU on the BS.1770-1 scale with Dolby Dialogue Intelligence, -2 dBTP, 48 kHz / 24-bit PCM, one flattened mono .wav per channel, no leader, slate or 2-pop; true D/M/E stems must reproduce the printmaster.
 
 Loudness rules:
 
-- -27 ±2 LKFS dialogue-gated, BS.1770-1
+- -27 ±2 LKFS dialogue-gated, BS.1770-1 · Amazon measures with Dolby Dialogue Intelligence on Nugen VisLM2. cumple approximates that gate with an open speech detector and says so on every sheet. Amazon states no speech-share switch: a mix with no dialogue is measured as full programme, and the sheet says so.
 
-In the source's words (paraphrased; verbatim quotes pending):
+In the source's words:
 
-- `loudness.dialogue_gated`: -27 ±2 LU, ITU-R BS.1770-1 with dialogue gating (Dolby Dialogue Intelligence); reference meter Nugen VisLM2. (paraphrase of the Amazon Studios asset technical specifications)
-- `peak.true`: -2 dBTP maximum. (paraphrase)
-- `format.packaging`: Each .wav file must be flattened. Discrete .wav files required per channel. Interleaved audio is not acceptable. (as quoted in search extraction of the gated portal)
-- `stems.sum`: True D/M/E: dialogue, music and effects stems played together must reproduce the original-version printmaster at matching levels. (paraphrase)
+- `loudness.dialogue_gated`: Follow the Loudness guidelines noted below for Near Field 5.1/2.0 mixes only. [...] Loudness Target: -27 LKFS ± 2 LU. Loudness Scale: 1770-1 with Dialogue Gating exclusion algorithm/Dolby Dialogue Intelligence. [QC Guidelines for Loudness:] If the 1770-1 loudness scale with dialogue gating exclusion algorithm/Dolby Dialogue Intelligence is not within -27 +/- 2 LU range, please flag as a rejection on the QC report.
+- `peak.true`: Maximum True Peak: -2dbTP
+- `format.sample_rate`: Audio Codec: PCM. Audio Sample Rate: 48kHz. Audio Bit Depth: 24-bit. Audio Bit Rate: Uncompressed.
+- `format.bit_depth`: Audio Codec: PCM. Audio Sample Rate: 48kHz. Audio Bit Depth: 24-bit. Audio Bit Rate: Uncompressed.
+- `format.packaging`: Each .wav file must be flattened. Discrete .wav files required per channel. Interleaved audio is not acceptable.
+- `format.layout`: 2.0 mixes must be provided as true stereo Left Only/Right Only (Lo/Ro) audio. [Track Layouts:] 2.0: Lo, Ro. [...] Mono and 2.0 audio assets do not require LFE Channel Filtering, as they do not include an LFE channel.
+- `padding.head`: Do not include leader, slate, 2-pop, or post roll. [...] Start of File: 00:00:00:00. First Frame of Program: 00:00:00:00.
+- `stems.sum`: All Dialogue, Music, and Effects stems must be delivered as “True D/M/E” files. When played back together a True D/M/E will result in an OV Printmaster experience with matching mix levels.
+- `stems.me_speech`: Elements Not to Be Included in the M&E: Discernible dialogue of any kind. This includes foreign language and discernible dialogue in groups or walla.
 
 Sources:
 
-- **GATED** (primary) Amazon Studios Asset Technical Specifications · Amazon MGM Studios · <https://portal.amazonstudios.com/hc/en-us/articles/15986845319323-Asset-Technical-Specifications> · retrieved 2026-09-03. Partner portal returns 403 without a login; values come from search extraction.
-- **TOOL_DEFAULT** (default) Stem residual default · cumple · retrieved 2026-09-03
+- **READ** (primary) Asset Technical Specifications: Audio (Nearfield WAV, Audio Asset Specs, Track Layouts) · Amazon MGM Studios · <https://portal.amazonstudios.com/hc/en-us/articles/15986845319323-Asset-Technical-Specifications> · retrieved 2026-09-04. Public article on the Amazon Studios partner portal, read directly in a browser (command-line fetches get a 403).
+- **READ** (supporting) Delivery & QC: Near Field Loudness Levels, QC Guidelines for Loudness, M&E · Amazon MGM Studios · <https://portal.amazonstudios.com/hc/en-us/articles/15986851525147-Delivery-QC> · retrieved 2026-09-04. Names Nugen Audio VisLM2 as the reference meter and states that Dolby Atmos audio has no loudness requirement.
+- **TOOL_DEFAULT** (default) Stem residual and leader threshold · cumple · retrieved 2026-09-04. Amazon publishes no null-test tolerance; -60 dBFS residual after alignment is the tool's choice. Leader, slate and 2-pop are forbidden without a number; cumple flags more than 2 s of leading silence.
+
+## Amazon MGM Studios 5.1 (discrete mono files) (`amazon-5.1-package`)
+
+Amazon MGM Studios near-field 5.1 printmaster. -27 LKFS ±2 LU on the BS.1770-1 scale with Dolby Dialogue Intelligence, -2 dBTP, 48 kHz / 24-bit PCM, one flattened mono .wav per channel in L R C LFE Ls Rs order, LFE low-passed at 120 Hz, no leader, slate or 2-pop; true D/M/E stems must reproduce the printmaster. Nugen VisLM2 is Amazon's reference meter and a QC vendor rejects anything outside the window.
+
+Loudness rules:
+
+- -27 ±2 LKFS dialogue-gated, BS.1770-1 · Amazon measures with Dolby Dialogue Intelligence on Nugen VisLM2. cumple approximates that gate with an open speech detector and says so on every sheet. Amazon states no speech-share switch: a mix with no dialogue is measured as full programme, and the sheet says so.
+
+In the source's words:
+
+- `loudness.dialogue_gated`: Loudness Target: -27 LKFS ± 2 LU. Loudness Scale: 1770-1 with Dialogue Gating exclusion algorithm/Dolby Dialogue Intelligence. [QC Guidelines for Loudness:] If the 1770-1 loudness scale with dialogue gating exclusion algorithm/Dolby Dialogue Intelligence is not within -27 +/- 2 LU range, please flag as a rejection on the QC report.
+- `peak.true`: Maximum True Peak: -2dbTP
+- `format.sample_rate`: Audio Codec: PCM. Audio Sample Rate: 48kHz. Audio Bit Depth: 24-bit. Audio Bit Rate: Uncompressed.
+- `format.bit_depth`: Audio Codec: PCM. Audio Sample Rate: 48kHz. Audio Bit Depth: 24-bit. Audio Bit Rate: Uncompressed.
+- `format.packaging`: Each .wav file must be flattened. Discrete .wav files required per channel. Interleaved audio is not acceptable.
+- `format.layout`: Track Layouts: 5.1: L, R, C, LFE, Ls, Rs. [...] If Surround Sound does not include an LFE channel then provide a 5.0 track layout.
+- `format.lfe_band`: LFE Channel Filter: Low-Pass filter @ 120Hz 24 dB/octave
+- `padding.head`: Do not include leader, slate, 2-pop, or post roll. [...] Start of File: 00:00:00:00. First Frame of Program: 00:00:00:00.
+- `stems.sum`: All Dialogue, Music, and Effects stems must be delivered as “True D/M/E” files. When played back together a True D/M/E will result in an OV Printmaster experience with matching mix levels.
+- `stems.me_speech`: Elements Not to Be Included in the M&E: Discernible dialogue of any kind. This includes foreign language and discernible dialogue in groups or walla.
+
+Sources:
+
+- **READ** (primary) Asset Technical Specifications: Audio (Nearfield WAV, Audio Asset Specs, Track Layouts) · Amazon MGM Studios · <https://portal.amazonstudios.com/hc/en-us/articles/15986845319323-Asset-Technical-Specifications> · retrieved 2026-09-04. Public article on the Amazon Studios partner portal, read directly in a browser (command-line fetches get a 403).
+- **READ** (supporting) Delivery & QC: Near Field Loudness Levels, QC Guidelines for Loudness, M&E · Amazon MGM Studios · <https://portal.amazonstudios.com/hc/en-us/articles/15986851525147-Delivery-QC> · retrieved 2026-09-04. Names Nugen Audio VisLM2 as the reference meter and states that Dolby Atmos audio has no loudness requirement.
+- **TOOL_DEFAULT** (default) Stem residual, leader threshold and LFE check corner · cumple · retrieved 2026-09-04. Amazon publishes no null-test tolerance; -60 dBFS residual after alignment is the tool's choice. Leader, slate and 2-pop are forbidden without a number; cumple flags more than 2 s of leading silence. The LFE check looks one octave above the 120 Hz corner, where Amazon's 24 dB/octave filter leaves -24 dB.
 
 ## Prime Video Direct mezzanine audio (`amazon-pvd`)
 
@@ -435,25 +470,47 @@ Sources:
 
 - **READ** (primary) ATSC A/85:2026-07, Annex L: Guidelines for Establishing and Maintaining Audio Loudness of Internet-delivered Content, A/85:2026-07 (8 July 2026) · ATSC · <https://www.atsc.org/wp-content/uploads/2026/07/A85-2026-07.pdf> · retrieved 2026-09-03
 
-## Disney+ near-field mix (`disney-plus`)
+## Disney+ near-field 2.0 stereo (`disney-plus-2.0`)
 
-Disney media tech specs for home audio. -27 LKFS dialogue anchor; -24 LKFS program loudness when speech is under 15 %; BS.1770-3/-4 relative gating over the full composite program; every bed and object at or below -2 dBTP; monitoring at 79 dBC.
+Disney Media Tech Specs, Audio v1.7 (2024-01-24), near field 2.0 stereo. Program target -24 LKFS ±0.4 with BS.1770-3/-4 gating and no dialogue norm for stereo; loudness range 0 to 20 LU as a guideline; -2 dBTP.
 
-Loudness rules (any one applicable rule may pass):
+Loudness rules:
 
-- -27 ±2 LKFS dialogue-gated, BS.1770-4, if speech ≥ 15 % · Disney states the -27 LKFS dialogue anchor; the ±2 tolerance is cumple's assumption pending a direct read of the page.
-- -24 ±2 LUFS integrated, BS.1770-4, if speech < 15 % · A ±0.4 tolerance was reported by search extraction; it is unusually tight and unverified, so ±2 is used until the page is read directly.
+- -24 ±0.4 LUFS integrated, BS.1770-4 · For 2.0 stereo Disney's table gives a Program Target only; Maximum Program and Dialogue Norm Target are N/A.
 
-In the source's words (paraphrased; verbatim quotes pending):
+In the source's words:
 
-- `loudness.dialogue_gated`: -27 LKFS dialogue anchor, measured on the full composite program with the relative-level (G10) gating of BS.1770-3 or -4. (paraphrase of mediatechspecs.disney.com)
-- `loudness.integrated`: -24 LKFS program loudness when the speech or dialogue percentage is below 15 %. (paraphrase of mediatechspecs.disney.com)
-- `peak.true`: Limit all beds and objects individually to -2 dBTP or lower; the Atmos printmaster may exceed -2 dBTP when measured via the 5.1 re-render. (paraphrase of mediatechspecs.disney.com)
+- `loudness.integrated`: 2.0 Stereo: Program Target (Tolerance): -24 LKFS (± 0.4). Maximum Program: N/A. Dialogue Norm Target (Tolerance): N/A. [...] Measurement of Program: Program loudness should be measured using the relative level G10 gating provided for in BS 1770-3 or -4.
+- `dynamics.lra`: Loudness Range: 0 - 20 LU (Guideline Only)
+- `peak.true`: True Peak: -2dBTP. [...] Maximum True Peak, measured as dBTP, is the maximum peak level permitted within the soundtrack. There is no expectation that audio should always peak to this level. True Peak is measured on all configurations.
 
 Sources:
 
-- **SE** (primary) Disney Media Tech Specs: Production Audio · Disney · <https://mediatechspecs.disney.com/production/audio/production-audio> · retrieved 2026-09-03. The site is a JavaScript app; values were recovered via search extraction.
-- **TOOL_DEFAULT** (default) Tolerance assumption · cumple · retrieved 2026-09-03
+- **READ** (primary) Disney Media Tech Specs: Mastering, Audio Specifications, Loudness Standards, v1.7 (2024-01-24) · The Walt Disney Company · <https://mediatechspecs.disney.com/mastering/audio/audio-specifications> · retrieved 2026-09-04. Read directly in a browser (the site is a JavaScript app). Disney measures from First Frame of Action to Last Frame of Action; cumple measures the whole delivered file, so trim leaders before checking.
+- **SE** (supporting) Disney Media Tech Specs: Production Audio (format values) · The Walt Disney Company · <https://mediatechspecs.disney.com/production/audio/production-audio> · retrieved 2026-09-03. The 48 kHz / 24-bit format values come from search extraction of this page and were not re-read on the site.
+
+## Disney+ near-field 5.1, 7.1 and Atmos (`disney-plus-5.1`)
+
+Disney Media Tech Specs, Audio v1.7 (2024-01-24), near field 5.1, 7.1 and Atmos. Dialogue norm -27 LKFS ±0.4 measured with Dolby Dialogue Intelligence on the full composite program; mixes with under 15 % speech use the program target -24 LKFS ±0.4 with BS.1770-3/-4 gating; program loudness never above -20 LKFS; loudness range 0 to 20 LU as a guideline; beds and objects at or below -2 dBTP.
+
+Loudness rules:
+
+- -27 ±0.4 LKFS dialogue-gated, BS.1770-1, if speech ≥ 15 % · Disney's Dialogue Norm is measured with Dolby's Dialogue Intelligence, 'the dialog gated setting', on the full composite program. cumple approximates that gate with an open speech detector and says so on every sheet. Disney names no BS.1770 revision for it; the dialog-gated setting of the meters it names has no relative gate, which is BS.1770-1.
+- -24 ±0.4 LUFS integrated, BS.1770-4, if speech < 15 %
+- ≤ -20 LUFS integrated, BS.1770-4 · Maximum Program: the BS.1770-3/-4 gated program loudness may never exceed -20 LKFS, whatever the speech share.
+
+In the source's words:
+
+- `loudness.dialogue_gated`: Dialogue Norm Target (Tolerance): -27 LKFS (± 0.4). [...] Measurement of Dialogue Norm: Dialogue Norm should be measured using Dolby’s Dialogue Intelligence Algorithm which may commonly be referred to as the “dialog gated” setting. Measurement should include the full composite program, not just the center channel or dialogue stem.
+- `loudness.integrated`: Near-Field Atmos and 5.1 mixes that measure a Speech/Dialogue Percentage of less than the minimum 15% will use the Program Target standard of -24 LKFS ± 0.4 and not the Dialogue Norm Target. [...] Maximum Program: -20 LKFS. [...] Measurement of Program: Program loudness should be measured using the relative level G10 gating provided for in BS 1770-3 or -4.
+- `dynamics.lra`: Loudness Range: 0 - 20 LU (Guideline Only)
+- `peak.true`: True Peak: -2dBTP. [...] Maximum True Peak, measured as dBTP, is the maximum peak level permitted within the soundtrack. There is no expectation that audio should always peak to this level. True Peak is measured on all configurations. For Atmos printmasters, the requirement is to limit all beds and objects individually to -2dBTP or lower. This may yield an overall Atmos Printmaster True Peak level that exceeds -2dBTP when measured via the 5.1 re-render.
+
+Sources:
+
+- **READ** (primary) Disney Media Tech Specs: Mastering, Audio Specifications, Loudness Standards, v1.7 (2024-01-24) · The Walt Disney Company · <https://mediatechspecs.disney.com/mastering/audio/audio-specifications> · retrieved 2026-09-04. Read directly in a browser (the site is a JavaScript app). Disney measures from First Frame of Action to Last Frame of Action; cumple measures the whole delivered file, so trim leaders before checking.
+- **READ** (supporting) Disney Media Tech Specs: Mastering, Audio Specifications, Master Deliverables, v1.7 · The Walt Disney Company · <https://mediatechspecs.disney.com/mastering/audio/audio-specifications?tab=master-deliverables> · retrieved 2026-09-04. Deliverables are Pro Tools sessions with flattened Broadcast WAV files per track.
+- **SE** (supporting) Disney Media Tech Specs: Production Audio (format values) · The Walt Disney Company · <https://mediatechspecs.disney.com/production/audio/production-audio> · retrieved 2026-09-03. The 48 kHz / 24-bit format values come from search extraction of this page and were not re-read on the site.
 
 ## Hulu content partner guidebook (2018, stale) (`hulu-2018`)
 
@@ -498,53 +555,67 @@ Sources:
 
 ## Netflix stereo (2.0) printmaster (`netflix-2.0`)
 
-Netflix near-field stereo mix. -27 LKFS ±2 dialogue-gated (BS.1770-1 with Dialogue Intelligence), -24 ±2 full program if speech is under 15 %, -2 dBTP, 48 kHz / 24-bit.
+Netflix branded near-field 2.0 original-language mix (Sound Mix Specifications & Best Practices, OC-1-6). Lo/Ro preferred, or Lt/Rt; -27 LKFS ±2 dialogue-gated per BS.1770-1 over the entire program; -2 dBTP; mono compatible; 48 kHz / 24-bit discrete LPCM .wav or .bwav. Netflix's QC partners flag loudness only after both the dialogue-gated and the full-program measurement fail their ±3 windows.
 
 Loudness rules (any one applicable rule may pass):
 
-- -27 ±2 LKFS dialogue-gated, BS.1770-1, if speech ≥ 15 % · Netflix measures with Dolby Dialogue Intelligence. cumple approximates that gate with an open speech detector and says so on every sheet.
-- -24 ±2 LUFS integrated, BS.1770-4, if speech < 15 % · Content measuring under 15 % dialogue switches to a full-program target.
-- -27 ±2 LUFS integrated, BS.1770-4 (fallback) · Netflix QC rule: if the dialogue-gated measurement fails, re-measure BS.1770-4 full program and do not flag if that passes. The fallback window is taken as the same -27 ±2; to be verified against the live page.
+- -27 ±2 LKFS dialogue-gated, BS.1770-1, if speech ≥ 15 % · Netflix measures with Dolby Dialogue Intelligence. cumple approximates that gate with an open speech detector and says so on every sheet. QC partners flag at ±3 LU to absorb meter differences; the delivery window is ±2.
+- -24 ±2 LUFS integrated, BS.1770-4, if speech < 15 % · Netflix states the under-15 % dialogue switch for near field Atmos and 5.1 mixes in its Best Practices. cumple applies the same switch to 2.0, because a mix with no dialogue has no dialogue-gated value; that extension is the tool's choice.
+- -24 ±3 LUFS integrated, BS.1770-4 (fallback) · Netflix's QC procedure: if the dialogue-gated analysis fails, measure full program per BS.1770-4; if that passes, do not flag. The QC windows are -27 ±3 and -24 ±3.
 
-In the source's words (paraphrased; verbatim quotes pending):
+In the source's words:
 
-- `loudness.dialogue_gated`: -27 LKFS ±2 LU, dialogue-gated, measured over the entire program per ITU-R BS.1770-1 with Dolby Dialogue Intelligence. (paraphrase of Sound Mix Specifications v1.6)
-- `loudness.integrated`: Near-field mixes with less than 15 % dialogue: -24 LKFS ±2 LU, BS.1770-3 or -4, full program. (paraphrase of Sound Mix Specifications v1.6)
-- `peak.true`: True peak shall not exceed -2 dBTP; a limiter at -2.3 dBFS is recommended. (paraphrase of Sound Mix Specifications v1.6)
-- `stems.sum`: The DX, MX and FX stems must equal the printmaster when combined. No numeric tolerance is published; -60 dBFS residual is cumple's default. (paraphrase of Originals Delivery Specifications OC-3-3)
-- `stems.me_speech`: The M&E must be fully filled and contain no dialogue. (paraphrase of M&E Creation and Delivery Guidelines)
+- `loudness.dialogue_gated`: Provide a Lo/Ro or LT/RT mix with -27 LKFS (+/- 2 LU) dialogue loudness using ITU-R BS.1770-1 measured over entire program.
+- `loudness.integrated`: When near field Atmos or 5.1 mixes measure at less than 15% dialogue, program target measurement will be used instead (-24 LKFS +/- 2 LU - ITU BS 1770-3 or -4).
+- `loudness.fallback`: If the dialogue-gated analysis FAILS, proceed with measuring the mix against the ITU-R BS. 1770-4 full program algorithm. [...] If the full program analysis PASSES, do NOT flag in the QC Request. If the full program analysis FAILS, flag the Loudness LKFS Out of Spec as an ISSUE and include both the measurements for 1770-1 and 1770-4 or 1770-2/1770-3.
+- `peak.true`: Do not exceed +18dBu (-2 dBFS) maximum level (true-peak) over reference of -20 dBFS, achieved by peak limiting and not lowering the mix level. [Best Practices:] Set a True Peak limiter at -2.3 dBFS for all audio deliverables.
+- `dynamics.lra`: The following loudness range (LRA) values will play best on the service: [...] 2.0 program LRA between 4 and 18 LU. Dialog LRA of 10 LU or less. [Best Practices, which the page says are not technical specifications]
+- `mono.compat`: Lo/Ro or LT/RT mix to be mono compatible.
+- `format.sample_rate`: 48kHz/24-bit for Original Language Mix or M&E Mix - applies to Stems & Mix Masters.
+- `format.bit_depth`: 48kHz/24-bit for Original Language Mix or M&E Mix - applies to Stems & Mix Masters.
+- `format.channels`: Mono audio is acceptable if the program’s original source is mono and no stereo and/or 5.1 mix exists. Mono audio must be duplicated on channels 1 & 2 and delivered as 2-channel.
+- `format.layout`: Provide a Lo/Ro or LT/RT mix [...] Lo/Ro mix is preferred.
+- `format.container`: Lossy or lossless audio compression is never allowed. Audio must be standard or RF64 discrete LPCM .wav or .bwav files.
+- `format.packaging`: Discrete audio is required, except in the following circumstances: When muxed audio is inherent to the source, such as audio in an IMF, Quicktime or Atmos® BWAV ADM container. Interleaved Secondary Audio .wav deliveries.
+- `stems.sum`: For Original Version: Provide 5.1 Dialog, Music and Effects stems that equal the 5.1 mix when combined.
+- `stems.me_speech`: Provide a fully filled 5.1 surround submix containing only Music & Effects (no dialog).
 
 Sources:
 
-- **SE** (primary) Netflix Sound Mix Specifications & Best Practices, v1.6 · Netflix · <https://partnerhelp.netflixstudios.com/hc/en-us/articles/360001794307> · retrieved 2026-09-03. The Partner Help Center moved behind studiopartner.netflix.net, a JavaScript app; values were recovered via search extraction of the live page and must be re-read directly.
-- **READ** (primary) Netflix Originals Delivery Specifications OC-3-3, OC-3-3 (July 2019) · Netflix · retrieved 2026-09-03. Historical: read from a re-hosted copy. Used only for stems, M&E and channel-order clauses.
-- **SE** (primary) Loudness and True Peaks: How to Measure and When to Flag · Netflix · <https://partnerhelp.netflixstudios.com/hc/en-us/articles/360050414014> · retrieved 2026-09-03
-- **TOOL_DEFAULT** (default) Stem residual default · cumple · retrieved 2026-09-03. Netflix publishes no null-test tolerance; -60 dBFS residual after alignment is the tool's choice.
+- **READ** (primary) Netflix Sound Mix Specifications & Best Practices, OC-1-6 (2024-10-29) · Netflix · <https://studiopartner.netflix.net/studio/branded-sound-mix-spec-and-best-practices> · retrieved 2026-09-04. Read directly in a browser; the page is a JavaScript app that renders nothing for command-line fetchers. The LRA values and the under-15 % dialogue rule sit in its Best Practices section, which the page says are not technical specifications.
+- **READ** (supporting) Loudness and True Peaks: How to Measure and When to Flag (2024-04-30) · Netflix · <https://studiopartner.netflix.net/studio/loudness-and-true-peaks-how-to-measure-and-when-to-flag> · retrieved 2026-09-04. QC-partner thresholds: -27 ±3 dialogue-gated (BS.1770-1), -24 ±3 full program (BS.1770-4), the fallback procedure, and the channel configuration (2.0 - Lt/Rt). Its true-peak flag threshold is -1 dBTP; the delivery specification stays at -2 dBTP.
+- **TOOL_DEFAULT** (default) Speech switch on 2.0 and stem residual default · cumple · retrieved 2026-09-04. Netflix states the under-15 % dialogue switch for Atmos and 5.1 mixes; applying it to 2.0 is the tool's extension. Netflix publishes no null-test tolerance; -60 dBFS residual after alignment is the tool's choice.
 
 ## Netflix 5.1 near-field printmaster (`netflix-5.1`)
 
-Netflix near-field 5.1 mix. -27 LKFS ±2 dialogue-gated (BS.1770-1 with Dialogue Intelligence), -24 ±2 full program if speech is under 15 %, -2 dBTP, 48 kHz / 24-bit, L R C LFE Ls Rs; stems must sum to the printmaster.
+Netflix branded near-field 5.1 original-language mix (Sound Mix Specifications & Best Practices, OC-1-6). -27 LKFS ±2 dialogue-gated per BS.1770-1 over the entire program; -24 ±2 full program when the mix measures under 15 % dialogue; -2 dBTP; 48 kHz / 24-bit discrete LPCM .wav or .bwav in L R C LFE Ls Rs order; DX, MX and FX stems must equal the 5.1 mix when combined. Netflix's QC partners flag loudness only after both the dialogue-gated and the full-program measurement fail their ±3 windows.
 
 Loudness rules (any one applicable rule may pass):
 
-- -27 ±2 LKFS dialogue-gated, BS.1770-1, if speech ≥ 15 %
-- -24 ±2 LUFS integrated, BS.1770-4, if speech < 15 %
-- -27 ±2 LUFS integrated, BS.1770-4 (fallback) · Netflix QC rule: if the dialogue-gated measurement fails, re-measure BS.1770-4 full program and do not flag if that passes. The fallback window is taken as -27 ±2; to be verified against the live page.
+- -27 ±2 LKFS dialogue-gated, BS.1770-1, if speech ≥ 15 % · Netflix measures with Dolby Dialogue Intelligence. cumple approximates that gate with an open speech detector and says so on every sheet. QC partners flag at ±3 LU to absorb meter differences; the delivery window is ±2.
+- -24 ±2 LUFS integrated, BS.1770-4, if speech < 15 % · From the Best Practices section: near field Atmos or 5.1 mixes that measure under 15 % dialogue use the program target instead.
+- -24 ±3 LUFS integrated, BS.1770-4 (fallback) · Netflix's QC procedure: if the dialogue-gated analysis fails, measure full program per BS.1770-4; if that passes, do not flag. The QC windows are -27 ±3 and -24 ±3.
 
-In the source's words (paraphrased; verbatim quotes pending):
+In the source's words:
 
-- `loudness.dialogue_gated`: -27 LKFS ±2 LU, dialogue-gated, measured over the entire program per ITU-R BS.1770-1 with Dolby Dialogue Intelligence. (paraphrase of Sound Mix Specifications v1.6)
-- `loudness.integrated`: Near-field mixes with less than 15 % dialogue: -24 LKFS ±2 LU, BS.1770-3 or -4, full program. (paraphrase of Sound Mix Specifications v1.6)
-- `peak.true`: True peak shall not exceed -2 dBTP; a limiter at -2.3 dBFS is recommended. (paraphrase of Sound Mix Specifications v1.6)
-- `format.layout`: 5.1 channel order L, R, C, LFE, Ls, Rs. (paraphrase of Originals Delivery Specifications OC-3-3)
-- `stems.sum`: The DX, MX and FX stems must equal the 5.1 mix when combined. No numeric tolerance is published; -60 dBFS residual is cumple's default. (paraphrase of Originals Delivery Specifications OC-3-3)
-- `stems.me_speech`: The M&E must be fully filled and contain no dialogue. (paraphrase of M&E Creation and Delivery Guidelines)
+- `loudness.dialogue_gated`: Meet a -27 LKFS (+/- 2 LU) dialogue loudness using ITU-R BS.1770-1 measured over entire program.
+- `loudness.integrated`: When near field Atmos or 5.1 mixes measure at less than 15% dialogue, program target measurement will be used instead (-24 LKFS +/- 2 LU - ITU BS 1770-3 or -4).
+- `loudness.fallback`: If the dialogue-gated analysis FAILS, proceed with measuring the mix against the ITU-R BS. 1770-4 full program algorithm. [...] If the full program analysis PASSES, do NOT flag in the QC Request. If the full program analysis FAILS, flag the Loudness LKFS Out of Spec as an ISSUE and include both the measurements for 1770-1 and 1770-4 or 1770-2/1770-3.
+- `peak.true`: Do not exceed +18dBu (-2 dBFS) maximum level (true-peak) over reference of -20 dBFS, achieved by peak limiting and not lowering the mix level. [Best Practices:] Set a True Peak limiter at -2.3 dBFS for all audio deliverables.
+- `dynamics.lra`: The following loudness range (LRA) values will play best on the service: 5.1 program LRA between 4 and 18 LU [...] Dialog LRA of 10 LU or less. [Best Practices, which the page says are not technical specifications]
+- `format.sample_rate`: 48kHz/24-bit for Original Language Mix or M&E Mix - applies to Stems & Mix Masters.
+- `format.bit_depth`: 48kHz/24-bit for Original Language Mix or M&E Mix - applies to Stems & Mix Masters.
+- `format.container`: Lossy or lossless audio compression is never allowed. Audio must be standard or RF64 discrete LPCM .wav or .bwav files.
+- `format.packaging`: Discrete audio is required, except in the following circumstances: When muxed audio is inherent to the source, such as audio in an IMF, Quicktime or Atmos® BWAV ADM container. Interleaved Secondary Audio .wav deliveries.
+- `format.layout`: Channel Configuration: 5.1 - L,R,C,LFE,LS,RS
+- `stems.sum`: For Original Version: Provide 5.1 Dialog, Music and Effects stems that equal the 5.1 mix when combined.
+- `stems.me_speech`: Provide a fully filled 5.1 surround submix containing only Music & Effects (no dialog).
 
 Sources:
 
-- **SE** (primary) Netflix Sound Mix Specifications & Best Practices, v1.6 · Netflix · <https://partnerhelp.netflixstudios.com/hc/en-us/articles/360001794307> · retrieved 2026-09-03. The Partner Help Center moved behind studiopartner.netflix.net, a JavaScript app; values were recovered via search extraction and must be re-read directly.
-- **READ** (primary) Netflix Originals Delivery Specifications OC-3-3, OC-3-3 (July 2019) · Netflix · retrieved 2026-09-03. Historical, read from a re-hosted copy; used for stems, M&E and channel order only.
-- **TOOL_DEFAULT** (default) Stem residual and LFE corner defaults · cumple · retrieved 2026-09-03
+- **READ** (primary) Netflix Sound Mix Specifications & Best Practices, OC-1-6 (2024-10-29) · Netflix · <https://studiopartner.netflix.net/studio/branded-sound-mix-spec-and-best-practices> · retrieved 2026-09-04. Read directly in a browser; the page is a JavaScript app that renders nothing for command-line fetchers. The LRA values and the under-15 % dialogue rule sit in its Best Practices section, which the page says are not technical specifications.
+- **READ** (supporting) Loudness and True Peaks: How to Measure and When to Flag (2024-04-30) · Netflix · <https://studiopartner.netflix.net/studio/loudness-and-true-peaks-how-to-measure-and-when-to-flag> · retrieved 2026-09-04. QC-partner thresholds: -27 ±3 dialogue-gated (BS.1770-1), -24 ±3 full program (BS.1770-4), the fallback procedure, and the channel configuration. Its true-peak flag threshold is -1 dBTP; the delivery specification stays at -2 dBTP.
+- **TOOL_DEFAULT** (default) Stem residual and LFE corner defaults · cumple · retrieved 2026-09-04. Netflix publishes no null-test tolerance; -60 dBFS residual after alignment is the tool's choice. Netflix states no LFE low-pass for the 5.1 master (200 Hz or lower is stated for the 2.0 fold-down); the 120 Hz corner is the tool's, and the check looks one octave above it.
 
 ## Paramount Global content delivery (Pluto TV ingest) (`paramount-pluto`)
 

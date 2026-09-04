@@ -1,0 +1,62 @@
+id: disney-plus-5.1
+name: Disney+ near-field 5.1, 7.1 and Atmos
+family: streaming
+summary: Disney Media Tech Specs, Audio v1.7 (2024-01-24), near field 5.1, 7.1 and Atmos. Dialogue norm -27 LKFS ±0.4 measured with Dolby Dialogue Intelligence on the full composite program; mixes with under 15 % speech use the program target -24 LKFS ±0.4 with BS.1770-3/-4 gating; program loudness never above -20 LKFS; loudness range 0 to 20 LU as a guideline; beds and objects at or below -2 dBTP.
+loudness:
+  policy: all
+  rules:
+    - method: dialogue_gated
+      standard: bs1770-1
+      target: -27.0
+      tolerance: 0.4
+      when: speech_at_or_above_15pct
+      notes: "Disney's Dialogue Norm is measured with Dolby's Dialogue Intelligence, 'the dialog gated setting', on the full composite program. cumple approximates that gate with an open speech detector and says so on every sheet. Disney names no BS.1770 revision for it; the dialog-gated setting of the meters it names has no relative gate, which is BS.1770-1."
+    - method: integrated
+      standard: bs1770-4
+      target: -24.0
+      tolerance: 0.4
+      when: speech_below_15pct
+    - method: integrated
+      standard: bs1770-4
+      max: -20.0
+      notes: "Maximum Program: the BS.1770-3/-4 gated program loudness may never exceed -20 LKFS, whatever the speech share."
+peaks:
+  true_peak_max: -2.0
+dynamics:
+  lra_guide_max: 20.0
+format:
+  sample_rates: [48000]
+  bit_depths: [24]
+  layouts: ["5.1", "7.1", atmos-adm]
+  channel_order: smpte
+  containers: [wav, bwf, rf64, adm-bwf]
+clauses:
+  loudness.dialogue_gated: "Dialogue Norm Target (Tolerance): -27 LKFS (± 0.4). [...] Measurement of Dialogue Norm: Dialogue Norm should be measured using Dolby’s Dialogue Intelligence Algorithm which may commonly be referred to as the “dialog gated” setting. Measurement should include the full composite program, not just the center channel or dialogue stem."
+  loudness.integrated: "Near-Field Atmos and 5.1 mixes that measure a Speech/Dialogue Percentage of less than the minimum 15% will use the Program Target standard of -24 LKFS ± 0.4 and not the Dialogue Norm Target. [...] Maximum Program: -20 LKFS. [...] Measurement of Program: Program loudness should be measured using the relative level G10 gating provided for in BS 1770-3 or -4."
+  dynamics.lra: "Loudness Range: 0 - 20 LU (Guideline Only)"
+  peak.true: "True Peak: -2dBTP. [...] Maximum True Peak, measured as dBTP, is the maximum peak level permitted within the soundtrack. There is no expectation that audio should always peak to this level. True Peak is measured on all configurations. For Atmos printmasters, the requirement is to limit all beds and objects individually to -2dBTP or lower. This may yield an overall Atmos Printmaster True Peak level that exceeds -2dBTP when measured via the 5.1 re-render."
+clauses_verbatim: true
+provenance:
+  - title: "Disney Media Tech Specs: Mastering, Audio Specifications, Loudness Standards"
+    publisher: The Walt Disney Company
+    version: "v1.7"
+    published: "2024-01-24"
+    url: https://mediatechspecs.disney.com/mastering/audio/audio-specifications
+    retrieved: 2026-09-04
+    grade: READ
+    notes: "Read directly in a browser (the site is a JavaScript app). Disney measures from First Frame of Action to Last Frame of Action; cumple measures the whole delivered file, so trim leaders before checking."
+  - title: "Disney Media Tech Specs: Mastering, Audio Specifications, Master Deliverables"
+    publisher: The Walt Disney Company
+    version: "v1.7"
+    url: https://mediatechspecs.disney.com/mastering/audio/audio-specifications?tab=master-deliverables
+    retrieved: 2026-09-04
+    grade: READ
+    role: supporting
+    notes: "Deliverables are Pro Tools sessions with flattened Broadcast WAV files per track."
+  - title: "Disney Media Tech Specs: Production Audio (format values)"
+    publisher: The Walt Disney Company
+    url: https://mediatechspecs.disney.com/production/audio/production-audio
+    retrieved: 2026-09-03
+    grade: SE
+    role: supporting
+    notes: "The 48 kHz / 24-bit format values come from search extraction of this page and were not re-read on the site."

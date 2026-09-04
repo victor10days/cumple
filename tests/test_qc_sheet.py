@@ -14,7 +14,7 @@ def test_sheet_renders_findings_timeline_and_sources(tmp_path):
     assert "FAIL" in html and "Netflix stereo" in html
     assert "<svg" in html and "integrated" in html
     assert "true peak" in html and "lower by" in html
-    assert "partnerhelp.netflixstudios.com" in html
+    assert "studiopartner.netflix.net" in html
     out, pdf = write_sheet(report, tmp_path / "hot.qc.html")
     assert out.exists() and out.stat().st_size > 5000 and pdf is None
 

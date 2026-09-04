@@ -1,7 +1,7 @@
-id: amazon-5.1-package
-name: Amazon MGM Studios 5.1 (discrete mono files)
+id: amazon-2.0-package
+name: Amazon MGM Studios 2.0 (discrete mono files)
 family: streaming
-summary: Amazon MGM Studios near-field 5.1 printmaster. -27 LKFS ±2 LU on the BS.1770-1 scale with Dolby Dialogue Intelligence, -2 dBTP, 48 kHz / 24-bit PCM, one flattened mono .wav per channel in L R C LFE Ls Rs order, LFE low-passed at 120 Hz, no leader, slate or 2-pop; true D/M/E stems must reproduce the printmaster. Nugen VisLM2 is Amazon's reference meter and a QC vendor rejects anything outside the window.
+summary: Amazon MGM Studios near-field 2.0 printmaster. True stereo Lo/Ro only; -27 LKFS ±2 LU on the BS.1770-1 scale with Dolby Dialogue Intelligence, -2 dBTP, 48 kHz / 24-bit PCM, one flattened mono .wav per channel, no leader, slate or 2-pop; true D/M/E stems must reproduce the printmaster.
 loudness:
   policy: all
   rules:
@@ -15,12 +15,10 @@ peaks:
 format:
   sample_rates: [48000]
   bit_depths: [24]
-  channel_counts: [6]
-  layouts: ["5.1"]
-  channel_order: smpte
+  channel_counts: [2]
+  layouts: [stereo]
   packaging: discrete
   containers: [wav, bwf]
-  lfe_lowpass_hz: 120.0
 padding:
   head_max_s: 2.0
 stems:
@@ -28,13 +26,12 @@ stems:
   residual_max_dbfs: -60.0
   me_must_have_no_speech: true
 clauses:
-  loudness.dialogue_gated: "Loudness Target: -27 LKFS ± 2 LU. Loudness Scale: 1770-1 with Dialogue Gating exclusion algorithm/Dolby Dialogue Intelligence. [QC Guidelines for Loudness:] If the 1770-1 loudness scale with dialogue gating exclusion algorithm/Dolby Dialogue Intelligence is not within -27 +/- 2 LU range, please flag as a rejection on the QC report."
+  loudness.dialogue_gated: "Follow the Loudness guidelines noted below for Near Field 5.1/2.0 mixes only. [...] Loudness Target: -27 LKFS ± 2 LU. Loudness Scale: 1770-1 with Dialogue Gating exclusion algorithm/Dolby Dialogue Intelligence. [QC Guidelines for Loudness:] If the 1770-1 loudness scale with dialogue gating exclusion algorithm/Dolby Dialogue Intelligence is not within -27 +/- 2 LU range, please flag as a rejection on the QC report."
   peak.true: "Maximum True Peak: -2dbTP"
   format.sample_rate: "Audio Codec: PCM. Audio Sample Rate: 48kHz. Audio Bit Depth: 24-bit. Audio Bit Rate: Uncompressed."
   format.bit_depth: "Audio Codec: PCM. Audio Sample Rate: 48kHz. Audio Bit Depth: 24-bit. Audio Bit Rate: Uncompressed."
   format.packaging: "Each .wav file must be flattened. Discrete .wav files required per channel. Interleaved audio is not acceptable."
-  format.layout: "Track Layouts: 5.1: L, R, C, LFE, Ls, Rs. [...] If Surround Sound does not include an LFE channel then provide a 5.0 track layout."
-  format.lfe_band: "LFE Channel Filter: Low-Pass filter @ 120Hz 24 dB/octave"
+  format.layout: "2.0 mixes must be provided as true stereo Left Only/Right Only (Lo/Ro) audio. [Track Layouts:] 2.0: Lo, Ro. [...] Mono and 2.0 audio assets do not require LFE Channel Filtering, as they do not include an LFE channel."
   padding.head: "Do not include leader, slate, 2-pop, or post roll. [...] Start of File: 00:00:00:00. First Frame of Program: 00:00:00:00."
   stems.sum: "All Dialogue, Music, and Effects stems must be delivered as “True D/M/E” files. When played back together a True D/M/E will result in an OV Printmaster experience with matching mix levels."
   stems.me_speech: "Elements Not to Be Included in the M&E: Discernible dialogue of any kind. This includes foreign language and discernible dialogue in groups or walla."
@@ -53,9 +50,9 @@ provenance:
     grade: READ
     role: supporting
     notes: "Names Nugen Audio VisLM2 as the reference meter and states that Dolby Atmos audio has no loudness requirement."
-  - title: "Stem residual, leader threshold and LFE check corner"
+  - title: "Stem residual and leader threshold"
     publisher: cumple
     retrieved: 2026-09-04
     grade: TOOL_DEFAULT
     role: default
-    notes: "Amazon publishes no null-test tolerance; -60 dBFS residual after alignment is the tool's choice. Leader, slate and 2-pop are forbidden without a number; cumple flags more than 2 s of leading silence. The LFE check looks one octave above the 120 Hz corner, where Amazon's 24 dB/octave filter leaves -24 dB."
+    notes: "Amazon publishes no null-test tolerance; -60 dBFS residual after alignment is the tool's choice. Leader, slate and 2-pop are forbidden without a number; cumple flags more than 2 s of leading silence."

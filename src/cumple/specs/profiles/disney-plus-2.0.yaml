@@ -1,0 +1,43 @@
+id: disney-plus-2.0
+name: Disney+ near-field 2.0 stereo
+family: streaming
+summary: Disney Media Tech Specs, Audio v1.7 (2024-01-24), near field 2.0 stereo. Program target -24 LKFS ±0.4 with BS.1770-3/-4 gating and no dialogue norm for stereo; loudness range 0 to 20 LU as a guideline; -2 dBTP.
+loudness:
+  policy: all
+  rules:
+    - method: integrated
+      standard: bs1770-4
+      target: -24.0
+      tolerance: 0.4
+      notes: "For 2.0 stereo Disney's table gives a Program Target only; Maximum Program and Dialogue Norm Target are N/A."
+peaks:
+  true_peak_max: -2.0
+dynamics:
+  lra_guide_max: 20.0
+format:
+  sample_rates: [48000]
+  bit_depths: [24]
+  channel_counts: [2]
+  layouts: [stereo, lt-rt]
+  containers: [wav, bwf, rf64]
+clauses:
+  loudness.integrated: "2.0 Stereo: Program Target (Tolerance): -24 LKFS (± 0.4). Maximum Program: N/A. Dialogue Norm Target (Tolerance): N/A. [...] Measurement of Program: Program loudness should be measured using the relative level G10 gating provided for in BS 1770-3 or -4."
+  dynamics.lra: "Loudness Range: 0 - 20 LU (Guideline Only)"
+  peak.true: "True Peak: -2dBTP. [...] Maximum True Peak, measured as dBTP, is the maximum peak level permitted within the soundtrack. There is no expectation that audio should always peak to this level. True Peak is measured on all configurations."
+clauses_verbatim: true
+provenance:
+  - title: "Disney Media Tech Specs: Mastering, Audio Specifications, Loudness Standards"
+    publisher: The Walt Disney Company
+    version: "v1.7"
+    published: "2024-01-24"
+    url: https://mediatechspecs.disney.com/mastering/audio/audio-specifications
+    retrieved: 2026-09-04
+    grade: READ
+    notes: "Read directly in a browser (the site is a JavaScript app). Disney measures from First Frame of Action to Last Frame of Action; cumple measures the whole delivered file, so trim leaders before checking."
+  - title: "Disney Media Tech Specs: Production Audio (format values)"
+    publisher: The Walt Disney Company
+    url: https://mediatechspecs.disney.com/production/audio/production-audio
+    retrieved: 2026-09-03
+    grade: SE
+    role: supporting
+    notes: "The 48 kHz / 24-bit format values come from search extraction of this page and were not re-read on the site."

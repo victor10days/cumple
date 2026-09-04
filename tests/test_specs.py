@@ -27,7 +27,7 @@ def test_every_profile_is_traceable():
 
 def test_grade_follows_primary_sources_only():
     netflix = get("netflix-2.0")
-    assert netflix.grade == Grade.SE and netflix.has_defaults
+    assert netflix.grade == Grade.READ and netflix.has_defaults
     assert get("max-wbd").grade == Grade.READ and not get("max-wbd").has_defaults
     apple = get("apple-tv")
     assert apple.grade == Grade.READ and apple.has_defaults
