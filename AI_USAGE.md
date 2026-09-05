@@ -7,9 +7,11 @@ came from a model.
 
 ## The short version
 
-cumple was built between 3 and 9 September 2026 in half days by Victor E.
-Diaz working with Claude (Claude Code, Anthropic's command-line agent, model
-Claude Fable 5.1). Claude wrote most of the code, the tests, the research
+cumple's code was written on 3 and 4 September 2026, in two half days, by
+Victor E. Diaz working with Claude (Claude Code, Anthropic's command-line
+agent, model Claude Fable 5.1); the review pass, the browser re-read of the
+studio specifications, the packaging and the real-dialogue check followed on
+4 and 5 September. Claude wrote most of the code, the tests, the research
 notes and the documents. Victor chose the problem, set the constraints that
 shaped the product, approved each plan, made the calls listed below, and
 supplied the thing a model does not have: years of delivering audio to these
@@ -60,7 +62,7 @@ says the same.
   detector, Leq(m) from the TASA response table, the rules engine with
   either/or rules and the speech switch, the audio diff, the watch folder,
   the gain-only fix, the QC sheet, the macOS droplet, 30 profiles.
-- **Tests and benchmarks.** 126 tests, including synthetic signals with
+- **Tests and benchmarks.** 127 tests, including synthetic signals with
   analytic answers and the official EBU cases; cross-checks against ffmpeg's
   `ebur128` filter, pyloudnorm and an independently designed interpolator;
   the scripts that regenerate `docs/CONFORMANCE.md`, `docs/BENCHMARK.md` and
@@ -111,6 +113,27 @@ fixed in one commit; fourteen carry a test that pins the corrected behaviour,
 and the other three were one-line changes (a rounding rule, an inert option,
 a clamped option). Victor did not find these; the process did, and the
 process is part of how the tool was built.
+
+## Real dialogue, a test the tool did not pass
+
+On 5 September Victor asked for real dialogue recordings to test the speech
+gate on, since every test until then had used synthetic speech-like noise.
+Claude found freely licensed material: Sintel and Tears of Steel, two Blender
+Foundation films that publish both the finished mix and a music-and-effects
+version without dialogue; a LibriVox narration; a NASA podcast; two
+public-domain feature films; and the EBU SQAM speech tracks. Where a mix
+carries more speech-band energy than its dialogue-free twin, dialogue is
+present, which makes a reference no detector can argue with. Against that
+reference the heuristic read the dialogue-gated loudness 1.6 LU low on one
+film and 6.7 LU low on the other, finding dialogue in quiet scenes and missing
+it under music; on clean speech and on music without dialogue it was right.
+Silero VAD, the standard open model, was more precise on both films but
+missed the same quiet dialogue on Sintel. The method, the numbers and the
+recordings' licences are in docs/DIALOGUE.md, and the README's limits
+paragraph carries the measured figures instead of a guess. The decision on
+the meter itself (keep the heuristic and label it, or add Silero as an
+optional backend) is Victor's; the numbers went into the documentation the
+same day.
 
 ## The day-to-day pattern
 
