@@ -410,16 +410,16 @@ silent the profile says so.
 
 [libebur128](https://github.com/jiixyj/libebur128) is the reference open-source
 meter and passes the same EBU cases; [pyloudnorm](https://github.com/csteinmetz1/pyloudnorm)
-is the Python library most people reach for (integrated loudness only, whole
-file in memory); ffmpeg's `ebur128` filter is an independent implementation.
+measures integrated loudness in Python (whole file in memory); ffmpeg's
+`ebur128` filter is an independent implementation.
 [loudcheck](https://github.com/chaoz23/loudcheck) gives pass/fail verdicts for
 EBU R 128 and ATSC A/85. [bbc/audio-offset-finder](https://github.com/bbc/audio-offset-finder)
 finds offsets between recordings; [DeltaWave](https://deltaw.org/) is the
 desktop null-test tool; [leqm-nrt](https://github.com/lucaTrv/leqm-nrt) measures
 Leq(m). Nugen VisLM and Dolby's DPLM are the commercial meters the studios name.
-What none of them do together is the point of cumple: named destinations with
-graded sources, verdicts with the clause attached, a report that travels with
-the delivery, and a diff that speaks.
+cumple combines what none of them do together: named destinations with graded
+sources, verdicts with the clause attached, a report that travels with the
+delivery, and a diff in words.
 
 ## How AI was used
 

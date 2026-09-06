@@ -14,8 +14,8 @@ studio specifications, the packaging and the real-dialogue check followed on
 4 and 5 September. Claude wrote most of the code, the tests, the research
 notes and the documents. Victor chose the problem, set the constraints that
 shaped the product, approved each plan, made the calls listed below, and
-supplied the thing a model does not have: years of delivering audio to these
-specifications by hand. Every commit carries a `Co-Authored-By` trailer that
+brought years of delivering audio to these specifications by hand, which no
+model has. Every commit carries a `Co-Authored-By` trailer that
 says the same.
 
 ## What Victor decided
@@ -120,8 +120,7 @@ which also made the watch folder skip such files silently; and 7-, 10- and
 away mid-poll to a duration that could print as 0:60.0. All seventeen were
 fixed in one commit; fourteen carry a test that pins the corrected behaviour,
 and the other three were one-line changes (a rounding rule, an inert option,
-a clamped option). Victor did not find these; the process did, and the
-process is part of how the tool was built.
+a clamped option). Victor did not find these; the review pass did.
 
 ## Real dialogue, a test the tool did not pass
 
@@ -162,7 +161,3 @@ same day.
   right. That is why `fix` never limits, why the dialogue gate is labelled an
   approximation with its block count printed next to it, and why the manual
   QA on real bounces in `docs/QA.md` is done by a person.
-
-## What was not AI
-
-The domain, the surfaces, the constraints, the sign-off, and the ear.
