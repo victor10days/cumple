@@ -1,7 +1,7 @@
 id: hulu-2018
 name: Hulu content partner guidebook (2018, stale)
 family: streaming
-summary: Hulu's public Content Partner Guidebook v5.0 from 2018. -24 LKFS per BS.1770-4, sample peak -2 dBFS, 48 kHz LPCM 16 or 24-bit interleaved, 8-channel L R C LFE Ls Rs Lt Rt. Kept for reference; Hulu now delivers through Disney.
+summary: Hulu's public Content Partner Guidebook v5.0 from 2018. -24 LKFS per BS.1770-4, sample peak -2 dBFS, 48 kHz LPCM 16 or 24-bit interleaved, 8-channel L R C LFE Ls Rs Lt Rt. Kept for reference; Hulu originals now follow Disney's General Entertainment path, the disney-a85 profile.
 loudness:
   policy: all
   rules:

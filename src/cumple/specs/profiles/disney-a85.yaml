@@ -1,0 +1,56 @@
+id: disney-a85
+name: Disney A85, General Entertainment (Hulu originals, ABC, FX)
+family: streaming
+summary: Disney Media Tech Specs, Production Audio GE v1.7 (2024-01-24), the "Disney A85" standard for General Entertainment content delivered to Disney's mastering vendor (Hulu originals, ABC, FX, Freeform, National Geographic). -24 LKFS ±2 for 5.1 and 2.0 mixes, dialog as the anchor where the meter allows and the whole act otherwise, all channels but the LFE, G10 gating per BS.1770-3/-4; true peak never above -2 dBFS, with some linear workflows at -6 dBFS; 1 kHz tone at -20 dBFS. Dubs of an A85 mix are made to Disney R128 (see disney-r128).
+loudness:
+  policy: any
+  rules:
+    - method: dialogue_gated
+      standard: bs1770-4
+      target: -24.0
+      tolerance: 2.0
+      notes: "Disney: 'Where metering allows, dialog should be used as the anchor element for this measurement.' cumple approximates the dialog anchor with an open speech detector and says so on every sheet."
+    - method: integrated
+      standard: bs1770-4
+      target: -24.0
+      tolerance: 2.0
+      notes: "Disney: 'If dialog is not available (such as in a music segment), or the meter does not allow dialog intelligibility, a long-term integrated measurement should be used over the duration of the entire act.' Either reading inside the window passes."
+peaks:
+  true_peak_max: -2.0
+format:
+  sample_rates: [48000]
+  bit_depths: [24]
+  layouts: [stereo, lt-rt, "5.1", "5.1+lt-rt"]
+  channel_order: smpte
+clauses:
+  loudness.integrated: "Disney A85 Requirements. 5.1 Mix: Program Target (Tolerance) -24LKFS (± 2). 2.0 Mix: Program Target (Tolerance) -24LKFS (± 2). [...] The target reference level for audio loudness is -24 LKFS, plus or minus 2 dB. Special care should be taken to bring the audio loudness to -24LKFS at the beginning and end of acts to ensure smooth program to interstitial (commercials, promos, etc.) transitions. [...] All audio channels of the 5.1, with the exception of the LFE, shall be measured. For stereo material, both audio channels shall be measured. Measurement of Program: Program loudness should be measured using the relative level G10 gating provided for in BS 1770-3 or -4."
+  loudness.dialogue_gated: "Where metering allows, dialog should be used as the anchor element for this measurement. If dialog is not available (such as in a music segment), or the meter does not allow dialog intelligibility, a long-term integrated measurement should be used over the duration of the entire act."
+  peak.true: "True Peak: -2 dBFS* (see note below). [...] * Maximum true peak levels are not to exceed -2 dBFS, per BS.1770, some broadcast workflows require a True Peak of -6 dBFS, check with your Disney rep for your specific workflow."
+  format.layout: "Disney Digital Supply Chain Trailer Specifications: Embedded Audio Channel Layout - 8 Channel, 5.1 + 2.0. 5.1: L, R, C, Lfe, Ls, Rs. Stereo: Left, Right. One channel per audio track (Discrete, Mono)."
+  reference.tone: "1kHz Reference Tone: -20 dBFS"
+clauses_verbatim: true
+provenance:
+  - title: "Disney Media Tech Specs: Production, Audio, Production Audio GE, Loudness Standards, ATSC A85"
+    publisher: The Walt Disney Company
+    version: "v1.7"
+    published: "2024-01-24"
+    url: https://mediatechspecs.disney.com/production/audio/production-audio-ge
+    retrieved: 2026-09-06
+    grade: READ
+    notes: "Read directly in a browser (the site is a JavaScript app). Disney measures from First Frame of Action to Last Frame of Action; cumple measures the whole delivered file, so trim leaders and tone before checking. The -6 dBFS variant for some linear workflows is not a rule here; ask the Disney representative and lower true_peak_max in a user profile if it applies."
+  - title: "Disney Digital Supply Chain Trailer Specifications"
+    publisher: The Walt Disney Company
+    version: "2024 v1.2"
+    published: "2025-03-03"
+    url: https://disneymasteringspecs.s3.us-east-1.amazonaws.com/Disney_Digital_Supply_Chain_Trailer_Specs_2024_v1_2_2025_03_03_e2ee0710cc.pdf
+    retrieved: 2026-09-06
+    grade: READ
+    role: supporting
+    notes: "The eight-channel 5.1 + 2.0 track layout is quoted from the trailer specification; the GE page itself lists 5.1 and 2.0 mixes without a track table."
+  - title: "Disney Media Tech Specs: Production Audio (format values)"
+    publisher: The Walt Disney Company
+    url: https://mediatechspecs.disney.com/production/audio/production-audio
+    retrieved: 2026-09-03
+    grade: SE
+    role: supporting
+    notes: "The 48 kHz / 24-bit format values come from search extraction of this page and were not re-read on the site."

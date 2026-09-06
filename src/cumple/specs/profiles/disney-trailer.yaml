@@ -1,0 +1,53 @@
+id: disney-trailer
+name: Disney in-home trailer (Digital Supply Chain)
+family: streaming
+summary: Disney Digital Supply Chain Trailer Specifications 2024 v1.2 (2025-03-03), in-home trailers. The composite mix follows ATSC A85 (-24 LKFS ±2, -2 dBTP), or the Disney Near Field standard when the trailer is exclusive to direct-to-consumer platforms; eight embedded channels as 5.1 plus 2.0, one channel per track; exactly one second of black and silence at head and tail; a partially filled M&E with no discernible words. Theatrical trailers are out of scope. For a direct-to-consumer trailer mixed to Near Field, check with disney-plus-5.1 or disney-plus-2.0 instead.
+loudness:
+  policy: all
+  rules:
+    - method: integrated
+      standard: bs1770-4
+      target: -24.0
+      tolerance: 2.0
+      notes: "The trailer specification delegates the numbers to ATSC A85 as stated on Disney's Production Audio GE page: -24 LKFS ±2, measured over the whole trailer with BS.1770-3/-4 gating, all channels but the LFE."
+peaks:
+  true_peak_max: -2.0
+format:
+  sample_rates: [48000]
+  layouts: ["5.1+lt-rt", "5.1", stereo, lt-rt]
+  channel_order: smpte
+padding:
+  head_min_s: 1.0
+  head_max_s: 1.0
+  tail_min_s: 1.0
+  tail_max_s: 1.0
+stems:
+  me_must_have_no_speech: true
+clauses:
+  loudness.integrated: "Audio Loudness Specification. Trailers for In-home distribution should generally follow the ATSC A85 guidelines. Trailers exclusive to “Direct to Consumer” streaming platforms will also be accepted in the Near Field loudness specification. Theatrical trailers for release in digital cinema may have different requirements, not covered in this document. [...] Audio Loudness analysis (for composite mix only): ATSC A85 or Near Field per guidelines."
+  peak.true: "Disney A85 Requirements (Production Audio GE): True Peak: -2 dBFS* (see note below). * Maximum true peak levels are not to exceed -2 dBFS, per BS.1770, some broadcast workflows require a True Peak of -6 dBFS, check with your Disney rep for your specific workflow."
+  format.layout: "Embedded Audio Channel Layout - 8 Channel, 5.1 + 2.0. 5.1: L, R, C, Lfe, Ls, Rs. Stereo: Left, Right. One channel per audio track (Discrete, Mono)."
+  padding.head: "Program Layout & Conformance is DPO. One (1) second of black video, silent audio at head and tail. Video timecode start at 00:00:00:00. Audio program matches start, end and length of video."
+  padding.tail: "One (1) second of black video, silent audio at head and tail."
+  padding.head_min: "One (1) second of black video, silent audio at head and tail."
+  padding.tail_min: "One (1) second of black video, silent audio at head and tail."
+  duration.av: "Audio program matches start, end and length of video."
+  stems.me_speech: "Music & Effects Tracks (for dubbing facility QC): Follows Partially-Filled M&E Guideline. No discernable spoken words. Not missing any music or effects from the main program. Volume match to main program."
+clauses_verbatim: true
+provenance:
+  - title: "Disney Digital Supply Chain Trailer Specifications"
+    publisher: The Walt Disney Company
+    version: "2024 v1.2"
+    published: "2025-03-03"
+    url: https://disneymasteringspecs.s3.us-east-1.amazonaws.com/Disney_Digital_Supply_Chain_Trailer_Specs_2024_v1_2_2025_03_03_e2ee0710cc.pdf
+    retrieved: 2026-09-06
+    grade: READ
+    notes: "PDF linked from mediatechspecs.disney.com, Production, Trailers. The document quotes no sample rate or bit depth of its own; 48 kHz is the Disney audio standard the trailer spec sits inside. The M&E rule is recorded; cumple checks an M&E for speech with cumple check on the M&E file itself, since the trailer package does not carry it in the same file."
+  - title: "Disney Media Tech Specs: Production, Audio, Production Audio GE, Loudness Standards, ATSC A85"
+    publisher: The Walt Disney Company
+    version: "v1.7"
+    published: "2024-01-24"
+    url: https://mediatechspecs.disney.com/production/audio/production-audio-ge
+    retrieved: 2026-09-06
+    grade: READ
+    notes: "The loudness and peak numbers the trailer specification delegates to."

@@ -12,6 +12,33 @@ def _esc(s: str) -> str:
     return s.replace("|", "\\|").replace("\n", " ")
 
 
+# Studios and platforms whose delivery specification was looked for and is not public. Recorded
+# here so the absence is a statement with a date, not a gap.
+NOT_PUBLIC: list[tuple[str, str]] = [
+    (
+        "Sony Pictures Entertainment and Sony Pictures Television",
+        "no public delivery specification; SonyLIV's Indian spec is not a studio document",
+    ),
+    ("Lionsgate", "delivery schedules are per contract; third-party summaries only"),
+    ("Starz", "the affiliate page says only that advertisements follow ATSC A/85"),
+    (
+        "Universal Pictures theatrical",
+        "not public; NBCU's public document is the Linear Commercial Guidelines (nbcu-commercial)",
+    ),
+    (
+        "Paramount+ originals",
+        "not public; Paramount's public documents are the Pluto TV guide (paramount-pluto) and the CBS commercial manual (cbs-commercial)",
+    ),
+    (
+        "HBO and Max brand A/V specs",
+        "behind a login; the public WBD document is the Content Partner Hub audio spec (max-wbd)",
+    ),
+    ("Warner Bros. Pictures theatrical", "not public"),
+    ("NBCUniversal Peacock programme delivery", "no public primary; see peacock, graded COMMUNITY"),
+]
+NOT_PUBLIC_DATE = "2026-09-06"
+
+
 def render_specs_markdown(profiles: list[Profile]) -> str:
     out = [f"# Destinations known to cumple {__version__}\n"]
     out.append(
@@ -84,4 +111,11 @@ def render_specs_markdown(profiles: list[Profile]) -> str:
                 line += f". {_esc(s.notes)}"
             out.append(line)
         out.append("")
+    out.append(f"## Looked for, not public ({NOT_PUBLIC_DATE})\n")
+    out.append(
+        "These companies were searched for on the date above and publish no delivery specification a tool can quote. A profile built from a rumour would carry a grade it does not deserve, so there is none.\n"
+    )
+    for who, why in NOT_PUBLIC:
+        out.append(f"- **{who}**: {why}")
+    out.append("")
     return "\n".join(out)

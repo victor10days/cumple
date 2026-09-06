@@ -56,13 +56,22 @@ says the same.
   (graded SE and GATED); a browser session the next day read all three
   directly, and their clauses are now quoted verbatim (grade READ), which
   changed real numbers: Disney's tolerance is ±0.4 LU, not the assumed ±2, and
-  Netflix requires one mono file per channel.
+  Netflix requires one mono file per channel. A third pass on 6 September,
+  when Victor asked for the specifications of every major studio, added
+  Disney's General Entertainment, R128 and trailer standards (read in the
+  browser), the CBS, ABC and Fox broadcast documents (read from their PDFs),
+  Apple's immersive audio profile and a community-graded Peacock entry, and
+  recorded that Sony Pictures, Lionsgate, Starz, Universal Pictures,
+  Paramount+ and the HBO and Max brand specs publish nothing a tool can quote.
+  Those documents also exposed a measurement gap: an eight-channel file with a
+  stereo fold-down on tracks 7 and 8 read as 7.1, so the layout meter learned
+  to tell the two apart.
 - **Code.** The BS.1770-5 meter with K-weighting re-derived at any sample
   rate, the true-peak filter from the ITU table, loudness range, the speech
   detector, Leq(m) from the TASA response table, the rules engine with
   either/or rules and the speech switch, the audio diff, the watch folder,
-  the gain-only fix, the QC sheet, the macOS droplet, 30 profiles.
-- **Tests and benchmarks.** 127 tests, including synthetic signals with
+  the gain-only fix, the QC sheet, the macOS droplet, 39 profiles.
+- **Tests and benchmarks.** 143 tests, including synthetic signals with
   analytic answers and the official EBU cases; cross-checks against ffmpeg's
   `ebur128` filter, pyloudnorm and an independently designed interpolator;
   the scripts that regenerate `docs/CONFORMANCE.md`, `docs/BENCHMARK.md` and

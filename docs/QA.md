@@ -1,7 +1,7 @@
 # Manual QA log
 
 Hands-on checks on real bounces, done by a person, recorded here with a date.
-The automated suite (`uv run pytest`, 127 tests) and the conformance report
+The automated suite (`uv run pytest`, 143 tests) and the conformance report
 cover the measurement; this log covers the surfaces an engineer actually
 touches. An item without a dated entry has **not** been done.
 

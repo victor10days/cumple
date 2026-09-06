@@ -89,7 +89,10 @@ finding, `--sheet` for the QC sheet, `--json` for machines.
   the response table in the TASA standard.
 - **Format**: sample rate, bit depth, channel count, layout, SMPTE or Film
   channel order, discrete or interleaved packaging, container, and whether the
-  LFE carries full-range content (an Apple clause).
+  LFE carries full-range content (an Apple clause). An eight-channel file is
+  told apart as 7.1 or as a 5.1 with its own stereo fold-down on tracks 7 and
+  8 (the Fox, CBS, Hulu and Disney trailer layout) by how well the pair
+  correlates with a fold of the bed; the bed alone is measured.
 - **Signal**: head and tail padding, clipping runs, DC offset, silent channels,
   mono fold-down (UK DPP), ACX RMS level and noise floor, duration caps.
 - **Metadata**: embedded BWF loudness values against the measurement
@@ -256,18 +259,26 @@ calls the same `cumple check --sheet --pdf`; no terminal involved.
 | `amazon-pvd` | Prime Video Direct mezzanine audio | -24 ±2 integrated | -2 dBTP | READ |
 | `apple-tv` | Apple TV+ / Apple TV app | -31 to -10 dialogue-gated; -31 to -5 integrated (speech < 15 %) | -1 dBTP | READ* |
 | `atsc-a85-streaming` | ATSC A/85:2026 Annex L streaming range | -27 to -23 dialogue-gated or -27 to -23 integrated (speech < 15 %) | -2 dBTP | READ |
+| `disney-a85` | Disney A85, General Entertainment (Hulu originals, ABC, FX) | -24 ±2 dialogue-gated or -24 ±2 integrated | -2 dBTP | READ |
 | `disney-plus-2.0` | Disney+ near-field 2.0 stereo | -24 ±0.4 integrated | -2 dBTP | READ |
 | `disney-plus-5.1` | Disney+ near-field 5.1, 7.1 and Atmos | -27 ±0.4 dialogue-gated; -24 ±0.4 integrated (speech < 15 %); ≤ -20 integrated | -2 dBTP | READ |
+| `disney-r128` | Disney R128 (dubs and territories on R 128) | -23 ±0.5 integrated | -3 dBTP | READ |
+| `disney-trailer` | Disney in-home trailer (Digital Supply Chain) | -24 ±2 integrated | -2 dBTP | READ |
 | `hulu-2018` | Hulu content partner guidebook (2018, stale) | -24 ±2 integrated | -2 dBFS sample | READ |
 | `max-wbd` | Warner Bros. Discovery / Max component audio | -24 ±2 dialogue-gated or -24 ±2 integrated | -2 dBTP | READ |
 | `netflix-2.0` | Netflix stereo (2.0) printmaster | -27 ±2 dialogue-gated or -24 ±2 integrated (speech < 15 %) | -2 dBTP | READ* |
 | `netflix-5.1` | Netflix 5.1 near-field printmaster | -27 ±2 dialogue-gated or -24 ±2 integrated (speech < 15 %) | -2 dBTP | READ* |
 | `paramount-pluto` | Paramount Global content delivery (Pluto TV ingest) | -24 ±2 integrated | -2 dBFS sample | READ* |
+| `peacock` | Peacock (NBCUniversal, community-reported) | -27 ±2 dialogue-gated | none stated | COMMUNITY* |
+| `abc-commercial` | ABC commercial file delivery HD (Disney Advertising) | -26 to -23 integrated | -6 dBTP | READ |
 | `arib-tr-b32` | ARIB TR-B32 (Japan television) | -24 ±1 integrated | -1 dBTP | SECONDARY |
 | `atsc-a85-2026` | ATSC A/85:2026 television (US) | -24 ±2 dialogue-gated or -24 ±2 integrated (speech < 15 %) | -2 dBTP | READ |
+| `cbs-commercial` | CBS Television Network commercial (Paramount) | -24 ±2 integrated | -2 dBTP | READ |
 | `dpp-as11` | UK DPP / AS-11 programme delivery | -23 ±0.5 integrated | -1 dBTP | READ |
 | `ebu-r128` | EBU R 128 broadcast programme | -23 ±1 integrated | -1 dBTP | READ* |
 | `ebu-r128-s1-short` | EBU R 128 s1 short-form (adverts, promos) | -23 ±0.2 integrated | -1 dBTP | READ |
+| `fox-commercial-2024` | Fox Networks commercial material (2024) | -24 ±2 integrated | -6 dBFS sample | READ* |
+| `fox-program-2018` | Fox Networks broadcast program material (2018) | -24 ±2 integrated | -2 dBTP | READ* |
 | `nbcu-commercial` | NBCUniversal linear commercial | -24 ±2 integrated | -2 dBTP | READ |
 | `op-59` | Free TV Australia OP-59 | -24 ±1 integrated | -2 dBTP | READ |
 | `dcp-5.1` | DCP 5.1 audio (ISDCF channel order) | no loudness target | none stated | READ |
@@ -275,6 +286,7 @@ calls the same `cumple check --sheet --pdf`; no terminal involved.
 | `tasa-trailer` | Cinema trailer (TASA) | ≤ 85 dB Leq(m) | none stated | READ |
 | `aes-td1008-music` | AES TD1008 streaming, music | -16 ±0.2 integrated | -1 dBTP | READ |
 | `apple-digital-masters` | Apple Digital Masters | no loudness target | -1 dBTP | READ* |
+| `apple-immersive` | Apple Music immersive audio (Dolby Atmos, 5.1, 7.1) | ≤ -18 integrated | -1 dBTP | READ* |
 | `soundcloud` | SoundCloud master | -14 ±1 integrated | -1 dBTP | READ* |
 | `spotify` | Spotify music master | -14 ±1 integrated | -1 dBTP | READ* |
 | `youtube` | YouTube (community-measured) | -14 ±1 integrated | -1 dBTP | COMMUNITY |
@@ -292,6 +304,11 @@ where some value (a tolerance, a null-test residual) is the tool's own default
 because the source is silent, and the profile says so. Delivery specs change
 without notice; every source carries its retrieval date. The full matrix with
 sources and clauses is [docs/SPECS.md](docs/SPECS.md).
+
+Sony Pictures, Lionsgate, Starz, Universal Pictures, Paramount+ originals, HBO and
+Max, Warner Bros. Pictures theatrical and NBCUniversal's Peacock publish no delivery
+specification a tool can quote; [docs/SPECS.md](docs/SPECS.md) records the search
+with its date rather than inventing a number.
 
 ## Add your own destination
 
@@ -346,7 +363,7 @@ silent the profile says so.
   dialogue, with Silero VAD as a second opinion.
   [docs/DIALOGUE.md](docs/DIALOGUE.md), regenerated by
   `scripts/dialogue_benchmark.py` after `scripts/fetch_real_dialogue.sh`.
-- **Tests**: 127, 92 % line coverage on `src/`, run with `uv run pytest`. The
+- **Tests**: 143, 92 % line coverage on `src/`, run with `uv run pytest`. The
   EBU cases run when the test set is in `~/.cache/cumple/` (it is free but not
   redistributed; see CONTRIBUTING).
 - **Manual QA** on real bounces is logged in [docs/QA.md](docs/QA.md).

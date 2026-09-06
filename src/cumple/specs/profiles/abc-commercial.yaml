@@ -1,0 +1,36 @@
+id: abc-commercial
+name: ABC commercial file delivery HD (Disney Advertising)
+family: broadcast
+summary: ABC Commercial File Delivery HD Technical Specifications (cover dated April 28, 2022; the media-kit file is dated 2024-08-13). -24 LKFS ±2 for the length of the spot with a BS.1770-3 meter on all channels but the LFE, and ABC rejects or normalizes anything louder than -23 LKFS, so the window is -26 to -23; true peak never above -6 dBFS; stereo or 5.1, 48 kHz, 24-bit (an earlier section prefers 20-bit); fixed dialnorm; a mono mix on track 7 when no audio description or SAP is delivered.
+loudness:
+  policy: all
+  rules:
+    - method: integrated
+      standard: bs1770-3
+      min: -26.0
+      max: -23.0
+      notes: "The nominal window is -24 ±2; clause 5.2.5.2 caps it at -23 LKFS, so the upper bound here is -23, not -22."
+peaks:
+  true_peak_max: -6.0
+format:
+  sample_rates: [48000]
+  bit_depths: [24]
+  layouts: [stereo, lt-rt, "5.1"]
+  channel_order: smpte
+clauses:
+  loudness.integrated: "In accordance with the ATSC recommended practice and the CALM act, ABC will adopt the current recommendation for audio loudness of -24LKFS (+/- 2 dB) measured for the length of the delivered spot. A loudness meter based on ITU-R BS.1770-3 incorporating all channels except the LFE channel should be used for this measurement. [...] 5.2.5.2 The target reference level for audio loudness is -24 LKFS, plus or minus 2 dB. ABC reserves the right to reject and/or normalize the content, on an entire spot basis, on anything louder than -23 dB LKFS. [...] 5.2.5.4 All audio channels of the 5.1, with the exception of the LFE, shall be measured. 5.2.5.5 For stereo material, both audio channels shall be measured."
+  peak.true: "The absolute maximum peak audio levels of brief and only occasional instances are not to exceed -6 dBFS. ABC reserves the right to either reject or correct audio levels that are not consistent with this specification. [...] 5.2.5.3 Maximum true peak levels are not to exceed -6 dBFS, per BS.1770."
+  format.sample_rate: "5.2.3 Digital audio shall be linear PCM with a sample rate of 48 kHz."
+  format.bit_depth: "5.2.3 Bit depth shall be 24 bits. [2.5.7.2 elsewhere in the document: at a sampling rate of 48KHz and at a preferred bit depth of 20 bits.]"
+  format.layout: "Either 2-channel stereo or 5.1 channel audio will be accepted. [...] A mono-mix is now required on audio track 7 if Audio Description or SAP is not delivered. [...] 5.2.1 Spots may be delivered with either 5.1 channel audio or 2-channel stereo audio."
+  metadata.dialnorm: "ABC will be operating under a fixed dialnorm paradigm."
+clauses_verbatim: true
+provenance:
+  - title: "ABC Commercial File Delivery HD Technical Specifications"
+    publisher: Disney Advertising (ABC)
+    version: "April 28, 2022"
+    published: "cover dated April 28, 2022; file dated 2024-08-13"
+    url: https://files.disneyadvertising.com/MediaKit/ABC-Brands/HD-Tech-Specs.pdf
+    retrieved: 2026-09-06
+    grade: READ
+    notes: "Read from the PDF's text layer. Clause 5.2.3 says 24 bits and clause 2.5.7.2 says a preferred bit depth of 20 bits; the profile takes 24 as the requirement and records both. The -6 dBFS peak is stated once as an absolute maximum peak and once as a true peak per BS.1770; cumple applies it as a true peak. The document is an advertising delivery spec, not ABC's programme delivery spec, which is not public."

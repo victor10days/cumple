@@ -1,0 +1,36 @@
+id: cbs-commercial
+name: CBS Television Network commercial (Paramount)
+family: broadcast
+summary: CBS Television Network Commercial Integration Manual 2025 to 2026 (Paramount), Appendix A. -24 LKFS ±2 per ATSC A/85 Annex J, measured with the BS.1770-2 technique over the length of the commercial with all channels; the Lt/Rt downmix of a 5.1 mix is measured too and its true peak never exceeds -2 dBFS; stereo, Lt/Rt or 5.1 on channels 1 to 6 in SMPTE order, 16, 20 or 24-bit at 48 kHz, SMPTE RP-155 reference level -20 dBFS. Paramount+ programme deliverables are not public; this is the public Paramount commercial document.
+loudness:
+  policy: all
+  rules:
+    - method: integrated
+      standard: bs1770-2
+      target: -24.0
+      tolerance: 2.0
+peaks:
+  true_peak_max: -2.0
+format:
+  sample_rates: [48000]
+  bit_depths: [16, 20, 24]
+  layouts: [stereo, lt-rt, "5.1"]
+  channel_order: smpte
+clauses:
+  loudness.integrated: "For all of the above audio formats, the ITU-R BS-1770-2 loudness measurement technique shall be used to confirm the measured loudness does not exceed the ATSC Recommended Practice A/85 Annex-J target of -24 LKFS ± 2 dB with all channels measured for the length of the commercial. [...] If the commercial content fails to meet this loudness target, then CBS will process the material per the ITU-R BS.1770-2 loudness measurement technique to meet the ASTC Recommended Practice A/85 Annex-J target of -24 LKFS ± 2 dB. This delivery requirement ensures the commercial will be in compliance with the CALM Act and Federal Communications Commission’s Regulations."
+  peak.true: "In addition to measuring the 5.1 surround sound mix for loudness, the Lt/Rt downmix should also be measured with the downmix parameters listed in the Appendix. The maximum true peak stereo audio level shall never exceed -2 dBFS and a loudness of -24 LKFS ± 2 dB when down mixed from 5.1."
+  loudness.downmix: "In addition to measuring the 5.1 surround sound mix for loudness, the Lt/Rt downmix should also be measured with the downmix parameters listed in the Appendix."
+  format.sample_rate: "Digital audio must conform to the AES3 Specification. The digital audio sampling depth may be at 16, 20 or 24 bit with a sampling frequency of 48 kHz and conform to SMPTE RP-155 for -20 dBFS reference level."
+  format.bit_depth: "The digital audio sampling depth may be at 16, 20 or 24 bit with a sampling frequency of 48 kHz and conform to SMPTE RP-155 for -20 dBFS reference level."
+  format.layout: "The program supplier has the option of providing one of three formats: Discrete Two Channel Stereo, Matrixed Surround Sound (Lt, Rt), or 5.1 Surround Sound. [...] The six discrete channels that comprise the 5.1 Surround Sound signal shall be recorded on the following channels: CH-1 Left (music & effects), CH-2 Right (music & effects), CH-3 Center (dialogue), CH-4 Low Frequency Effects (LFE), CH-5 LS - Left Surround (music & effects), CH-6 RS - Right Surround (music & effects). At the option of the program supplier, Channel 7 may contain Secondary Audio Program- SAP (Spanish or Video Description)."
+  reference.tone: "A 400 or 1KHz Hz audio tone at a reference level of -20dBFS shall be recorded on all channels containing program audio, with the exception of channel 4 (LFE) for 5.1 Surround Sound content shall contain 100 Hz audio tone at a reference level of -20 dBFS."
+clauses_verbatim: true
+provenance:
+  - title: "CBS Television Network Commercial Integration Manual, 2025 to 2026 Network Integration Manual, Appendix A: Broadcast Materials Technical Specification"
+    publisher: Paramount (CBS Television Network)
+    version: "2025 to 2026"
+    published: "PDF dated 2025-09-23"
+    url: https://www.paramount.com/files/documents/CBS%20Commercial%20Integration%20Manual.pdf
+    retrieved: 2026-09-06
+    grade: READ
+    notes: "Read from the PDF's text layer. The manual covers commercial material; the Lt/Rt downmix measurement is recorded as a clause and is not run by cumple on the 5.1 file. A 20-bit file reads as 24-bit in most tools; cumple reports the container's stated depth."

@@ -144,3 +144,18 @@ def test_a_profile_whose_rules_do_not_apply_warns_instead_of_passing_silently(tm
     codes = {x.code: x for x in r.findings}
     assert codes["loudness.skipped"].status is Status.WARN
     assert not any(x.code in ("loudness.integrated", "loudness.dialogue_gated") for x in r.findings)
+
+
+def test_disney_trailer_wants_exactly_one_second_of_silence(tmp_path):
+    from cumple.specs import get
+
+    trailer = get("disney-trailer")
+    codes = ("padding.head", "padding.tail", "padding.head_min", "padding.tail_min")
+    exact = tone_file(tmp_path / "exact.wav", dbfs=-24.0, head_silence=1.0, tail_silence=1.0)
+    r = evaluate(trailer, measure(exact))
+    got = {f.code: f.status for f in r.findings}
+    assert all(got[c] is Status.PASS for c in codes), got
+    none = tone_file(tmp_path / "none.wav", dbfs=-24.0, head_silence=0.0, tail_silence=1.0)
+    assert {f.code: f.status for f in evaluate(trailer, measure(none)).findings}["padding.head_min"] is Status.FAIL
+    long = tone_file(tmp_path / "long.wav", dbfs=-24.0, head_silence=2.0, tail_silence=1.0)
+    assert {f.code: f.status for f in evaluate(trailer, measure(long)).findings}["padding.head"] is Status.FAIL

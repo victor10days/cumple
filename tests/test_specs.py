@@ -9,9 +9,57 @@ from cumple.specs.schema import Grade, LoudnessRule
 
 def test_all_builtin_profiles_load():
     profiles = load_all()
-    assert len(profiles) >= 20
+    assert len(profiles) >= 39
     for path in builtin_dir().glob("*.yaml"):
         assert path.stem in profiles
+
+
+STUDIO_PROFILES = {
+    # id: (grade, has_defaults)
+    "disney-a85": (Grade.READ, False),
+    "disney-r128": (Grade.READ, False),
+    "disney-trailer": (Grade.READ, False),
+    "cbs-commercial": (Grade.READ, False),
+    "abc-commercial": (Grade.READ, False),
+    "fox-program-2018": (Grade.READ, True),
+    "fox-commercial-2024": (Grade.READ, True),
+    "peacock": (Grade.COMMUNITY, True),
+    "apple-immersive": (Grade.READ, True),
+}
+
+
+@pytest.mark.parametrize("pid", sorted(STUDIO_PROFILES))
+def test_studio_profiles_quote_their_sources(pid):
+    p = get(pid)
+    grade, has_defaults = STUDIO_PROFILES[pid]
+    assert p.clauses_verbatim
+    assert p.grade == grade and p.has_defaults == has_defaults
+    assert all(s.retrieved.isoformat() >= "2026-09-03" for s in p.provenance)
+    assert p.loudness is not None and p.loudness.rules
+
+
+def test_studio_profile_numbers_follow_the_documents():
+    cbs = get("cbs-commercial").loudness.rules[0]
+    assert cbs.standard == "bs1770-2" and (cbs.min, cbs.max) == (-26.0, -22.0)
+    abc = get("abc-commercial")
+    assert abc.loudness.rules[0].max == -23.0 and abc.peaks.true_peak_max == -6.0
+    r128 = get("disney-r128")
+    assert (r128.peaks.true_peak_max, r128.dynamics.short_term_max, r128.dynamics.lra_max) == (-3.0, -15.0, 20.0)
+    trailer = get("disney-trailer")
+    assert (trailer.padding.head_min_s, trailer.padding.head_max_s) == (1.0, 1.0)
+    assert "5.1+lt-rt" in trailer.format.layouts and trailer.stems.me_must_have_no_speech
+    assert get("fox-commercial-2024").peaks.sample_peak_max == -6.0
+    assert get("apple-immersive").loudness.rules[0].max == -18.0
+
+
+def test_prose_has_no_dashes():
+    """Names, summaries, notes and titles are cumple's prose; clauses are quotes and may keep the source's characters."""
+    dashes = ("–", "—")
+    for p in load_all().values():
+        texts = [p.name, p.summary] + [r.notes or "" for r in (p.loudness.rules if p.loudness else [])]
+        texts += [s.title for s in p.provenance] + [s.notes or "" for s in p.provenance]
+        for t in texts:
+            assert not any(d in t for d in dashes), (p.id, t)
 
 
 def test_every_profile_is_traceable():

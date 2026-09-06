@@ -1,0 +1,28 @@
+id: peacock
+name: Peacock (NBCUniversal, community-reported)
+family: streaming
+summary: NBCUniversal publishes no Peacock audio delivery specification; the number here, -27 LKFS dialogue-gated, comes from a delivery vendor's guide that cites no source. Tolerance and the BS.1770 revision are the tool's defaults. Treat the grade as part of the result and confirm the target with NBCUniversal before delivering.
+loudness:
+  policy: all
+  rules:
+    - method: dialogue_gated
+      standard: bs1770-1
+      target: -27.0
+      tolerance: 2.0
+      notes: "The ±2 window and the BS.1770-1 gate follow the Netflix and Amazon convention for a dialogue-gated -27 target; neither is sourced from NBCUniversal."
+clauses:
+  loudness.dialogue_gated: "Loudness Target: -27 LKFS dialogue-gated"
+clauses_verbatim: true
+provenance:
+  - title: "Peacock Delivery Guide: Avails and Specs"
+    publisher: Molten Cloud
+    url: https://moltencloud.com/blog-article/delivering-content-to-peacock-avails-specs-workflow
+    retrieved: 2026-09-06
+    grade: COMMUNITY
+    notes: "A delivery vendor's summary that states the target without citing an NBCUniversal document. NBCUniversal's own creative-guidelines page for Peacock returned 404 on 2026-09-06, and no public Peacock programme specification was found; NBCU's public Linear Commercial Guidelines are the nbcu-commercial profile."
+  - title: "Tolerance and gate revision"
+    publisher: cumple
+    retrieved: 2026-09-06
+    grade: TOOL_DEFAULT
+    role: default
+    notes: "±2 LU and the BS.1770-1 gate are the tool's defaults for a dialogue-gated -27 target."

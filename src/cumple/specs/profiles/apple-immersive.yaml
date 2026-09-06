@@ -1,0 +1,52 @@
+id: apple-immersive
+name: Apple Music immersive audio (Dolby Atmos, 5.1, 7.1)
+family: music
+summary: Apple Video and Audio Asset Guide, Immersive Audio Source Profile, the delivery rules for Dolby Atmos, 5.1 and 7.1 music on Apple Music. Integrated loudness never above -18 LKFS and true peak never above -1 dBTP, both per BS.1770-4; Dolby Atmos as a BWF ADM file at 24-bit 48 kHz, 5.1 and 7.1 as LPCM; the immersive source within 50 ms of the stereo master's length; no full-frequency content in the LFE; no Atmos generated from a stereo mix. cumple measures the bed or re-render it can read (a 5.1, 7.1 or 7.1.4 WAV), not rendered objects.
+loudness:
+  policy: all
+  rules:
+    - method: integrated
+      standard: bs1770-4
+      max: -18.0
+      notes: "A ceiling, not a target: Apple states no lower bound for immersive music."
+peaks:
+  true_peak_max: -1.0
+format:
+  sample_rates: [48000]
+  bit_depths: [24]
+  layouts: ["5.1", "7.1", atmos-adm]
+  containers: [adm-bwf, wav, bwf, rf64]
+  lfe_lowpass_hz: 120.0
+clauses:
+  loudness.integrated: "Integrated loudness should not exceed -18 LKFS measured as per ITU-R BS. 1770-4"
+  peak.true: "True-peak level should not exceed -1 dB TP measured as per ITU-R BS. 1770-4"
+  format.container: "Broadcast Wave Format Audio Definition Model (BWF ADM) file [for Dolby Atmos]; LPCM in .mov containers with channel assignments [for 5.1 and 7.1]"
+  format.sample_rate: "24-bit linear pulse code modulation (LPCM) audio at 48kHz"
+  format.bit_depth: "24-bit linear pulse code modulation (LPCM) audio at 48kHz [Dolby Atmos]; 48 kHz with 16-bit or 24-bit resolution [5.1 and 7.1]"
+  format.lfe_band: "Full-frequency content should not be present in the Low-Frequency Effects (LFE) channel"
+  sync.stereo_offset: "Duration difference between stereo and immersive sources: less than or equal to 50 milliseconds"
+  gapless.boundary: "Track boundaries must align no more than half a frame (1,000 samples @ 48 kHz) earlier or later with stereo versions [gapless albums]"
+  source.no_upmix: "Dolby Atmos audio files generated from stereo mixes are not allowed."
+clauses_verbatim: true
+provenance:
+  - title: "Apple Video and Audio Asset Guide, Immersive Audio Source Profile"
+    publisher: Apple
+    version: "5.3.18"
+    published: "October 13, 2025"
+    url: https://help.apple.com/itc/videoaudioassetguide/en.lproj/itcf946aaace.html
+    retrieved: 2026-09-06
+    grade: READ
+    notes: "cumple reads a BWF ADM as a plain multichannel WAV and does not render beds and objects; measure the 5.1, 7.1 or 7.1.4 bed or the re-render the mastering tool exports, and read the sheet as that render's loudness. The 5.1 and 7.1 .mov container is not in cumple's container list, so check the PCM before wrapping."
+  - title: "Apple Music Provider Support: Delivering Dolby Atmos audio"
+    publisher: Apple
+    url: https://itunespartner.apple.com/music/support/5216-delivering-dolby-atmos-audio
+    retrieved: 2026-09-06
+    grade: READ
+    role: supporting
+    notes: "States that Dolby Atmos can only be delivered through Transporter and that Atmos generated from stereo mixes, upmixed or de-mixed, is not allowed."
+  - title: "LFE corner frequency"
+    publisher: cumple
+    retrieved: 2026-09-06
+    grade: TOOL_DEFAULT
+    role: default
+    notes: "Apple forbids full-frequency content in the LFE without naming a corner; cumple checks one octave above 120 Hz, the usual LFE low-pass."
