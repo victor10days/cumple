@@ -1,0 +1,113 @@
+/* Hallmark · genre: modern-minimal · theme: custom (cumple) · design-system: design.md · designed-as-app
+ * paper: oklch(98% 0.005 225) · accent: oklch(47% 0.10 225) · display: Barlow Condensed · body: IBM Plex Sans · mono: IBM Plex Mono
+ * axes: light / display-condensed-bold / cool · studied: no · context: inferred (tone utilitarian) · 2026-09-06
+ * The one source of colour, type, spacing and rule tokens for every cumple surface: the QC sheet, the diff sheet
+ * and the infographic read this block. Every colour in those documents is a var() from here; none is inline. */
+:root {
+  color-scheme: light;
+
+  /* Paper and ink, all tinted toward the teal anchor (hue 225), none pure. */
+  --color-paper: oklch(98% 0.005 225);
+  --color-paper-2: oklch(95.5% 0.007 225);
+  --color-rule: oklch(86% 0.010 225);
+  --color-rule-2: oklch(90% 0.008 225);
+  --color-muted: oklch(46% 0.015 230);
+  --color-ink-2: oklch(34% 0.012 230);
+  --color-ink: oklch(20% 0.012 230);
+
+  /* The accent is a highlighter: rules of emphasis, the target band, links, focus. */
+  --color-accent: oklch(47% 0.10 225);
+  --color-accent-ink: oklch(98% 0.005 225);
+  --color-accent-soft: oklch(93% 0.03 225);
+  --color-focus: oklch(50% 0.16 225);
+
+  /* Verdict colours. Fills carry paper-coloured text only at display size (the stamp);
+     small pills use the tint with the matching dark ink, so no 11 px text sits white on colour. */
+  --color-pass: oklch(46% 0.11 150);
+  --color-pass-tint: oklch(93% 0.05 150);
+  --color-pass-ink: oklch(36% 0.11 150);
+  --color-fail: oklch(50% 0.16 28);
+  --color-fail-tint: oklch(93% 0.05 28);
+  --color-fail-ink: oklch(38% 0.15 28);
+  --color-warn: oklch(56% 0.13 70);
+  --color-warn-tint: oklch(93% 0.06 80);
+  --color-warn-ink: oklch(38% 0.11 70);
+  --color-info-tint: oklch(93% 0.010 225);
+  --color-info-ink: oklch(34% 0.012 230);
+
+  /* Type: three families, the ceiling. Display for verdicts, big numbers and headings;
+     body for everything read; mono for file names, rule codes, code and numeric columns. */
+  --font-display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* Scale 1.25 from the root size (13 px on the sheets, 16 px on the infographic). */
+  --text-xs: 0.8rem;
+  --text-sm: 0.9rem;
+  --text-base: 1rem;
+  --text-md: 1.25rem;
+  --text-lg: 1.5625rem;
+  --text-xl: 1.9531rem;
+  --text-2xl: 2.4414rem;
+  --text-3xl: 3.0518rem;
+  --text-display: clamp(2.75rem, 5vw + 1rem, 5.25rem);
+  --lh-tight: 1.05;
+  --lh-body: 1.5;
+  --track-label: 0.08em;
+
+  /* Spacing: a 4 pt scale named by role, in px so print and screen agree. */
+  --space-3xs: 2px;
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+  --space-2xl: 64px;
+  --space-3xl: 96px;
+
+  /* Rules and corners: a form has square corners; only code blocks round. */
+  --rule-hair: 1px;
+  --rule-thick: 2px;
+  --radius-none: 0;
+  --radius-code: 4px;
+
+  /* Motion, for the infographic only (the sheets do not move). */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+
+  /* Z-scale. */
+  --z-base: 1;
+  --z-raised: 10;
+  --z-sticky: 200;
+}
+
+/* The dark set, same hue, only lightness and chroma move. Used by the infographic; the sheets stay light. */
+.theme-dark,
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-paper: oklch(15% 0.012 230);
+  --color-paper-2: oklch(19% 0.014 230);
+  --color-rule: oklch(30% 0.012 230);
+  --color-rule-2: oklch(25% 0.012 230);
+  --color-muted: oklch(66% 0.012 225);
+  --color-ink-2: oklch(80% 0.010 225);
+  --color-ink: oklch(94% 0.008 225);
+  --color-accent: oklch(74% 0.10 220);
+  --color-accent-ink: oklch(15% 0.012 230);
+  --color-accent-soft: oklch(27% 0.05 225);
+  --color-focus: oklch(78% 0.16 220);
+  --color-pass: oklch(70% 0.13 150);
+  --color-pass-tint: oklch(26% 0.05 150);
+  --color-pass-ink: oklch(84% 0.12 150);
+  --color-fail: oklch(66% 0.16 28);
+  --color-fail-tint: oklch(27% 0.06 28);
+  --color-fail-ink: oklch(84% 0.12 28);
+  --color-warn: oklch(76% 0.14 80);
+  --color-warn-tint: oklch(27% 0.06 80);
+  --color-warn-ink: oklch(86% 0.13 85);
+  --color-info-tint: oklch(24% 0.012 230);
+  --color-info-ink: oklch(80% 0.010 225);
+}

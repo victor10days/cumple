@@ -13,6 +13,7 @@ dist/
 htmlcov/
 
 # OS / editors
+.hallmark/
 .DS_Store
 .idea/
 .vscode/

@@ -71,11 +71,17 @@ says the same.
   detector, Leq(m) from the TASA response table, the rules engine with
   either/or rules and the speech switch, the audio diff, the watch folder,
   the gain-only fix, the QC sheet, the macOS droplet, 39 profiles.
-- **Tests and benchmarks.** 143 tests, including synthetic signals with
+- **Tests and benchmarks.** 147 tests, including synthetic signals with
   analytic answers and the official EBU cases; cross-checks against ffmpeg's
   `ebur128` filter, pyloudnorm and an independently designed interpolator;
   the scripts that regenerate `docs/CONFORMANCE.md`, `docs/BENCHMARK.md` and
   `docs/PERF.md`.
+- **Design.** On 6 September an audit against a checklist of the tells of
+  generated interfaces found the QC sheet rendering in a fallback font,
+  overflowing a phone and failing contrast on its amber. The sheet was rebuilt
+  on a locked system (`design.md`, `tokens.css`, embedded font subsets), and
+  the audit's checks became tests: no colour outside the token block, every
+  text pair above 4.5:1.
 
 ## Three times Claude was wrong and a test caught it
 

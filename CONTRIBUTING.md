@@ -9,7 +9,7 @@ destination, or report a number that disagrees with a published document.
 git clone https://github.com/victor10days/cumple
 cd cumple
 uv sync            # Python 3.12, runtime and dev dependencies
-uv run pytest      # 143 tests; the 29 EBU cases skip until you fetch the test set
+uv run pytest      # 147 tests; the 29 EBU cases skip until you fetch the test set
 uv run ruff check src tests scripts && uv run ruff format --check src tests scripts
 ```
 
@@ -65,6 +65,10 @@ date tells you how old our reading is; delivery specs change without notice.
 - New measurements get a synthetic test with a known answer, not a golden
   file. See `tests/test_bs1770.py` and `tests/test_truepeak.py` for the pattern.
 - `ruff` is the formatter and linter; line length 120.
+- The documents cumple writes (the QC sheet, the diff sheet) follow `design.md`.
+  Colours and type come from `src/cumple/report/tokens.css` through `var()`,
+  never inline; a test enforces it. `scripts/build_fonts.py` rebuilds the
+  embedded font subsets in `src/cumple/report/fonts/`.
 - Never commit audio from a client or a platform. Fixtures are generated at
   test time or come from the official EBU and ITU test signals, which stay in
   your cache.

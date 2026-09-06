@@ -35,6 +35,7 @@ dev = [
   "pytest-cov>=5",
   "pyloudnorm>=0.2",
   "ruff>=0.6",
+  "fonttools[woff]>=4.50",
 ]
 
 [build-system]

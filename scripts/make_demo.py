@@ -146,12 +146,60 @@ def make_demo(out: Path) -> list[Path]:
     return written
 
 
+def render_pngs(out: Path, docs: Path) -> list[Path]:
+    """The README images: the QC sheet of hot.wav against Netflix stereo, and its timeline alone.
+
+    Rendered with the same local Chrome the PDF export uses, at the sheet's own width.
+    """
+    import subprocess
+
+    from cumple.checks import evaluate
+    from cumple.meters.measure import measure
+    from cumple.report import write_sheet
+    from cumple.report.qc_sheet import _timeline
+    from cumple.report.style import document_css
+    from cumple.specs import get
+
+    chrome = _find_chrome()
+    if chrome is None:
+        print("no Chrome or Chromium found; the PNGs were not rendered")
+        return []
+    report = evaluate(get("netflix-2.0"), measure(out / "hot.wav"))
+    sheet, _ = write_sheet(report, out / "hot.qc.html")
+    timeline = out / "hot.timeline.html"
+    timeline.write_text(
+        "<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width'>"
+        f"<style>{document_css()}</style></head><body><div class='sheet'>{_timeline(report)}</div></body></html>",
+        encoding="utf-8",
+    )
+    docs.mkdir(parents=True, exist_ok=True)
+    made = []
+    for src, png, size in ((sheet, docs / "qc-sheet.png", "920,1180"), (timeline, docs / "qc-timeline.png", "920,400")):
+        cmd = [chrome, "--headless=new", "--disable-gpu", "--hide-scrollbars", "--no-first-run"]
+        cmd += [f"--window-size={size}", f"--screenshot={png}", src.resolve().as_uri()]
+        subprocess.run(cmd, check=False, capture_output=True, timeout=90)
+        if png.exists():
+            made.append(png)
+    return made
+
+
+def _find_chrome() -> str | None:
+    from cumple.report.qc_sheet import find_chrome
+
+    return find_chrome()
+
+
 def main(argv: list[str]) -> int:
-    if len(argv) != 2:
+    if len(argv) not in (2, 4) or (len(argv) == 4 and argv[2] != "--png"):
         print(__doc__)
+        print("Add `--png docs/` to also render docs/qc-sheet.png and docs/qc-timeline.png with the local Chrome.")
         return 2
-    files = make_demo(Path(argv[1]).expanduser())
-    print(f"wrote {len(files)} files under {Path(argv[1]).expanduser()}")
+    out = Path(argv[1]).expanduser()
+    files = make_demo(out)
+    print(f"wrote {len(files)} files under {out}")
+    if len(argv) == 4:
+        for png in render_pngs(out, Path(argv[3]).expanduser()):
+            print(f"rendered {png}")
     return 0
 
 
