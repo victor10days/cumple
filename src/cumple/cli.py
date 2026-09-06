@@ -182,6 +182,10 @@ def explain(profile_id: str = typer.Argument(..., help="A profile id from `cumpl
         rules.add_row("head padding", f"≤ {p.padding.head_max_s:g} s")
     if p.padding.tail_max_s is not None:
         rules.add_row("tail padding", "not permitted" if p.padding.tail_max_s == 0 else f"≤ {p.padding.tail_max_s:g} s")
+    if p.padding.head_min_s is not None:
+        rules.add_row("head padding", f"≥ {p.padding.head_min_s:g} s")
+    if p.padding.tail_min_s is not None:
+        rules.add_row("tail padding", f"≥ {p.padding.tail_min_s:g} s")
     if p.stems.must_sum_to_printmaster:
         rules.add_row("stems", f"must sum to the printmaster (residual ≤ {p.stems.residual_max_dbfs:g} dBFS)")
     if p.stems.me_must_have_no_speech:

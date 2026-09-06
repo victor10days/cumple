@@ -44,6 +44,32 @@ def five_one(tmp_path, name, order="smpte", lfe_full_range=False, lfe_silent=Fal
     return path
 
 
+def five_one_plus_two(tmp_path, name, pair="fold", pair_db=-3.0):
+    """The 5.1 bed of five_one() with two more channels: a Lo/Ro fold-down of the bed, a
+    matrix-encoded Lt/Rt (surrounds phase-shifted 90 degrees, 10 dB down), or independent
+    rear surrounds, which is a real 7.1."""
+    seconds = 4.0
+    full = [band_noise(seconds, 40, 16000, -26.0, s) for s in range(5)]
+    lfe = band_noise(seconds, 20, 100, -30.0, 9)
+    left, right, centre, ls, rs = full
+    g = 10 ** (pair_db / 20)
+    if pair == "fold":
+        lt = g * (left + 0.7071 * centre + 0.7071 * ls)
+        rt = g * (right + 0.7071 * centre + 0.7071 * rs)
+    elif pair == "matrix":
+        from scipy.signal import hilbert
+
+        s = 10 ** (-10 / 20)
+        lt = g * (left + 0.7071 * centre + s * np.imag(hilbert(ls)))
+        rt = g * (right + 0.7071 * centre - s * np.imag(hilbert(rs)))
+    else:
+        lt = band_noise(seconds, 40, 16000, -26.0, 21)
+        rt = band_noise(seconds, 40, 16000, -26.0, 22)
+    path = tmp_path / name
+    sf.write(str(path), np.stack([left, right, centre, lfe, ls, rs, lt, rt], 1), FS, subtype="PCM_24")
+    return path
+
+
 def test_layout_meter_finds_the_lfe():
     x = np.stack([band_noise(2, 40, 16000, -20, 1), band_noise(2, 20, 100, -20, 2)], 1)
     m = LayoutMeter(FS, 2)
@@ -84,6 +110,32 @@ def test_silent_lfe_is_reported_not_failed(tmp_path):
     c = {f.code: f for f in r.findings}
     assert c["format.lfe_band"].status is Status.INFO
     assert c["signal.silent_channels"].status is Status.WARN and "LFE" in c["signal.silent_channels"].measured
+
+
+def test_eight_channel_fold_down_reads_as_five_one_plus_two(tmp_path):
+    p8 = five_one_plus_two(tmp_path, "bed_plus_fold.wav")
+    p6 = five_one(tmp_path, "bed.wav")  # the same bed, same seeds, without the pair
+    m = measure(p8)
+    assert m.layout == "5.1+lt-rt" and m.roles[6:] == ["Lt", "Rt"]
+    assert m.layout_stats.downmix_corr > 0.9
+    assert abs(m.loudness.integrated - measure(p6).loudness.integrated) < 0.05  # the pair is not counted
+    c = {f.code: f for f in evaluate(get("hulu-2018"), m).findings}
+    assert c["format.layout"].status is Status.PASS and "fold down" in c["format.layout"].note
+
+
+def test_eight_channel_with_real_rears_stays_seven_one(tmp_path):
+    p = five_one_plus_two(tmp_path, "seven_one.wav", pair="rears")
+    m = measure(p)
+    assert m.layout == "7.1" and m.layout_stats.downmix_corr < 0.3
+    assert {f.code: f.status for f in evaluate(get("disney-plus-5.1"), m).findings}["format.layout"] is Status.PASS
+    c = {f.code: f for f in evaluate(get("hulu-2018"), m).findings}
+    assert c["format.layout"].status is Status.FAIL and "rear surrounds" in c["format.layout"].note
+
+
+def test_matrix_encoded_lt_rt_is_still_a_fold_down(tmp_path):
+    p = five_one_plus_two(tmp_path, "bed_plus_ltrt.wav", pair="matrix")
+    m = measure(p)
+    assert m.layout == "5.1+lt-rt" and m.layout_stats.downmix_corr > 0.7
 
 
 def test_lfe_band_check_follows_the_profile_corner(tmp_path):

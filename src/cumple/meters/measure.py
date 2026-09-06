@@ -10,14 +10,26 @@ import numpy as np
 import soundfile as sf
 
 from ..io.reader import DEFAULT_BLOCK_FRAMES, AudioInfo, Package, iter_blocks, probe
-from .bs1770 import SUB_HOP_S, LoudnessMeter, LoudnessResult, default_roles
+from .bs1770 import SUB_HOP_S, LoudnessMeter, LoudnessResult, channel_weights, default_roles
 from .dialogue import SpeechDetector, SpeechResult
-from .layout import LayoutMeter, LayoutResult
+from .layout import DOWNMIX_CORR_MIN, LayoutMeter, LayoutResult
 from .leqm import LeqmMeter, LeqmResult
 from .truepeak import PeakMeter, PeakResult
 
 SILENCE_DBFS = -80.0  # below this, a sample counts as padding / digital black
 SMPTE_ORDER = ["L", "R", "C", "LFE", "Ls", "Rs", "Lrs", "Rrs"]
+FIVE_ONE_PLUS_TWO = ["L", "R", "C", "LFE", "Ls", "Rs", "Lt", "Rt"]  # the 8-track "5.1 + 2.0" deliverable
+
+
+def bed_weights(roles: list[str]) -> np.ndarray:
+    """BS.1770 channel weights, with a stereo pair that rides on a 5.1 bed weighted zero: the pair
+    is a fold-down of the bed, and the destinations that ask for it measure the 5.1 alone."""
+    w = channel_weights(len(roles), roles)
+    if {"L", "R", "C", "Ls", "Rs"} <= set(roles):
+        for i, r in enumerate(roles):
+            if r in ("Lt", "Rt"):
+                w[i] = 0.0
+    return w
 
 
 @dataclass
@@ -57,6 +69,8 @@ class Measurement:
             return "lt-rt"
         if self.channels == 2:
             return "stereo"
+        if roles >= {"L", "R", "C", "LFE", "Ls", "Rs", "Lt", "Rt"}:
+            return "5.1+lt-rt"
         if roles >= {"L", "R", "C", "LFE", "Ls", "Rs", "Lrs", "Rrs"}:
             return "7.1"
         if roles >= {"L", "R", "C", "LFE", "Ls", "Rs"}:
@@ -231,12 +245,13 @@ def _run(
     leqm: bool | dict = False,
     lfe_corner_hz: float | None = None,
 ) -> Measurement:
-    loud = LoudnessMeter(fs, channels, roles=roles)
+    roles = list(roles)
+    loud = LoudnessMeter(fs, channels, roles=roles, weights=bed_weights(roles))
     peak = PeakMeter(fs, channels)
     stats = _Stats(fs, channels)
     speech = SpeechDetector(fs, channels, roles=roles)
     fold = LoudnessMeter(fs, 1) if channels == 2 else None
-    layout = LayoutMeter(fs, channels, corner_hz=lfe_corner_hz or 250.0) if channels >= 3 else None
+    layout = LayoutMeter(fs, channels, corner_hz=lfe_corner_hz or 250.0, roles=roles) if channels >= 3 else None
     leqm_meter = LeqmMeter(fs, channels, roles=roles, **(leqm if isinstance(leqm, dict) else {})) if leqm else None
     for block in blocks:
         loud.feed(block)
@@ -250,6 +265,18 @@ def _run(
         if leqm_meter is not None:
             leqm_meter.feed(block)
     head, tail = stats.head_tail()
+    ls = layout.result() if layout is not None else None
+    if (
+        channels == 8
+        and package is None
+        and ls is not None
+        and ls.downmix_corr is not None
+        and ls.downmix_corr >= DOWNMIX_CORR_MIN
+    ):
+        # Channels 7 and 8 fold down from the bed: a "5.1 + 2.0" deliverable, not rear surrounds.
+        # The weights apply when the meter reads out, so the pass already taken is not repeated.
+        roles = list(FIVE_ONE_PLUS_TWO)
+        loud.weights = bed_weights(roles)
     sp = speech.result()
     lr = loud.result()
     n_sub = len(loud._hop_energies())
@@ -272,7 +299,7 @@ def _run(
         mono_fold_loudness=(fold.result().integrated if fold is not None else None),
         speech_fraction=sp.fraction,
         speech=sp,
-        layout_stats=(layout.result() if layout is not None else None),
+        layout_stats=ls,
         leqm=(leqm_meter.result() if leqm_meter is not None else None),
         info=info,
         package=package,

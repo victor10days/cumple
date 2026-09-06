@@ -381,11 +381,19 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
         if layout == "stereo":
             candidates.add("lt-rt")  # a stereo file may be an Lt/Rt; the file cannot tell us
         ok = bool(candidates & set(f.layouts))
-        note = (
-            "a 2-channel file may be L/R or Lt/Rt; both accepted"
-            if layout == "stereo" and "lt-rt" in f.layouts and "stereo" in f.layouts
-            else None
-        )
+        corr = m.layout_stats.downmix_corr if m.layout_stats is not None else None
+        corr_text = f" (correlation {corr:+.2f})" if corr is not None else ""
+        if layout == "stereo" and "lt-rt" in f.layouts and "stereo" in f.layouts:
+            note = "a 2-channel file may be L/R or Lt/Rt; both accepted"
+        elif layout == "5.1+lt-rt":
+            note = (
+                f"channels 7 and 8 fold down from the 5.1{corr_text}; the pair may be L/R, Lt/Rt or a mono mix; "
+                "loudness measured on the 5.1 bed only"
+            )
+        elif layout == "7.1" and m.channels == 8 and "5.1+lt-rt" in f.layouts and corr is not None:
+            note = f"channels 7 and 8 do not fold down from channels 1 to 6{corr_text}; read as 7.1 rear surrounds"
+        else:
+            note = None
         out.append(
             Finding(
                 "format.layout",

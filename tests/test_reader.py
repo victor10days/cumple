@@ -48,3 +48,14 @@ def test_package_layout(make_wav, tmp_path):
     pkg = load_package(tmp_path)
     problems = pkg.consistent()
     assert any("length" in s for s in problems) and any("not mono" in s for s in problems)
+
+
+def test_package_with_a_stereo_pair_on_the_bed(make_wav, tmp_path):
+    from cumple.meters.measure import measure
+
+    for role in ("L", "R", "C", "LFE", "Ls", "Rs", "Lt", "Rt"):
+        make_wav(name=f"Show_{role}.wav", channels=1, seconds=0.5)
+    pkg = load_package(tmp_path)
+    assert pkg.layout_guess == "5.1+lt-rt" and pkg.consistent() == []
+    m = measure(tmp_path)
+    assert m.layout == "5.1+lt-rt" and m.roles[-2:] == ["Lt", "Rt"]

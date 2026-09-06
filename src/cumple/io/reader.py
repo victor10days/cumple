@@ -208,6 +208,8 @@ class Package:
     @property
     def layout_guess(self) -> str:
         roles = set(self.files)
+        if roles >= {"L", "R", "C", "LFE", "Ls", "Rs", "Lt", "Rt"}:
+            return "5.1+lt-rt"
         if roles >= {"L", "R", "C", "LFE", "Ls", "Rs", "Lrs", "Rrs"}:
             return "7.1"
         if roles >= {"L", "R", "C", "LFE", "Ls", "Rs"}:
