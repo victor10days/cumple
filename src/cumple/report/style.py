@@ -165,6 +165,7 @@ figure { margin: var(--space-xs) 0 0; }
 .plot .lab.y { transform: translate(-100%, -50%); }
 .plot .lab.x { transform: translate(-50%, 0); }
 .plot .lab.acc { color: var(--color-accent); }
+@media (max-width: 40rem) { .plot .lab.alt { display: none; } }
 .plot .band { fill: var(--color-accent-soft); }
 .plot .grid { stroke: var(--color-rule); stroke-width: 1; }
 .plot .zero { stroke: var(--color-ink-2); stroke-width: 1; }

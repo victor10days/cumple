@@ -74,3 +74,28 @@ def test_stems_that_sum_null_and_a_half_db_music_change_is_reported(tmp_path):
     assert -56 < r2.residual_dbfs < -45  # the 0.5 dB on one stem is left in, not fitted away
     assert not r2.identical
     assert "stems must match" in describe(r2)
+    from cumple.report import render_diff_html
+
+    assert "NULLS" in render_diff_html(r) and "NO NULL" in render_diff_html(r2)
+    assert "stems must match" in render_diff_html(r2) and "against PM.wav" in render_diff_html(r2)
+
+
+def test_diff_sheet_draws_the_bands_and_stamps_the_verdict(tmp_path):
+    from cumple.report import render_diff_html, write_diff_sheet
+
+    a = stereo_noise()
+    b_num, b_den = iirpeak(3150, Q=2, fs=FS)
+    b = (a + lfilter(b_num, b_den, a, axis=0) * (10 ** (6 / 20) - 1)) * 10 ** (-1.4 / 20)
+    sf.write(str(tmp_path / "v12.wav"), a, FS, subtype="PCM_24")
+    sf.write(str(tmp_path / "v13.wav"), b, FS, subtype="PCM_24")
+    r = diff_files(tmp_path / "v12.wav", tmp_path / "v13.wav")
+    html = render_diff_html(r)
+    assert "v13.wav against v12.wav" in html
+    assert "SAME MATERIAL" in html or "DIFFERENT" in html
+    assert "<svg" in html and "Spectral balance" in html and "3.15 kHz" in html
+    assert 'class="bar-up"' in html and "gain change removed" in html
+    assert "integrated loudness" in html and "B minus A" in html
+    out, pdf = write_diff_sheet(r, tmp_path / "v13.diff.html")
+    assert out.exists() and out.stat().st_size > 5000 and pdf is None
+    same = diff_files(tmp_path / "v12.wav", tmp_path / "v12.wav")
+    assert "IDENTICAL" in render_diff_html(same)

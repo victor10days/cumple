@@ -1,4 +1,4 @@
-# Design — cumple
+# Design: cumple
 
 A locked design system for every surface cumple puts in front of a person:
 the QC sheet, the diff sheet, and the one-page infographic about the tool.

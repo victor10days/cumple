@@ -9,7 +9,7 @@ destination, or report a number that disagrees with a published document.
 git clone https://github.com/victor10days/cumple
 cd cumple
 uv sync            # Python 3.12, runtime and dev dependencies
-uv run pytest      # 147 tests; the 29 EBU cases skip until you fetch the test set
+uv run pytest      # 148 tests; the 29 EBU cases skip until you fetch the test set
 uv run ruff check src tests scripts && uv run ruff format --check src tests scripts
 ```
 

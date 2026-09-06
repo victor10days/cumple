@@ -154,8 +154,9 @@ def render_pngs(out: Path, docs: Path) -> list[Path]:
     import subprocess
 
     from cumple.checks import evaluate
+    from cumple.diff.compare import diff_files
     from cumple.meters.measure import measure
-    from cumple.report import write_sheet
+    from cumple.report import write_diff_sheet, write_sheet
     from cumple.report.qc_sheet import _timeline
     from cumple.report.style import document_css
     from cumple.specs import get
@@ -166,6 +167,7 @@ def render_pngs(out: Path, docs: Path) -> list[Path]:
         return []
     report = evaluate(get("netflix-2.0"), measure(out / "hot.wav"))
     sheet, _ = write_sheet(report, out / "hot.qc.html")
+    diff_sheet, _ = write_diff_sheet(diff_files(out / "v12.wav", out / "v13.wav"), out / "v13.diff.html")
     timeline = out / "hot.timeline.html"
     timeline.write_text(
         "<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width'>"
@@ -174,7 +176,12 @@ def render_pngs(out: Path, docs: Path) -> list[Path]:
     )
     docs.mkdir(parents=True, exist_ok=True)
     made = []
-    for src, png, size in ((sheet, docs / "qc-sheet.png", "920,1180"), (timeline, docs / "qc-timeline.png", "920,400")):
+    shots = (
+        (sheet, docs / "qc-sheet.png", "920,1180"),
+        (timeline, docs / "qc-timeline.png", "920,400"),
+        (diff_sheet, docs / "diff-sheet.png", "920,1080"),
+    )
+    for src, png, size in shots:
         cmd = [chrome, "--headless=new", "--disable-gpu", "--hide-scrollbars", "--no-first-run"]
         cmd += [f"--window-size={size}", f"--screenshot={png}", src.resolve().as_uri()]
         subprocess.run(cmd, check=False, capture_output=True, timeout=90)

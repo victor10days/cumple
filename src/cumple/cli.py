@@ -17,7 +17,7 @@ from .diff import describe, diff_files, diff_to_dict, sum_stems_against
 from .fix import fix_file
 from .io import load_package, probe
 from .meters.measure import measure, measure_args
-from .report import print_report, report_to_dict, write_sheet
+from .report import print_report, report_to_dict, write_diff_sheet, write_sheet
 from .report.specs_md import render_specs_markdown
 from .specs import ProfileNotFound, get, load_all
 from .specs.schema import GRADE_LABEL, Profile
@@ -331,6 +331,13 @@ def diff(
     ),
     as_json: bool = typer.Option(False, "--json"),
     max_offset: float = typer.Option(10.0, "--max-offset", help="Largest time offset to search, in seconds."),
+    sheet: bool = typer.Option(
+        False, "--sheet", help="Write the diff sheet (<name>.diff.html) next to the second file or the printmaster."
+    ),
+    pdf: bool = typer.Option(False, "--pdf", help="Also print the sheet to PDF with the local Chrome."),
+    out: Path | None = typer.Option(
+        None, "--out", help="Directory for the sheet and JSON instead of next to the file."
+    ),
 ) -> None:
     """Say in words how two audio files differ, or whether stems sum to a printmaster."""
     try:
@@ -348,6 +355,24 @@ def diff(
         console.print_json(json.dumps(diff_to_dict(r)))
     else:
         console.print(describe(r))
+    if sheet or pdf or out is not None:
+        target = against if against is not None else paths[1]
+        base_dir = out if out is not None else target.parent
+        try:
+            base_dir.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            console.print(f"[red]cannot write to {base_dir}:[/] {e}")
+            raise typer.Exit(2) from None
+        html_path, pdf_path = write_diff_sheet(r, base_dir / f"{target.stem}.diff.html", pdf=pdf)
+        (base_dir / f"{target.stem}.diff.json").write_text(json.dumps(diff_to_dict(r), indent=2))
+        console.print(
+            f"[dim]sheet:[/] {html_path}"
+            + (
+                f"  [dim]pdf:[/] {pdf_path}"
+                if pdf_path
+                else ("  [yellow]pdf: Chrome not found or printing failed[/]" if pdf else "")
+            )
+        )
     raise typer.Exit(0 if (r.identical or r.residual_dbfs < -60) else 1)
 
 
