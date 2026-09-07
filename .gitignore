@@ -24,6 +24,9 @@ htmlcov/
 *.qc.pdf
 *.qc.json
 cumple-log.csv
+*.diff.html
+*.diff.json
+*.diff.pdf
 
 # Audio fixtures generated at test time and the cached EBU test set
 tests/fixtures/generated/
