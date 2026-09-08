@@ -1,6 +1,6 @@
 # cumple vs ffmpeg ebur128 and pyloudnorm on the EBU Loudness Test Set v5.0
 
-Generated 2026-09-04 with cumple 0.1.0, `ffmpeg version 8.0 Copyright (c) 2000-2025 the FFmpeg developers` and pyloudnorm 0.2.0. Expected values from EBU Tech 3341 Table 1 (±0.1 LU; true peak +0.2/−0.4 dBTP) and Tech 3342 (±1 LU). ✓ means inside the published tolerance. pyloudnorm measures integrated loudness only (no true peak, no loudness range), so it has one column.
+Generated 2026-09-08 with cumple 0.2.0, `ffmpeg version 8.0 Copyright (c) 2000-2025 the FFmpeg developers` and pyloudnorm 0.2.0. Expected values from EBU Tech 3341 Table 1 (±0.1 LU; true peak +0.2/−0.4 dBTP) and Tech 3342 (±1 LU). ✓ means inside the published tolerance. pyloudnorm measures integrated loudness only (no true peak, no loudness range), so it has one column.
 
 | file | expected | cumple I | ffmpeg I | pyloudnorm I | cumple TP | ffmpeg TP | cumple LRA | ffmpeg LRA |
 |---|---|---|---|---|---|---|---|---|

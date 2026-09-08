@@ -75,7 +75,9 @@ def main() -> None:
         print(
             f"| {name} | {ch} | {minutes} min | {size:.2f} GB | {wall:.0f} s | {minutes * 60 / wall:.0f}x | {rss:.0f} MB |"
         )
-    print("\nMemory should not grow with duration: the meters keep 10 ms energies and filter state, never the audio.")
+    print(
+        "\nMemory grows far slower than the file: twelve times the duration costs well under twice the memory, because the meters keep 10 ms energies, per-frame speech features and filter state, never the audio."
+    )
 
 
 if __name__ == "__main__":
