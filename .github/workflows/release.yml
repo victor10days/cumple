@@ -188,6 +188,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8
         with:
+          pattern: cumple-*  # the launch-<os> evidence artifacts stay out of the release
           path: assets
           merge-multiple: true
       - run: ls -la assets
