@@ -211,12 +211,13 @@ def test_settings_round_trip(tmp_path, monkeypatch):
 
 def test_info_carries_the_initial_paths_and_spec():
     api = Api(initial_paths=[Path("/x/a.wav")], initial_spec="ebu-r128")
-    assert api.info()["initial"] == {"paths": ["/x/a.wav"], "spec": "ebu-r128"}
+    assert api.info()["initial"] == {"paths": [str(Path("/x/a.wav"))], "spec": "ebu-r128"}
 
 
 def test_reveal_command_per_platform(tmp_path):
-    assert desktop.reveal_command("/x/a.wav", "Darwin") == ["open", "-R", "/x/a.wav"]
-    assert desktop.reveal_command("/x/a.wav", "Windows") == ["explorer", "/select,", "/x/a.wav"]
+    p = str(Path("/x/a.wav"))  # the separator the host uses; the test runs on Windows too
+    assert desktop.reveal_command("/x/a.wav", "Darwin") == ["open", "-R", p]
+    assert desktop.reveal_command("/x/a.wav", "Windows") == ["explorer", "/select,", p]
     assert desktop.reveal_command(str(tmp_path / "a.wav"), "Linux") == ["xdg-open", str(tmp_path)]
     assert desktop.reveal_command(str(tmp_path), "Linux") == ["xdg-open", str(tmp_path)]
 
@@ -299,7 +300,7 @@ def test_main_run_builds_the_window_with_a_stub_webview(monkeypatch, tmp_path):
     kw = calls["window"]
     assert kw["title"] == "cumple" and kw["text_select"] is True and kw["min_size"] == (760, 520)
     assert 'id="sheet"' in kw["html"] and tokens_css() in kw["html"] and "/*__" not in kw["html"]
-    assert isinstance(kw["js_api"], Api) and kw["js_api"].info()["initial"]["paths"] == ["/x/a.wav"]
+    assert isinstance(kw["js_api"], Api) and kw["js_api"].info()["initial"]["paths"] == [str(Path("/x/a.wav"))]
     assert kw["js_api"].window is calls["w"]
     assert calls["start"]["gui"] is None and Path(calls["start"]["icon"]).is_file()
     assert [m[1] for m in calls["start"]["menu"]] == ["File", "Help"]
