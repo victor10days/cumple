@@ -205,27 +205,30 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
                 status = Status.INFO
             else:
                 status = Status.FAIL
+            fix = None
             if (
                 status is Status.PASS
                 and r.method == "dialogue_gated"
                 and np.isfinite(m.loudness.dialogue_gated)
                 and m.loudness.dialogue_blocks > 0
             ):
-                # The heuristic gate reads low on dense mixes (1.6 and 6.7 LU low on two open
-                # films, docs/DIALOGUE.md), and reading low turns a too-loud mix into a pass.
-                # Both films' true dialogue-gated values sat under 3 LU from the full-programme
-                # value; the detector's sat 2.8 and 9.5 LU under it. So a pass that far under
-                # the full-programme value is flagged for a real meter.
+                # The heuristic gate reads low on dense mixes (two open films, docs/DIALOGUE.md),
+                # and reading low turns a too-loud mix into a pass. On those two films the true
+                # dialogue-gated value sat within 3 LU of the full-programme value while the
+                # detector's sat 2.8 and 9.5 LU under it, so 3 LU is the tool default (n = 2).
+                # A false pass needs a true value above the window's top; the full-programme
+                # value is a practical ceiling for dialogue in a mix, so when even that sits
+                # inside the window (Apple TV+'s wide window, for one) there is nothing to warn about.
                 gap = m.loudness.integrated - value
-                if np.isfinite(gap) and gap >= DIALOGUE_GAP_WARN_LU:
+                above_top = r.max is None or m.loudness.integrated > r.max
+                if np.isfinite(gap) and gap >= DIALOGUE_GAP_WARN_LU and above_top:
                     status = Status.WARN
                     note = (note + "; " if note else "") + (
                         f"reads {gap:.1f} LU under the full-programme value ({m.loudness.integrated:.1f} LUFS); "
-                        "the heuristic speech gate reads low on dense mixes (1.6 and 6.7 LU low on two open films), "
-                        "so this pass may be a false pass: verify with a Dolby Dialogue Intelligence meter before "
-                        f"sending (tool default: warn from {DIALOGUE_GAP_WARN_LU:g} LU)"
+                        "the heuristic speech gate reads low on dense mixes (docs/DIALOGUE.md), so this pass "
+                        f"may be a false pass (tool default: warn from {DIALOGUE_GAP_WARN_LU:g} LU)"
                     )
-            fix = None
+                    fix = "verify the dialogue-gated value with a Dolby Dialogue Intelligence meter before sending"
             if status is Status.FAIL:
                 target = (
                     r.target
