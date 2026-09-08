@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import re
+from html import unescape
 from pathlib import Path
+
+from cumple.specs import load_all
 
 ROOT = Path(__file__).resolve().parents[1]
 PAGE = (ROOT / "site" / "index.html").read_text(encoding="utf-8")
@@ -82,3 +85,35 @@ def test_dialogue_gate_errors_in_the_note():
     assert len(deltas) == 2
     for d in deltas:
         assert f"{d:.1f} LU" in PAGE
+
+
+def _page_compare_table() -> list[dict[str, str]]:
+    """The page's comparison table as rows of column header to cell text, tags stripped."""
+    table = re.search(r'<table class="compare">(.*?)</table>', PAGE, re.S).group(1)
+    rows = []
+    for tr in re.findall(r"<tr>(.*?)</tr>", table, re.S):
+        cells = re.findall(r"<t[hd]\b[^>]*>(.*?)</t[hd]>", tr, re.S)
+        rows.append([" ".join(unescape(re.sub(r"<[^>]+>", "", c)).split()) for c in cells])
+    return [dict(zip(rows[0], r, strict=True)) for r in rows[1:]]
+
+
+def test_compare_table_matches_related_and_benchmark():
+    """Every cell is the one docs/RELATED.md records, and every run cell is the run's own count."""
+    related = (ROOT / "docs" / "RELATED.md").read_text(encoding="utf-8")
+    benchmark = (ROOT / "docs" / "BENCHMARK.md").read_text(encoding="utf-8")
+    conformance = (ROOT / "docs" / "CONFORMANCE.md").read_text(encoding="utf-8")
+    page = _page_compare_table()
+    assert len(page) == 9 and all(len(r) == 7 for r in page)
+    assert page == _tables(related, "| Capability |")
+    runs = next(r for r in page if r["Capability"] == "Passes the EBU test set")
+    counted = 0
+    for tool, cell in runs.items():
+        m = re.search(r"(\d+) of (\d+) readings in our run", cell)
+        if m:
+            assert f"**{tool}: {m.group(1)} of {m.group(2)} readings inside tolerance**" in benchmark, tool
+            counted += 1
+    assert counted == 5
+    cases = {r["case"] for r in _tables(conformance, "| case |")}
+    assert f"{len(cases)} of {len(cases)} cases" in runs["cumple"]
+    named = next(r for r in page if r["Capability"] == "Named destinations with graded sources")
+    assert named["cumple"] == str(len(load_all()))

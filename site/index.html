@@ -309,7 +309,7 @@ table.compare td.no { color: var(--color-muted); }
     <div><a href="https://github.com/victor10days/cumple/blob/main/docs/BENCHMARK.md"><span class="big">0.05 LU</span> <span class="what">the largest gap to libebur128, ffmpeg ebur128 and pyloudnorm on integrated loudness</span></a></div>
     <div><a href="https://github.com/victor10days/cumple/blob/main/docs/PERF.md" aria-label="91 times real time: 60 minutes of stereo measured in 39 seconds at 704 MB peak memory"><span class="big">91x</span> <span class="what">real time: 60 minutes of stereo measured in 39 s at 704 MB peak memory</span></a></div>
   </div>
-  <p class="note">Every measured number on this page comes from a report in the repository, and the disagreements are written down too. The dialogue gate is a labelled approximation of Dolby's algorithm: against two open films it read 1.6 LU low on Tears of Steel and 6.7 LU low on Sintel, whose dialogue sits under an orchestral score. <a href="https://github.com/victor10days/cumple/blob/main/docs/DIALOGUE.md">docs/DIALOGUE.md</a> has the method and the numbers. 189 tests with 91 % line coverage run on macOS, Windows and Linux.</p>
+  <p class="note">Every measured number on this page comes from a report in the repository, and the disagreements are written down too. The dialogue gate is a labelled approximation of Dolby's algorithm: against two open films it read 1.6 LU low on Tears of Steel and 6.7 LU low on Sintel, whose dialogue sits under an orchestral score. <a href="https://github.com/victor10days/cumple/blob/main/docs/DIALOGUE.md">docs/DIALOGUE.md</a> has the method and the numbers. 190 tests with 91 % line coverage run on macOS, Windows and Linux.</p>
 </section>
 
 <section aria-labelledby="destinations">
@@ -342,21 +342,21 @@ table.compare td.no { color: var(--color-muted); }
 
 <section aria-labelledby="compare">
   <h2 id="compare">What it does that the meters do not</h2>
-  <p>cumple measures with the same standards these meters implement, and adds the destination's rule, the source of that rule, and a sheet to send. Cells say "not checked" where the tool's own documentation was not read for this table.</p>
+  <p>cumple measures with the same standards these meters implement, and adds the destination's rule, the source of that rule, and a sheet to send. Every cell below comes from the tool's own documentation or source, or from a run recorded in the repository: <a href="https://github.com/victor10days/cumple/blob/main/docs/RELATED.md">docs/RELATED.md</a> lists what was read and when, and <a href="https://github.com/victor10days/cumple/blob/main/docs/BENCHMARK.md">docs/BENCHMARK.md</a> is the run.</p>
   <div class="scroll" role="region" aria-label="Comparison with other tools" tabindex="0">
   <table class="compare">
-    <caption class="lbl">Capability comparison, cumple against five loudness tools</caption>
+    <caption class="lbl">Capability comparison, cumple against five other tools</caption>
     <thead><tr><th scope="col"><span class="vh">Capability</span></th><th scope="col">cumple</th><th scope="col">libebur128</th><th scope="col">pyloudnorm</th><th scope="col">ffmpeg ebur128</th><th scope="col">loudcheck</th><th scope="col">DeltaWave</th></tr></thead>
     <tbody>
-      <tr><th scope="row">BS.1770 loudness and true peak</th><td class="yes">yes</td><td class="yes">yes</td><td>integrated only</td><td class="yes">yes</td><td class="yes">yes</td><td class="no">not checked</td></tr>
-      <tr><th scope="row">Passes the EBU test set</th><td class="yes">29 of 29, report in the repo</td><td class="yes">yes, per its README</td><td class="no">not checked</td><td class="no">no published report</td><td class="no">not checked</td><td class="no">not applicable</td></tr>
-      <tr><th scope="row">Named destinations with graded sources</th><td class="yes">39</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td>EBU R 128 and ATSC A/85</td><td class="no">no</td></tr>
-      <tr><th scope="row">The clause behind each verdict</th><td class="yes">yes</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="no">not checked</td><td class="no">no</td></tr>
-      <tr><th scope="row">A report that travels with the delivery</th><td class="yes">HTML, PDF, JSON, CSV log</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="no">not checked</td><td class="no">not checked</td></tr>
-      <tr><th scope="row">Diff in words, stems null test</th><td class="yes">yes</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td>null test, desktop app</td></tr>
-      <tr><th scope="row">Watch folder and desktop app</th><td class="yes">yes, three platforms</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td>desktop app</td></tr>
-      <tr><th scope="row">Runs offline, no account</th><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
-      <tr><th scope="row">Licence</th><td>MIT</td><td>MIT</td><td>MIT</td><td>LGPL</td><td>MIT</td><td class="no">not checked</td></tr>
+      <tr><th scope="row">BS.1770 loudness and true peak</th><td class="yes">yes</td><td class="yes">yes</td><td>integrated and range, no true peak</td><td class="yes">yes</td><td class="yes">yes, measured by ffmpeg loudnorm</td><td class="yes">R 128 loudness, true peak and LRA per its release notes</td></tr>
+      <tr><th scope="row">Passes the EBU test set</th><td class="yes">24 of 24 readings in our run; 29 of 29 cases in the conformance report</td><td class="yes">24 of 24 readings in our run; its own tests open the EBU files</td><td class="yes">15 of 15 readings in our run, loudness and range only</td><td class="yes">24 of 24 readings in our run, no published report of its own</td><td>23 of 24 readings in our run, through ffmpeg loudnorm</td><td class="no">no published report; Windows only</td></tr>
+      <tr><th scope="row">Named destinations with graded sources</th><td class="yes">39</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td>EBU R 128 and ATSC A/85; no platform presets, by design</td><td class="no">no</td></tr>
+      <tr><th scope="row">The clause behind each verdict</th><td class="yes">yes</td><td class="no">no verdicts</td><td class="no">no verdicts</td><td class="no">no verdicts</td><td>a one-line citation per gated metric, paraphrased</td><td class="no">no verdicts</td></tr>
+      <tr><th scope="row">A report that travels with the delivery</th><td class="yes">HTML, PDF, JSON, CSV log</td><td class="no">no, library only</td><td class="no">no, library only</td><td class="no">no, log output only</td><td>JSON on stdout, no file written</td><td class="yes">HTML report, batch via Report Cruncher</td></tr>
+      <tr><th scope="row">Diff in words, stems null test</th><td class="yes">yes</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td>null test with level, offset and clock drift matched</td></tr>
+      <tr><th scope="row">Watch folder and desktop app</th><td class="yes">yes, three platforms</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="no">no; batch over a folder and an MCP server</td><td>desktop app, Windows only</td></tr>
+      <tr><th scope="row">Runs offline, no account</th><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes, with ffmpeg installed</td><td>no account mentioned; offline not stated</td></tr>
+      <tr><th scope="row">Licence</th><td>MIT</td><td>MIT</td><td>MIT</td><td>LGPL 2.1 or later</td><td>MIT</td><td>free of charge, all rights reserved, no program source published</td></tr>
     </tbody>
   </table>
   </div>
@@ -396,7 +396,7 @@ table.compare td.no { color: var(--color-muted); }
 <section class="two" aria-labelledby="who">
   <div><h2 id="who">Who made it</h2></div>
   <div>
-    <p>cumple is written by Victor E. Diaz, studio engineer at Paleta Creativa in San Juan from 2025 to June 2026. The work was for Warner Bros., Caribbean Cinemas, GFR Media and Mobil, where a platform's spec sheet was checked by hand and by ear before every send. He trained at Berklee (BA, Electronic Production and Design) and at Holberton (software engineering).</p>
+    <p>cumple is written by Victor E. Diaz. He spent a year as a studio engineer at Paleta Creativa in San Juan, recording and mixing in sessions for clients such as Warner Bros., Caribbean Cinemas, GFR Media and Mobil, and checking each mix against the platform's spec sheet by hand and by ear before it went out. cumple is his own project, written after that year. He studied electronic production and design at Berklee College of Music and software engineering at Holberton.</p>
     <p>Most of the code was written with Claude. <a href="https://github.com/victor10days/cumple/blob/main/AI_USAGE.md">AI_USAGE.md</a> records what the model did, what he decided, and the three times a test caught the model being wrong.</p>
   </div>
 </section>
