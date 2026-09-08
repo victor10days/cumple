@@ -4,20 +4,31 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>cumple: delivery QC for audio</title>
-<meta name="description" content="Delivery QC for audio: drop a bounce, name the destination, read the verdict with the clause attached. 39 specs, a QC sheet, a watch folder, a diff.">
+<meta name="description" content="Delivery QC for audio: drop a bounce, name the destination, read the verdict with the clause attached. 39 destinations, a QC sheet, a watch folder, a diff.">
 <link rel="canonical" href="https://cumple-uxa7.onrender.com/">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="cumple">
+<meta property="og:locale" content="en">
 <meta property="og:title" content="cumple: delivery QC for audio">
 <meta property="og:description" content="Drop a bounce, name the destination, read the verdict with the clause attached. Free, MIT, for macOS, Windows and Linux.">
 <meta property="og:url" content="https://cumple-uxa7.onrender.com/">
-<meta property="og:image" content="https://cumple-uxa7.onrender.com/img/app-window.png">
+<meta property="og:image" content="https://cumple-uxa7.onrender.com/img/og-card.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The cumple window with a QC sheet open, showing a FAIL stamp against Netflix stereo">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="img/icon.png" type="image/png">
+<!-- theme-color is the sRGB of the paper token, oklch(98% 0.005 225); a meta tag cannot read a CSS variable. -->
+<meta name="theme-color" content="#f5f9fb">
+<link rel="icon" href="img/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="img/icon.png" type="image/png" sizes="512x512">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="tokens.css">
+<link rel="preload" href="fonts/IBMPlexSans-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/BarlowCondensed-Bold.woff2" as="font" type="font/woff2" crossorigin>
 <style>
 /* Hallmark · genre: modern-minimal · macrostructure: Workbench · theme: custom (cumple) · design-system: design.md
  * nav: N9 edge-aligned · footer: Ft5 statement · enrichment: none (real screenshots) · contrast: pass (40-41) · honest: pass (46)
- * chrome: pass (47) · tokens: pass (48) · mobile: 320/375/414/768 · pre-emit critique: P4 H4 E4 S5 R4 V4 · 2026-09-08 */
+ * chrome: pass (47) · tokens: pass (48) · active: pass (26) · mobile: 320/375/414/768 · pre-emit critique: P4 H3 E4 S5 R3 V3 · 2026-09-07 */
 @font-face { font-family: "Barlow Condensed"; font-weight: 600; font-style: normal; font-display: swap; src: url(fonts/BarlowCondensed-SemiBold.woff2) format("woff2"); }
 @font-face { font-family: "Barlow Condensed"; font-weight: 700; font-style: normal; font-display: swap; src: url(fonts/BarlowCondensed-Bold.woff2) format("woff2"); }
 @font-face { font-family: "IBM Plex Sans"; font-weight: 400; font-style: normal; font-display: swap; src: url(fonts/IBMPlexSans-Regular.woff2) format("woff2"); }
@@ -30,15 +41,19 @@ body { margin: 0; overflow-x: clip; font-family: var(--font-body); font-size: va
 img { max-width: 100%; height: auto; display: block; }
 a { color: var(--color-accent); text-decoration: underline; text-underline-offset: 2px; }
 a:hover { color: var(--color-focus); }
+a:active { color: var(--color-ink); }
 :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
-h1, h2, h3 { font-family: var(--font-display); font-weight: 700; font-style: normal; letter-spacing: -0.01em; line-height: var(--lh-tight); margin: 0; overflow-wrap: anywhere; min-width: 0; text-wrap: balance; }
+.skip { position: absolute; left: -9999px; top: 0; padding: var(--space-xs) var(--space-md); background: var(--color-paper); color: var(--color-accent); z-index: var(--z-sticky); }
+.skip:focus { left: 0; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 700; font-style: normal; letter-spacing: -0.01em; line-height: var(--lh-tight); margin: 0; overflow-wrap: break-word; min-width: 0; text-wrap: balance; }
 h1 { font-size: var(--text-display); }
 h2 { font-size: var(--text-2xl); margin-bottom: var(--space-md); }
 h3 { font-size: var(--text-lg); font-weight: 600; }
 p { margin: 0 0 var(--space-md); max-width: 62ch; }
 code, pre, .mono { font-family: var(--font-mono); font-size: 0.92em; }
 code { overflow-wrap: anywhere; }
-pre { margin: 0; padding: var(--space-md); background: var(--color-paper-2); border-left: var(--rule-thick) solid var(--color-accent); overflow-x: auto; font-size: var(--text-sm); line-height: 1.45; }
+pre { margin: 0; padding: var(--space-md); background: var(--color-paper-2); border-left: var(--rule-thick) solid var(--color-accent); white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-sm); line-height: var(--lh-body); }
 .wrap { max-width: 74rem; margin: 0 auto; padding: 0 var(--space-lg); }
 section { padding: var(--space-2xl) 0; border-top: var(--rule-hair) solid var(--color-rule); }
 section.tight { padding: var(--space-xl) 0; }
@@ -46,16 +61,16 @@ section.tight { padding: var(--space-xl) 0; }
 
 .nav { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-md) 0; }
 .wordmark { font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); letter-spacing: -0.01em; color: var(--color-ink); text-decoration: none; }
-.btn { display: inline-block; padding: 0.7rem 1.25rem; min-height: 44px; border: var(--rule-thick) solid var(--color-accent); background: var(--color-accent); color: var(--color-accent-ink); font-weight: 600; text-decoration: none; white-space: nowrap; border-radius: var(--radius-none); }
+.btn { display: inline-block; padding: var(--space-sm) var(--space-lg); min-height: 44px; border: var(--rule-thick) solid var(--color-accent); background: var(--color-accent); color: var(--color-accent-ink); font-weight: 600; text-decoration: none; white-space: nowrap; border-radius: var(--radius-none); }
 .btn:hover { background: var(--color-focus); border-color: var(--color-focus); color: var(--color-accent-ink); }
-.btn-outline { background: transparent; color: var(--color-accent); }
-.btn-outline:hover { background: var(--color-accent-soft); color: var(--color-accent); border-color: var(--color-accent); }
+.btn:active { background: var(--color-focus); border-color: var(--color-ink); color: var(--color-accent-ink); }
 
-.hero { display: grid; grid-template-columns: 7fr 5fr; gap: var(--space-2xl); align-items: start; padding: var(--space-xl) 0 var(--space-2xl); border-top: var(--rule-thick) solid var(--color-ink); }
+.hero { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--space-2xl); align-items: start; padding: var(--space-xl) 0 var(--space-2xl); border-top: var(--rule-thick) solid var(--color-ink); }
 .hero h1 { margin-bottom: var(--space-lg); }
 .lede { font-size: var(--text-md); max-width: 56ch; }
 .cta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm) var(--space-md); margin: var(--space-lg) 0 var(--space-sm); max-width: none; }
 .also { color: var(--color-muted); }
+.also a[href="#install"] { white-space: nowrap; }
 .fine { color: var(--color-muted); font-size: var(--text-sm); }
 figure { margin: 0; min-width: 0; }
 .hero > *, .feature > *, .free > *, .two > * { min-width: 0; }
@@ -63,10 +78,10 @@ figure img { border: var(--rule-hair) solid var(--color-rule); }
 figcaption { margin-top: var(--space-xs); color: var(--color-muted); font-size: var(--text-sm); }
 
 .problems { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-lg); }
-.problems li { border-top: var(--rule-thick) solid var(--color-ink); padding-top: var(--space-sm); font-size: var(--text-md); line-height: 1.35; }
+.problems li { border-top: var(--rule-thick) solid var(--color-ink); padding-top: var(--space-sm); font-size: var(--text-md); line-height: var(--lh-tight); }
 
-.feature { display: grid; grid-template-columns: 5fr 7fr; gap: var(--space-2xl); align-items: start; padding: var(--space-xl) 0; border-top: var(--rule-hair) solid var(--color-rule); }
-.feature.flip { grid-template-columns: 7fr 5fr; }
+.feature { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-2xl); align-items: start; padding: var(--space-xl) 0; border-top: var(--rule-hair) solid var(--color-rule); }
+.feature.flip { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
 .feature.flip .text { order: 2; }
 .feature h3 { margin-bottom: var(--space-sm); }
 .features > .feature:first-of-type { border-top: 0; padding-top: var(--space-md); }
@@ -74,49 +89,54 @@ figcaption { margin-top: var(--space-xs); color: var(--color-muted); font-size: 
 .strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); border-top: var(--rule-thick) solid var(--color-ink); border-bottom: var(--rule-hair) solid var(--color-rule); }
 .strip > div { padding: var(--space-md) var(--space-md) var(--space-md) 0; border-right: var(--rule-hair) solid var(--color-rule); }
 .strip > div:last-child { border-right: 0; }
-.strip .big { display: block; font-family: var(--font-display); font-weight: 700; font-size: var(--text-3xl); line-height: 1; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.strip .big { display: block; font-family: var(--font-display); font-weight: 700; font-size: var(--text-3xl); line-height: var(--lh-tight); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; overflow-wrap: break-word; min-width: 0; }
 .strip .what { display: block; margin-top: var(--space-2xs); font-size: var(--text-sm); color: var(--color-ink-2); }
 .strip a { color: inherit; text-decoration: none; }
+.strip a .what { text-decoration: underline; text-underline-offset: 2px; text-decoration-color: var(--color-rule); }
 .strip a:hover .big { color: var(--color-accent); }
+.strip a:hover .what { text-decoration-color: var(--color-accent); }
 .note { color: var(--color-muted); font-size: var(--text-sm); margin-top: var(--space-md); max-width: 70ch; }
 
 table { width: 100%; border-collapse: collapse; margin-top: var(--space-sm); font-size: var(--text-sm); }
+table caption { text-align: left; padding-bottom: var(--space-2xs); }
 th { text-align: left; font-weight: 600; font-size: var(--text-xs); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--color-muted); border-bottom: var(--rule-hair) solid var(--color-ink); padding: var(--space-2xs) var(--space-sm) var(--space-2xs) 0; vertical-align: bottom; }
 td { border-bottom: var(--rule-hair) solid var(--color-rule); padding: var(--space-xs) var(--space-sm) var(--space-xs) 0; vertical-align: top; overflow-wrap: anywhere; }
-td.num { font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); line-height: 1; white-space: nowrap; }
+td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
 td.fam { font-weight: 600; white-space: nowrap; }
-table.compare td:first-child { font-weight: 600; }
+table.compare th[scope="row"] { font-weight: 600; font-size: var(--text-sm); letter-spacing: normal; text-transform: none; color: var(--color-ink); border-bottom: var(--rule-hair) solid var(--color-rule); padding: var(--space-xs) var(--space-sm) var(--space-xs) 0; vertical-align: top; text-align: left; }
 table.compare td.yes { color: var(--color-pass-ink); }
 table.compare td.no { color: var(--color-muted); }
 .scroll { overflow-x: auto; }
+.scroll td, .scroll th { overflow-wrap: normal; }
 
 .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-lg); counter-reset: step; }
 .steps li { border-top: var(--rule-thick) solid var(--color-ink); padding-top: var(--space-sm); }
-.steps li::before { counter-increment: step; content: counter(step) ".0"; display: block; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); line-height: 1; color: var(--color-accent); margin-bottom: var(--space-xs); }
+.steps li::before { counter-increment: step; content: counter(step); display: block; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); line-height: var(--lh-tight); color: var(--color-accent); margin-bottom: var(--space-xs); }
 .steps h3 { margin-bottom: var(--space-2xs); }
 .steps p { font-size: var(--text-sm); margin: 0; }
 
-.faq details { border-top: var(--rule-hair) solid var(--color-rule); padding: var(--space-sm) 0; }
+.faq details { border-top: var(--rule-hair) solid var(--color-rule); }
 .faq details:last-child { border-bottom: var(--rule-hair) solid var(--color-rule); }
-.faq summary { cursor: pointer; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: var(--space-md); }
+.faq summary { cursor: pointer; font-weight: 600; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-sm) 0; }
 .faq summary::-webkit-details-marker { display: none; }
-.faq summary::after { content: "+"; font-family: var(--font-display); font-weight: 600; color: var(--color-accent); flex: 0 0 auto; }
-.faq details[open] summary::after { content: "\2013"; }
-.faq details p { margin: var(--space-xs) 0 0; }
+.faq summary::after { content: "+" / ""; font-family: var(--font-display); font-weight: 600; color: var(--color-accent); flex: 0 0 auto; }
+.faq details[open] summary::after { content: "\2212" / ""; }
+.faq details p { margin: 0 0 var(--space-sm); }
 
-.limits { margin: 0; padding-left: 1.2em; max-width: 70ch; }
+.limits { margin: 0; padding-left: var(--space-lg); max-width: 70ch; }
 .limits li { margin-bottom: var(--space-xs); }
 .free { display: grid; grid-template-columns: 5fr 7fr; gap: var(--space-2xl); align-items: start; }
 .free h2 { font-size: var(--text-3xl); }
 .two { display: grid; grid-template-columns: 5fr 7fr; gap: var(--space-2xl); align-items: start; }
 .dl { list-style: none; margin: 0 0 var(--space-md); padding: 0; }
-.dl li { padding: var(--space-xs) 0; border-bottom: var(--rule-hair) solid var(--color-rule); display: flex; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap; }
+.dl li { border-bottom: var(--rule-hair) solid var(--color-rule); display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap; }
+.dl a { font-family: var(--font-mono); font-size: var(--text-sm); padding: var(--space-sm) 0; overflow-wrap: anywhere; }
 .dl .lbl { align-self: center; }
-.firstrun { padding-left: 1.2em; }
+.firstrun { padding-left: var(--space-lg); }
 .firstrun li { margin-bottom: var(--space-sm); }
 
 .foot { border-top: var(--rule-thick) solid var(--color-ink); padding: var(--space-2xl) 0 var(--space-xl); }
-.statement { font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl); line-height: var(--lh-tight); letter-spacing: -0.01em; margin-bottom: var(--space-lg); max-width: 24ch; }
+.statement { font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl); line-height: var(--lh-tight); letter-spacing: -0.01em; margin-bottom: var(--space-lg); max-width: 24ch; overflow-wrap: break-word; min-width: 0; }
 .foot-row { display: flex; flex-wrap: wrap; gap: var(--space-md) var(--space-lg); align-items: baseline; color: var(--color-muted); font-size: var(--text-sm); }
 .foot-row .wordmark { font-size: var(--text-lg); }
 
@@ -124,12 +144,15 @@ table.compare td.no { color: var(--color-muted); }
   .hero, .feature, .feature.flip, .free, .two { grid-template-columns: minmax(0, 1fr); gap: var(--space-lg); }
   .feature.flip .text { order: 0; }
   .problems, .steps { grid-template-columns: minmax(0, 1fr); }
+  .scroll table { width: max-content; min-width: 100%; }
   section { padding: var(--space-xl) 0; }
 }
 @media (max-width: 40rem) {
   .wrap { padding: 0 var(--space-md); }
   .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .strip > div:nth-child(2n) { border-right: 0; }
+  .strip .big { font-size: var(--text-2xl); }
+  .scroll table caption { max-width: calc(100vw - 2rem); }
   table.stack thead { display: none; }
   table.stack tr { display: block; padding: var(--space-xs) 0; border-bottom: var(--rule-hair) solid var(--color-rule); }
   table.stack td { display: block; border: 0; padding: var(--space-3xs) 0; }
@@ -142,16 +165,20 @@ table.compare td.no { color: var(--color-muted); }
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "cumple",
+  "description": "Delivery QC for audio: drop a bounce, name the destination, read the verdict with the clause attached. 39 destinations, a QC sheet, a watch folder, a diff.",
   "applicationCategory": "MultimediaApplication",
-  "operatingSystem": "macOS, Windows, Linux",
+  "operatingSystem": ["macOS", "Windows", "Linux"],
   "softwareVersion": "0.2.0",
+  "dateModified": "2026-09-07",
   "url": "https://cumple-uxa7.onrender.com/",
+  "sameAs": "https://github.com/victor10days/cumple",
   "downloadUrl": "https://github.com/victor10days/cumple/releases/latest",
+  "image": "https://cumple-uxa7.onrender.com/img/og-card.jpg",
   "screenshot": "https://cumple-uxa7.onrender.com/img/app-window.png",
   "license": "https://opensource.org/license/mit",
   "isAccessibleForFree": true,
-  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "author": { "@type": "Person", "name": "Victor E. Diaz" },
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "availability": "https://schema.org/InStock", "url": "https://github.com/victor10days/cumple/releases/latest" },
+  "author": { "@type": "Person", "name": "Victor E. Diaz", "url": "https://github.com/victor10days" },
   "featureList": [
     "Measures loudness, true peak and format against 39 named destinations with graded, quoted sources",
     "Writes a one-page QC sheet that travels with the delivery",
@@ -165,60 +192,69 @@ table.compare td.no { color: var(--color-muted); }
   "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
-    { "@type": "Question", "name": "Is cumple free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. MIT licence, no account, no server, no tiers. The app and the command line are the same code." } },
+    { "@type": "Question", "name": "Is cumple free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. MIT licence, no account, no server, no tier. The app and the command line are the same code, in one repository." } },
     { "@type": "Question", "name": "Does my audio leave the machine?", "acceptedAnswer": { "@type": "Answer", "text": "No. Nothing is uploaded. The only external program cumple runs is the Chrome, Chromium or Edge already on the machine, to print a PDF." } },
-    { "@type": "Question", "name": "Which destinations does it know?", "acceptedAnswer": { "@type": "Answer", "text": "39, each with the grade of its source and the date the source was read. A destination you add is one YAML file." } },
-    { "@type": "Question", "name": "How accurate is the meter?", "acceptedAnswer": { "@type": "Answer", "text": "All 29 cases of the official EBU Loudness Test Set pass, 66 of 66 readings inside the published tolerance, and integrated loudness lands within 0.05 LU of ffmpeg and pyloudnorm on the same files." } },
-    { "@type": "Question", "name": "Does it measure dialogue-gated loudness like the studios?", "acceptedAnswer": { "@type": "Answer", "text": "Approximately. A heuristic speech detector, labelled as such, read 1.6 and 6.7 LU low on two open films; the full-programme value is always shown beside it." } },
-    { "@type": "Question", "name": "Which files does it read?", "acceptedAnswer": { "@type": "Answer", "text": "WAV, BWF, RF64, AIFF and FLAC. Not AAC, AC-3, MP3 or MXF, and no Dolby Atmos or ADM checks yet." } },
+    { "@type": "Question", "name": "Which destinations does it know?", "acceptedAnswer": { "@type": "Answer", "text": "39, each with the grade of its source and the date the source was read. A destination you add is one YAML file in your config folder, and a pull request if you want everyone to have it." } },
+    { "@type": "Question", "name": "How accurate is the meter?", "acceptedAnswer": { "@type": "Answer", "text": "All 29 cases of the official EBU Loudness Test Set pass, with 66 of 66 Tech 3341 readings inside the published tolerance, and integrated loudness lands within 0.05 LU of ffmpeg and pyloudnorm on the same files. The reports are in the repository and a script regenerates them." } },
+    { "@type": "Question", "name": "Does it measure dialogue-gated loudness like the studios?", "acceptedAnswer": { "@type": "Answer", "text": "Approximately. Netflix, Amazon and Disney gate on dialogue with a Dolby algorithm nobody outside Dolby can run. cumple uses a heuristic speech detector, labelled as such on every sheet, that read 1.6 and 6.7 LU low on two open films; the full-programme value is always shown beside it, and Netflix's own fallback rule is applied before anything is flagged." } },
+    { "@type": "Question", "name": "Which files does it read?", "acceptedAnswer": { "@type": "Answer", "text": "WAV, BWF, RF64, AIFF and FLAC, mono to 7.1 and packages of discrete mono files. Not AAC, AC-3, MP3 or MXF, and no Dolby Atmos or ADM checks yet. Check the master." } },
     { "@type": "Question", "name": "Which platforms?", "acceptedAnswer": { "@type": "Answer", "text": "macOS on Apple silicon and Intel, Windows 10 and 11 on x64, Linux on x86_64. The builds come from CI and are unsigned; the macOS build is the one exercised by hand so far. Any machine with Python 3.12 can install the command line with uv." } }
   ]
 }
 </script>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 <div class="wrap">
 
 <header class="nav" id="top">
-  <a class="wordmark" href="#top">cumple</a>
-  <a class="btn btn-outline" href="#download">Download</a>
+  <a class="wordmark" href="#main">cumple</a>
+  <a class="btn" href="#download">Download</a>
 </header>
 
-<section class="hero">
+<main id="main">
+
+<section class="hero" aria-labelledby="hero-title">
   <div class="hero-text">
-    <h1>Does this file comply? Ask before you send.</h1>
+    <h1 id="hero-title">Does this file comply? Ask before you send.</h1>
     <p class="lede">Drop a WAV, a bounce folder or a delivery package and name the destination. cumple measures it the way that destination does, says which rule fails, quotes the rule, and suggests the fix. The QC sheet travels with the delivery.</p>
     <p class="cta">
       <a id="dl" class="btn" href="https://github.com/victor10days/cumple/releases/latest/download/cumple-macos-arm64.zip">Download for macOS</a>
-      <span class="also">Also <a href="https://github.com/victor10days/cumple/releases/latest/download/cumple-windows-x86_64.zip">Windows</a>, <a href="https://github.com/victor10days/cumple/releases/latest/download/cumple-linux-x86_64.tar.gz">Linux</a>, <a href="https://github.com/victor10days/cumple/releases/latest/download/cumple-macos-x86_64.zip">Intel Mac</a>. <a href="#install">Or install the command line with uv.</a></span>
+      <span class="also">Also <a href="https://github.com/victor10days/cumple/releases/latest/download/cumple-windows-x86_64.zip">Windows</a>, <a href="https://github.com/victor10days/cumple/releases/latest/download/cumple-linux-x86_64.tar.gz">Linux</a>, <a href="https://github.com/victor10days/cumple/releases/latest/download/cumple-macos-x86_64.zip">Intel Mac</a>. <a href="#install">Or install with uv.</a></span>
     </p>
     <p class="fine">Free and open source under the MIT licence. No account, no server, nothing leaves the machine. The builds are unsigned, so the first launch takes one extra step; <a href="#download">the steps are below</a>. <a href="https://github.com/victor10days/cumple">Source on GitHub.</a></p>
   </div>
   <figure class="hero-fig">
-    <img src="img/app-window.png" width="2360" height="1560" alt="The cumple window: the Check tab with three queued items, two bounces and a delivery package, each with its verdict, and the QC sheet open on the right with a FAIL stamp">
+    <picture>
+      <source type="image/webp" srcset="img/app-window-720.webp 720w, img/app-window-1180.webp 1180w, img/app-window.webp 2360w" sizes="(min-width: 74rem) 447px, (min-width: 56rem) 33vw, calc(100vw - 3rem)">
+      <img src="img/app-window.png" width="2360" height="1560" fetchpriority="high" decoding="async" alt="The cumple window: the Check tab with three queued items, two bounces and a delivery package, each with its verdict, and the QC sheet open on the right with a FAIL stamp">
+    </picture>
     <figcaption>The Check tab on the synthetic demo set, against Netflix stereo (2.0): a hot bounce fails on integrated loudness, true peak and packaging. The sheet shows the numbers, the limits and the fix.</figcaption>
   </figure>
 </section>
 
 <section class="tight">
   <ul class="problems">
-    <li>The platform's QC is usually the first time anyone measures the file the way the platform does.</li>
-    <li>The specs are PDFs and partner portals that change without notice, and nobody writes down the day they were read.</li>
-    <li>A meter tells you a number. It does not know which rule applies to this file, for this destination, today.</li>
+    <li>The platform's QC measures the file the way the platform does, and it runs after you have sent it.</li>
+    <li>The specs are PDFs and partner portals that change without notice, and a number copied out of one carries no date.</li>
+    <li>A meter tells you a number. It does not know which rule applies to this file, for this destination.</li>
   </ul>
 </section>
 
-<section class="features">
-  <h2>What you do with it</h2>
+<section class="features" aria-labelledby="features">
+  <h2 id="features">What you do with it</h2>
 
   <div class="feature">
     <div class="text">
       <h3>Read the verdict, with the clause attached</h3>
-      <p>Every rule gets PASS or FAIL, the measured value, the limit, the standard it comes from and the destination's own words. Under the findings: what would fix it, in decibels. Integrated and dialogue-gated loudness, true peak, loudness range, sample rate, bit depth, channel layout, packaging, padding, mono compatibility, the metadata's own loudness claim.</p>
+      <p>Every rule gets PASS or FAIL, the measured value, the limit, the standard it comes from and the destination's own words. Under the findings it prints what would fix it, in decibels. Integrated and dialogue-gated loudness, true peak, loudness range, sample rate, bit depth, channel layout, packaging, padding, mono compatibility, the metadata's own loudness claim.</p>
       <p>One HTML file with its type embedded. It opens offline, on a phone, and prints to A4; a PDF comes through the Chrome you already have.</p>
     </div>
     <figure>
-      <img src="img/qc-sheet.png" width="920" height="1180" alt="A cumple QC sheet: a stereo printmaster failing Netflix on integrated loudness and true peak, with the measured values, the limits and what would fix it">
+      <picture>
+        <source type="image/webp" srcset="img/qc-sheet.webp">
+        <img src="img/qc-sheet.png" width="920" height="1180" loading="lazy" decoding="async" alt="A cumple QC sheet: a stereo printmaster failing Netflix on integrated loudness and true peak, with the measured values, the limits and what would fix it">
+      </picture>
       <figcaption>The QC sheet for a hot stereo printmaster against Netflix 2.0, from the demo set.</figcaption>
     </figure>
   </div>
@@ -239,10 +275,13 @@ table.compare td.no { color: var(--color-muted); }
   <div class="feature">
     <div class="text">
       <h3>See where the loudness lives</h3>
-      <p>The sheet carries the short-term loudness over time, the integrated value as a line, the destination's window as a band, and a dot on the loudest three seconds, so a failure points at a place in the programme and not only at a number.</p>
+      <p>The sheet shows the short-term loudness over time, the integrated value as a line, the destination's window as a band, and a dot on the loudest 3 seconds, so a failure points at a place in the programme.</p>
     </div>
     <figure>
-      <img src="img/qc-timeline.png" width="920" height="400" alt="The short-term loudness timeline from a QC sheet: the 3 second short-term loudness over time, the integrated value as a dashed line, the destination's window as a shaded band, and a dot on the loudest 3 seconds">
+      <picture>
+        <source type="image/webp" srcset="img/qc-timeline.webp">
+        <img src="img/qc-timeline.png" width="920" height="400" loading="lazy" decoding="async" alt="The short-term loudness timeline from a QC sheet: the 3 second short-term loudness over time, the integrated value as a dashed line, the destination's window as a shaded band, and a dot on the loudest 3 seconds">
+      </picture>
       <figcaption>The timeline block of a QC sheet.</figcaption>
     </figure>
   </div>
@@ -250,32 +289,35 @@ table.compare td.no { color: var(--color-muted); }
   <div class="feature flip">
     <div class="text">
       <h3>Diff two versions, or stems against the printmaster</h3>
-      <p>Two files, one sentence: the gain change, the offset in samples and milliseconds, the polarity, the EQ as third-octave bars, and what is left once all of that is corrected. Stems summed against the printmaster are judged at level, so a null is a null. The diff has its own sheet.</p>
+      <p>One sentence gives the gain change, the offset in samples and milliseconds, the polarity, the EQ as third-octave bars, and what is left once all of that is corrected. Stems summed against the printmaster are judged at level, so the residual is the real difference. The diff has its own sheet.</p>
     </div>
     <figure>
-      <img src="img/diff-sheet.png" width="920" height="1080" alt="A cumple diff sheet: v13 against v12, read as the same material treated differently, with the gain, offset and residual numbers, the levels of both files, and third-octave bars showing a lift around 2.5 kHz">
+      <picture>
+        <source type="image/webp" srcset="img/diff-sheet.webp">
+        <img src="img/diff-sheet.png" width="920" height="1080" loading="lazy" decoding="async" alt="A cumple diff sheet: the gain, offset and residual numbers, the levels of both files, and third-octave bars with a lift in the upper mids">
+      </picture>
       <figcaption>v13 against v12 from the demo set: the same material, treated differently, with a lift around 2.5 kHz.</figcaption>
     </figure>
   </div>
 </section>
 
-<section>
-  <h2>How we know the numbers are right</h2>
+<section aria-labelledby="proof">
+  <h2 id="proof">How we know the numbers are right</h2>
   <div class="strip">
-    <div><a href="https://github.com/victor10days/cumple/blob/main/docs/CONFORMANCE.md"><span class="big">66 of 66</span><span class="what">EBU Tech 3341 readings inside the published tolerance</span></a></div>
-    <div><a href="https://github.com/victor10days/cumple/blob/main/docs/CONFORMANCE.md"><span class="big">29 of 29</span><span class="what">cases of the official EBU Loudness Test Set v5.0</span></a></div>
-    <div><a href="https://github.com/victor10days/cumple/blob/main/docs/BENCHMARK.md"><span class="big">0.05 LU</span><span class="what">the largest gap to ffmpeg ebur128 and to pyloudnorm on integrated loudness, derived from the benchmark table</span></a></div>
-    <div><a href="https://github.com/victor10days/cumple/blob/main/docs/PERF.md"><span class="big">92x</span><span class="what">real time: 60 minutes of stereo measured in 39 s at 622 MB peak memory</span></a></div>
-    <div><a href="https://github.com/victor10days/cumple#how-we-know-the-numbers-are-right"><span class="big">171</span><span class="what">tests, 91 % line coverage, run on macOS, Windows and Linux</span></a></div>
+    <div><a href="https://github.com/victor10days/cumple/blob/main/docs/CONFORMANCE.md"><span class="big">66 of 66</span> <span class="what">EBU Tech 3341 readings inside the published tolerance</span></a></div>
+    <div><a href="https://github.com/victor10days/cumple/blob/main/docs/CONFORMANCE.md"><span class="big">29 of 29</span> <span class="what">cases of the official EBU Loudness Test Set v5.0</span></a></div>
+    <div><a href="https://github.com/victor10days/cumple/blob/main/docs/BENCHMARK.md"><span class="big">0.05 LU</span> <span class="what">the largest gap to ffmpeg ebur128 and to pyloudnorm on integrated loudness</span></a></div>
+    <div><a href="https://github.com/victor10days/cumple/blob/main/docs/PERF.md" aria-label="92 times real time: 60 minutes of stereo measured in 39 seconds at 622 MB peak memory"><span class="big">92x</span> <span class="what">real time: 60 minutes of stereo measured in 39 s at 622 MB peak memory</span></a></div>
   </div>
-  <p class="note">Every number on this page is regenerated by a script in the repository, and the disagreements are written down too. The dialogue gate is a labelled approximation of Dolby's algorithm: against two open films it read 1.6 LU low on Tears of Steel and 6.7 LU low on Sintel, whose dialogue sits under an orchestral score. <a href="https://github.com/victor10days/cumple/blob/main/docs/DIALOGUE.md">docs/DIALOGUE.md</a> has the method and the numbers.</p>
+  <p class="note">Every measured number on this page comes from a report in the repository, and the disagreements are written down too. The dialogue gate is a labelled approximation of Dolby's algorithm: against two open films it read 1.6 LU low on Tears of Steel and 6.7 LU low on Sintel, whose dialogue sits under an orchestral score. <a href="https://github.com/victor10days/cumple/blob/main/docs/DIALOGUE.md">docs/DIALOGUE.md</a> has the method and the numbers. 171 tests with 91 % line coverage run on macOS, Windows and Linux.</p>
 </section>
 
-<section>
-  <h2><span data-count="39">39 destinations</span>, every number with a source and a grade</h2>
-  <p>A profile is one YAML file that quotes the document it comes from, names the grade of that access (READ, the primary document was read; SECONDARY, another standards body's table; COMMUNITY, the platform publishes nothing) and carries the date it was read. Where a source is silent on a tolerance, the profile says the number is the tool's own default.</p>
+<section aria-labelledby="destinations">
+  <h2 id="destinations"><span data-count="39">39 destinations</span>, every number with a source and a grade</h2>
+  <p>A profile is one YAML file that quotes the document it comes from, names the grade of that access (READ, the primary document was read; SECONDARY, another standards body's table; COMMUNITY, the platform publishes nothing) and records the date it was read. Where a source is silent on a tolerance, the profile says the number is the tool's own default.</p>
   <table class="stack destinations">
-    <thead><tr><th>Family</th><th>Count</th><th>Destinations</th></tr></thead>
+    <caption class="lbl">The 39 destinations by family</caption>
+    <thead><tr><th scope="col">Family</th><th scope="col">Count</th><th scope="col">Destinations</th></tr></thead>
     <tbody>
       <tr><td class="fam" data-h="Family">Streaming</td><td class="num" data-h="Count">17</td><td data-h="Destinations">Netflix stereo (2.0) and 5.1 near-field printmasters; Apple TV+; Amazon MGM Studios 2.0 and 5.1 as discrete mono files, and Prime Video Direct; Disney+ near-field 2.0 and 5.1, 7.1 and Atmos; Disney A85 for General Entertainment, Disney R128 for dubs, the Disney in-home trailer; Warner Bros. Discovery / Max; Hulu (the 2018 guidebook, marked stale); Paramount Global for Pluto TV; Peacock (community-reported); ATSC A/85:2026 Annex L streaming; AES TD1008 speech-anchored.</td></tr>
       <tr><td class="fam" data-h="Family">Broadcast</td><td class="num" data-h="Count">11</td><td data-h="Destinations">EBU R 128 programme and s1 short-form; ATSC A/85:2026; UK DPP / AS-11; Free TV Australia OP-59; ARIB TR-B32 (Japan, from an AES table); CBS, ABC and NBCUniversal commercial delivery; Fox Networks program (2018) and commercial (2024) material.</td></tr>
@@ -288,8 +330,8 @@ table.compare td.no { color: var(--color-muted); }
   <p class="note">Grades across the 39: READ 36, COMMUNITY 2, SECONDARY 1; 14 profiles carry a stated tool default where the source is silent. The full matrix with every clause and source is <a href="https://github.com/victor10days/cumple/blob/main/docs/SPECS.md">docs/SPECS.md</a>.</p>
 </section>
 
-<section>
-  <h2>How it works</h2>
+<section aria-labelledby="how">
+  <h2 id="how">How it works</h2>
   <ol class="steps">
     <li><h3>Drop the bounce</h3><p>A file, a folder of bounces, or a delivery package of discrete mono files whose channel roles are read from the file names.</p></li>
     <li><h3>Name the destination</h3><p>One of 39, grouped by family, with the grade of its source beside the name. Or add your own as one YAML file.</p></li>
@@ -298,41 +340,42 @@ table.compare td.no { color: var(--color-muted); }
   </ol>
 </section>
 
-<section>
-  <h2>What it does that the meters do not</h2>
-  <p>The measurement is a solved problem, and cumple stands on the same standards the meters implement. The judgement, the sources and the paperwork are what was missing. Cells say "not checked" where the tool's own documentation was not read for this table.</p>
-  <div class="scroll">
+<section aria-labelledby="compare">
+  <h2 id="compare">What it does that the meters do not</h2>
+  <p>cumple measures with the same standards these meters implement, and adds the destination's rule, the source of that rule, and a sheet to send. Cells say "not checked" where the tool's own documentation was not read for this table.</p>
+  <div class="scroll" role="region" aria-label="Comparison with other tools" tabindex="0">
   <table class="compare">
-    <thead><tr><th></th><th>cumple</th><th>libebur128</th><th>pyloudnorm</th><th>ffmpeg ebur128</th><th>loudcheck</th><th>DeltaWave</th></tr></thead>
+    <caption class="lbl">Capability comparison, cumple against five loudness tools</caption>
+    <thead><tr><th scope="col"><span class="vh">Capability</span></th><th scope="col">cumple</th><th scope="col">libebur128</th><th scope="col">pyloudnorm</th><th scope="col">ffmpeg ebur128</th><th scope="col">loudcheck</th><th scope="col">DeltaWave</th></tr></thead>
     <tbody>
-      <tr><td>BS.1770 loudness and true peak</td><td class="yes">yes</td><td class="yes">yes</td><td>integrated only</td><td class="yes">yes</td><td class="yes">yes</td><td class="no">not checked</td></tr>
-      <tr><td>Passes the EBU test set</td><td class="yes">29 of 29, report in the repo</td><td class="yes">yes, per its README</td><td class="no">not checked</td><td class="no">no published report</td><td class="no">not checked</td><td class="no">not applicable</td></tr>
-      <tr><td>Named destinations with graded sources</td><td class="yes">39</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td>EBU R 128 and ATSC A/85</td><td class="no">no</td></tr>
-      <tr><td>The clause behind each verdict</td><td class="yes">yes</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="no">not checked</td><td class="no">no</td></tr>
-      <tr><td>A report that travels with the delivery</td><td class="yes">HTML, PDF, JSON, CSV log</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="no">not checked</td><td class="no">not checked</td></tr>
-      <tr><td>Diff in words, stems null test</td><td class="yes">yes</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td>null test, desktop app</td></tr>
-      <tr><td>Watch folder and desktop app</td><td class="yes">yes, three platforms</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td>desktop app</td></tr>
-      <tr><td>Runs offline, no account</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
-      <tr><td>Licence</td><td>MIT</td><td>MIT</td><td>MIT</td><td>LGPL</td><td>MIT</td><td class="no">not checked</td></tr>
+      <tr><th scope="row">BS.1770 loudness and true peak</th><td class="yes">yes</td><td class="yes">yes</td><td>integrated only</td><td class="yes">yes</td><td class="yes">yes</td><td class="no">not checked</td></tr>
+      <tr><th scope="row">Passes the EBU test set</th><td class="yes">29 of 29, report in the repo</td><td class="yes">yes, per its README</td><td class="no">not checked</td><td class="no">no published report</td><td class="no">not checked</td><td class="no">not applicable</td></tr>
+      <tr><th scope="row">Named destinations with graded sources</th><td class="yes">39</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td>EBU R 128 and ATSC A/85</td><td class="no">no</td></tr>
+      <tr><th scope="row">The clause behind each verdict</th><td class="yes">yes</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="no">not checked</td><td class="no">no</td></tr>
+      <tr><th scope="row">A report that travels with the delivery</th><td class="yes">HTML, PDF, JSON, CSV log</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="no">not checked</td><td class="no">not checked</td></tr>
+      <tr><th scope="row">Diff in words, stems null test</th><td class="yes">yes</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td>null test, desktop app</td></tr>
+      <tr><th scope="row">Watch folder and desktop app</th><td class="yes">yes, three platforms</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td>desktop app</td></tr>
+      <tr><th scope="row">Runs offline, no account</th><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+      <tr><th scope="row">Licence</th><td>MIT</td><td>MIT</td><td>MIT</td><td>LGPL</td><td>MIT</td><td class="no">not checked</td></tr>
     </tbody>
   </table>
   </div>
   <p class="note">Nugen VisLM and Dolby's DPLM are the commercial meters the studios name in their specifications; they are not compared here.</p>
 </section>
 
-<section class="faq">
-  <h2>Questions</h2>
-  <details><summary>Is cumple free?</summary><p>Yes. MIT licence, no account, no server, no tiers. The app and the command line are the same code, in one repository.</p></details>
+<section class="faq" aria-labelledby="questions">
+  <h2 id="questions">Questions</h2>
+  <details><summary>Is cumple free?</summary><p>Yes. MIT licence, no account, no server, no tier. The app and the command line are the same code, in one repository.</p></details>
   <details><summary>Does my audio leave the machine?</summary><p>No. Nothing is uploaded. The only external program cumple runs is the Chrome, Chromium or Edge already on the machine, to print a PDF.</p></details>
   <details><summary>Which destinations does it know?</summary><p>39, each with the grade of its source and the date the source was read. A destination you add is one YAML file in your config folder, and a pull request if you want everyone to have it.</p></details>
-  <details><summary>How accurate is the meter?</summary><p>All 29 cases of the official EBU Loudness Test Set pass, 66 of 66 readings inside the published tolerance, and integrated loudness lands within 0.05 LU of ffmpeg and pyloudnorm on the same files. The reports are in the repository and a script regenerates them.</p></details>
+  <details><summary>How accurate is the meter?</summary><p>All 29 cases of the official EBU Loudness Test Set pass, with 66 of 66 Tech 3341 readings inside the published tolerance, and integrated loudness lands within 0.05 LU of ffmpeg and pyloudnorm on the same files. The reports are in the repository and a script regenerates them.</p></details>
   <details><summary>Does it measure dialogue-gated loudness like the studios?</summary><p>Approximately. Netflix, Amazon and Disney gate on dialogue with a Dolby algorithm nobody outside Dolby can run. cumple uses a heuristic speech detector, labelled as such on every sheet, that read 1.6 and 6.7 LU low on two open films; the full-programme value is always shown beside it, and Netflix's own fallback rule is applied before anything is flagged.</p></details>
-  <details><summary>Which files does it read?</summary><p>WAV, BWF, RF64, AIFF and FLAC, mono to 7.1 and packages of discrete mono files. Not AAC, AC-3, MP3 or MXF, and no Dolby Atmos or ADM checks yet: check the master.</p></details>
+  <details><summary>Which files does it read?</summary><p>WAV, BWF, RF64, AIFF and FLAC, mono to 7.1 and packages of discrete mono files. Not AAC, AC-3, MP3 or MXF, and no Dolby Atmos or ADM checks yet. Check the master.</p></details>
   <details><summary>Which platforms?</summary><p>macOS on Apple silicon and Intel, Windows 10 and 11 on x64, Linux on x86_64. The builds come from CI and are unsigned; the macOS build is the one exercised by hand so far. Any machine with Python 3.12 can install the command line with uv.</p></details>
 </section>
 
-<section>
-  <h2>Honest limits</h2>
+<section aria-labelledby="limits">
+  <h2 id="limits">Honest limits</h2>
   <ul class="limits">
     <li>The dialogue gate is a heuristic and the weakest meter in the tool on film mixes; the numbers above say by how much.</li>
     <li>No Dolby Atmos or ADM checks yet: cumple reads BWF metadata but does not validate beds, objects or track mappings.</li>
@@ -342,25 +385,25 @@ table.compare td.no { color: var(--color-muted); }
   </ul>
 </section>
 
-<section class="free">
-  <div><h2>Free. MIT. Yours.</h2></div>
+<section class="free" aria-labelledby="free">
+  <div><h2 id="free">Free and MIT licensed.</h2></div>
   <div>
-    <p>The app and the command line are one MIT-licensed repository. There is no hosted version, no account and no tier; it is a tool today.</p>
+    <p>The app and the command line are one MIT-licensed repository. There is no hosted version, no account and no tier.</p>
     <p>If the destination you deliver to is not there, it is one YAML file with the clause quoted and the source graded, and a pull request. Every profile in the registry was built that way.</p>
   </div>
 </section>
 
-<section class="two">
-  <div><h2>Who made it</h2></div>
+<section class="two" aria-labelledby="who">
+  <div><h2 id="who">Who made it</h2></div>
   <div>
-    <p>cumple is written by Victor E. Diaz, studio engineer at Paleta Creativa in San Juan from 2025 to June 2026, on work for clients including Warner Bros., Caribbean Cinemas, GFR Media and Mobil, where compliance with a platform's spec sheet was checked by hand and by ear before every send. He trained at Berklee (BA, Electronic Production and Design) and at Holberton (software engineering).</p>
-    <p>Most of the code was written with Claude. <a href="https://github.com/victor10days/cumple/blob/main/AI_USAGE.md">AI_USAGE.md</a> records what the model did, what the author decided, and the three times a test caught the model being wrong.</p>
+    <p>cumple is written by Victor E. Diaz, studio engineer at Paleta Creativa in San Juan from 2025 to June 2026. The work was for Warner Bros., Caribbean Cinemas, GFR Media and Mobil, where a platform's spec sheet was checked by hand and by ear before every send. He trained at Berklee (BA, Electronic Production and Design) and at Holberton (software engineering).</p>
+    <p>Most of the code was written with Claude. <a href="https://github.com/victor10days/cumple/blob/main/AI_USAGE.md">AI_USAGE.md</a> records what the model did, what he decided, and the three times a test caught the model being wrong.</p>
   </div>
 </section>
 
-<section id="download" class="two">
+<section id="download" class="two" aria-labelledby="download-title">
   <div>
-    <h2>Download</h2>
+    <h2 id="download-title">Download</h2>
     <p>One folder per platform, from the <a href="https://github.com/victor10days/cumple/releases/latest">latest release</a>. Unsigned, so the first launch takes one extra step.</p>
   </div>
   <div>
@@ -373,7 +416,7 @@ table.compare td.no { color: var(--color-muted); }
     <ol class="firstrun">
       <li><strong>macOS</strong>: unzip, move cumple.app to Applications, open it once and let macOS refuse, then System Settings, Privacy and Security, Open Anyway. The terminal route is <code>xattr -dr com.apple.quarantine /Applications/cumple.app</code>.</li>
       <li><strong>Windows</strong>: unzip, run cumple-app.exe. SmartScreen shows "Windows protected your PC": More info, Run anyway. The app needs Microsoft's WebView2 runtime, which Windows 11 and most Windows 10 machines already have; when it is missing the app says so and opens the download page.</li>
-      <li><strong>Linux</strong>: untar, run cumple-app/cumple-app. The folder carries a .desktop file and an icon for the launcher.</li>
+      <li><strong>Linux</strong>: untar, run cumple-app/cumple-app. The folder includes a .desktop file and an icon for the launcher.</li>
     </ol>
     <h3 id="install">Or install the command line with uv</h3>
 <pre>uv tool install --python 3.12 git+https://github.com/victor10days/cumple
@@ -382,6 +425,8 @@ cumple check master.wav --spec netflix-2.0</pre>
   </div>
 </section>
 
+</main>
+
 <footer class="foot">
   <p class="statement">Check the bounce you are about to send.</p>
   <div class="foot-row">
@@ -389,22 +434,33 @@ cumple check master.wav --spec netflix-2.0</pre>
     <span>MIT licence</span>
     <a href="https://github.com/victor10days/cumple">github.com/victor10days/cumple</a>
     <span>Victor E. Diaz, San Juan, Puerto Rico</span>
-    <span>Numbers as of 8 September 2026, from the repository's own reports.</span>
+    <span>Numbers as of 7 September 2026, from the repository's own reports.</span>
   </div>
 </footer>
 
 </div>
 <script>
 (function () {
-  var p = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
+  var uad = navigator.userAgentData;
+  var p = (uad && uad.platform) || navigator.platform || "";
   var base = "https://github.com/victor10days/cumple/releases/latest/download/";
+  var a = document.getElementById("dl");
+  if (/iphone|ipad|ipod|android/i.test(navigator.userAgent) || (/mac/i.test(p) && navigator.maxTouchPoints > 1)) {
+    a.href = "https://github.com/victor10days/cumple/releases/latest";
+    a.textContent = "See the downloads";
+    return;
+  }
   var pick = /win/i.test(p) ? ["cumple-windows-x86_64.zip", "Download for Windows"]
-    : /linux/i.test(p) && !/android/i.test(navigator.userAgent) ? ["cumple-linux-x86_64.tar.gz", "Download for Linux"]
+    : /linux/i.test(p) ? ["cumple-linux-x86_64.tar.gz", "Download for Linux"]
     : /mac/i.test(p) ? ["cumple-macos-arm64.zip", "Download for macOS"] : null;
   if (!pick) { return; }
-  var a = document.getElementById("dl");
   a.href = base + pick[0];
   a.textContent = pick[1];
+  if (/mac/i.test(p) && uad && uad.getHighEntropyValues) {
+    uad.getHighEntropyValues(["architecture"]).then(function (h) {
+      if (h.architecture === "x86") { a.href = base + "cumple-macos-x86_64.zip"; a.textContent = "Download for Intel Mac"; }
+    }).catch(function () {});
+  }
 })();
 </script>
 </body>

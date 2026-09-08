@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 from collections import Counter
+from html import unescape
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -126,6 +127,15 @@ def test_json_ld_parses():
     assert "aggregateRating" not in app and "review" not in app
     faq = types["FAQPage"]
     assert len(faq["mainEntity"]) == 7 and PAGE.count("<details>") == 7
+
+
+def test_faq_json_ld_repeats_the_visible_answers():
+    w = walk()
+    faq = next(b for b in (json.loads(b) for b in w.jsonld) if b["@type"] == "FAQPage")
+    visible = re.findall(r"<details><summary>([^<]+)</summary><p>([^<]+)</p></details>", PAGE)
+    assert len(visible) == 7
+    structured = [(q["name"], q["acceptedAnswer"]["text"]) for q in faq["mainEntity"]]
+    assert structured == [(unescape(s), unescape(a)) for s, a in visible]
 
 
 def test_inline_css_is_token_pure():
