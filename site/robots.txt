@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://victor10days.github.io/cumple/sitemap.xml
