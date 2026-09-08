@@ -3,6 +3,8 @@ name: release
 # Builds the desktop app on the four targets. On a pull request that touches the app or the
 # packaging it only uploads the artifacts; on a v* tag it also drafts a GitHub Release with
 # version-less asset names, so the landing page can link releases/latest/download/<asset>.
+# The Windows and Linux builds also open their real window on a tone and upload a screenshot
+# of it with the app log (the launch-<os> artifact), since nobody opens those two by hand.
 
 on:
   pull_request:
@@ -41,13 +43,14 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      - name: Linux libraries for Qt WebEngine and libsndfile
+      - name: Linux libraries for Qt WebEngine and libsndfile, and an X server for the launch check
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libsndfile1 libegl1 libgl1 libxkbcommon0 libxkbcommon-x11-0 libdbus-1-3 libnss3 \
             libxcomposite1 libxdamage1 libxrandr2 libxtst6 libasound2 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 \
-            libxcb-shape0 libxcb-xinerama0 libfontconfig1
+            libxcb-shape0 libxcb-xinerama0 libfontconfig1 libxcb-image0 libxcb-randr0 libxcb-render-util0 libxcb-xkb1 \
+            xvfb xauth imagemagick fonts-dejavu-core
       - name: Install
         env:
           UV_PYTHON: ${{ steps.py.outputs.python-path }}
@@ -69,6 +72,91 @@ jobs:
           $p = Start-Process -FilePath "dist\cumple-app\cumple-app.exe" -ArgumentList "--selftest" -Wait -PassThru
           Get-Content "$env:LOCALAPPDATA\cumple\app.log" -ErrorAction SilentlyContinue
           if ($p.ExitCode -ne 0) { exit $p.ExitCode }
+      # The self-test proves the measurement; the next steps prove the window. The app opens on a
+      # 3 s tone at -20 dBFS with the EBU R 128 destination, so the check runs at once and the sheet
+      # should show a FAIL stamp (loudness), and after 25 s the whole screen is captured. The step
+      # fails when the app has already exited by then. launch/ goes up as launch-<os>.
+      - name: Tone for the launch check
+        id: tone
+        if: runner.os != 'macOS'
+        shell: bash
+        run: |
+          mkdir -p launch
+          uv run python - <<'EOF'
+          import numpy as np
+          import soundfile as sf
+
+          t = np.arange(48000 * 3) / 48000
+          x = 10 ** (-20 / 20) * np.sin(2 * np.pi * 1000 * t)  # -20 dBFS on both channels reads -20 LUFS
+          sf.write("launch/tone.wav", np.column_stack([x, x]), 48000, subtype="PCM_24")
+          print("launch/tone.wav: 3 s stereo 1 kHz tone at -20 dBFS, 48 kHz, 24-bit")
+          EOF
+      - name: Launch the window and screenshot it (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # The image ships Edge but not necessarily the WebView2 runtime the app needs; same registry
+          # key the app checks (desktop.webview2_installed).
+          $client = "Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
+          $pv = @("HKLM:\SOFTWARE\WOW6432Node\$client", "HKLM:\SOFTWARE\$client", "HKCU:\SOFTWARE\$client") |
+            ForEach-Object { (Get-ItemProperty -Path $_ -Name pv -ErrorAction SilentlyContinue).pv } |
+            Where-Object { $_ -and $_ -ne "0.0.0.0" } | Select-Object -First 1
+          if ($pv) { "WebView2 runtime $pv is registered" } else {
+            "No WebView2 runtime on this image, installing the Evergreen bootstrapper"
+            Invoke-WebRequest -Uri "https://go.microsoft.com/fwlink/p/?LinkId=2124703" -OutFile "$env:TEMP\MicrosoftEdgeWebview2Setup.exe"
+            Start-Process -FilePath "$env:TEMP\MicrosoftEdgeWebview2Setup.exe" -ArgumentList "/silent", "/install" -Wait
+          }
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+          "screen $($bounds.Width)x$($bounds.Height)"
+          $app = Start-Process -FilePath "dist\cumple-app\cumple-app.exe" -ArgumentList "--spec", "ebu-r128", "$PWD\launch\tone.wav" -PassThru
+          Start-Sleep -Seconds 25
+          $alive = -not $app.HasExited
+          if ($alive) { "after 25 s: cumple-app is running" } else { "after 25 s: cumple-app exited with $($app.ExitCode)" }
+          $shot = $null
+          try {
+            $bmp = [System.Drawing.Bitmap]::new($bounds.Width, $bounds.Height)
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+            $bmp.Save("$PWD\launch\launch-windows.png", [System.Drawing.Imaging.ImageFormat]::Png)
+            $g.Dispose(); $bmp.Dispose()
+          } catch { $shot = $_.Exception.Message; Write-Warning "screenshot failed: $shot" }
+          Stop-Process -Id $app.Id -Force -ErrorAction SilentlyContinue
+          Get-Process cumple-app -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Copy-Item "$env:LOCALAPPDATA\cumple\app.log" "launch\app.log" -ErrorAction SilentlyContinue
+          "--- app.log ---"
+          Get-Content "launch\app.log" -ErrorAction SilentlyContinue
+          "--- launch/ ---"
+          Get-ChildItem launch | Format-Table Name, Length
+          if (-not $alive) { throw "cumple-app exited before the screenshot" }
+          if ($shot) { throw "no screenshot: $shot" }
+      - name: Launch the window and screenshot it (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          # A real X server and Qt's xcb platform this time, not the offscreen platform of the self-test.
+          xvfb-run -a -s "-screen 0 1280x800x24" bash -c '
+            dist/cumple-app/cumple-app --spec ebu-r128 "$PWD/launch/tone.wav" > launch/app-output.txt 2>&1 &
+            app=$!
+            sleep 25
+            if kill -0 "$app" 2>/dev/null; then echo "after 25 s: cumple-app is running" | tee launch/status.txt
+            else wait "$app"; echo "after 25 s: cumple-app exited with $?" | tee launch/status.txt; fi
+            import -window root launch/launch-linux.png || echo "screenshot failed"
+            kill "$app" 2>/dev/null; sleep 2; kill -9 "$app" 2>/dev/null; true
+          '
+          cp "${XDG_STATE_HOME:-$HOME/.local/state}/cumple/app.log" launch/app.log || true
+          echo "--- app.log ---"; cat launch/app.log || true
+          echo "--- stdout and stderr ---"; cat launch/app-output.txt || true
+          echo "--- launch/ ---"; ls -la launch
+          grep -q "is running" launch/status.txt || { echo "cumple-app exited before the screenshot"; exit 1; }
+          test -s launch/launch-linux.png || { echo "no screenshot"; exit 1; }
+      - name: Upload the launch evidence
+        if: runner.os != 'macOS' && !cancelled() && steps.tone.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: launch-${{ matrix.os }}
+          path: launch/
+          if-no-files-found: error
       - name: Package (macOS)
         if: runner.os == 'macOS'
         run: ditto -c -k --sequesterRsrc --keepParent dist/cumple.app dist/${{ matrix.asset }}
