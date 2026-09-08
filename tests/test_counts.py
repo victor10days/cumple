@@ -14,14 +14,17 @@ COUNTS = {
     "CONTRIBUTING.md": r"# (\d+) tests;",
     "docs/QA.md": r"`uv run pytest`, (\d+) tests",
     "AI_USAGE.md": r"(\d+) tests, including",
-    "site/index.html": r"(\d+) tests with 91",
+    "site/index.html": r"(\d+) tests with \d+ %",
 }
 
 
 def test_documented_test_count_matches_the_collected_suite(request):
+    cfg = request.config
+    options = ("keyword", "markexpr", "deselect", "ignore", "ignore_glob", "lf", "ff")
+    filtered = any(cfg.getoption(name, default=None) for name in options)
     n = len(request.session.items)
-    if n < 100:  # a subset was collected; the documented number describes the whole suite
-        pytest.skip("run the whole suite to check the documented count")
+    if filtered or n < 100:  # a filtered run or a subset; the documented number describes the whole suite
+        pytest.skip("run the whole suite without filters to check the documented count")
     for name, pattern in COUNTS.items():
         m = re.search(pattern, (ROOT / name).read_text(encoding="utf-8"))
         assert m, f"{name}: no test count found"

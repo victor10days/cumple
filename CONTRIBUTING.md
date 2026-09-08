@@ -9,7 +9,7 @@ destination, or report a number that disagrees with a published document.
 git clone https://github.com/victor10days/cumple
 cd cumple
 uv sync            # Python 3.12, runtime and dev dependencies
-uv run pytest      # 185 tests; the 29 EBU cases skip until you fetch the test set into ~/.cache/cumple
+uv run pytest      # 189 tests; the 29 EBU cases skip until you fetch the test set into ~/.cache/cumple
 uv run ruff check src tests scripts && uv run ruff format --check src tests scripts
 uv sync --extra app --group packaging     # the desktop app (pywebview) and PyInstaller
 uv run cumple app                         # the window, from the source tree
@@ -81,3 +81,18 @@ date tells you how old our reading is; delivery specs change without notice.
 
 By contributing you agree that your contribution is licensed under the MIT
 License in `LICENSE`.
+
+## Releasing
+
+1. Bump `__version__` in `src/cumple/__init__.py` and the `softwareVersion` in
+   `site/index.html` on a branch; merge.
+2. Tag main: `git tag -a vX.Y.Z origin/main -m "..."` and push the tag from a
+   feature-branch checkout (the push hook refuses a main checkout).
+3. The release workflow builds the four assets, self-tests each, opens the
+   Windows and Linux windows in CI, and creates a draft release with the builds
+   only.
+4. Download the macOS zip with the quarantine bit set, follow the README's
+   first-launch steps, check a file with it, and log the result in
+   `docs/QA.md`; then publish the draft with notes that name what changed and
+   any known issue.
+

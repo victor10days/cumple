@@ -1,7 +1,7 @@
 # Manual QA log
 
 Hands-on checks recorded here with a date and with who or what ran them.
-The automated suite (`uv run pytest`, 185 tests) and the conformance report
+The automated suite (`uv run pytest`, 189 tests) and the conformance report
 cover the measurement; this log covers the surfaces an engineer actually
 touches. An item without a dated entry has **not** been done. Rows that need
 a DAW, real mix versions or a Windows or Linux machine stay pending until a
@@ -95,8 +95,8 @@ Format for an entry:
 - Ran by: the release workflow (run 34193335538 on the `ci/launch-screenshots` branch), not
   a person.
 - Action: after the self-test, each frozen build was launched on a 3 s tone at -20 dBFS
-  against EBU R 128, left for 25 s, and the whole screen captured: the Windows 11 runner
-  (WebView2 runtime 151 already registered) and Ubuntu 22.04 under xvfb with Qt's xcb
+  against EBU R 128, left for 25 s, and the whole screen captured: the windows-latest runner
+  (Windows Server 2025, WebView2 runtime 151 already registered) and Ubuntu 22.04 under xvfb with Qt's xcb
   platform.
 - Result: both windows opened, ran the check at once and rendered the sheet with a FAIL
   stamp on integrated loudness (-20.0 LUFS against -23 ±1); `tone.qc.html` and
@@ -104,8 +104,11 @@ Format for an entry:
   Screenshots: [docs/launch-windows.png](launch-windows.png) and
   [docs/launch-linux.png](launch-linux.png).
 - Finding: on the Windows runner pywebview logged fourteen "Error while processing
-  window.native.AccessibilityObject.Bounds" lines while the window kept working; not seen on
-  macOS; to look at on a real Windows machine. Linux printed Vulkan and GPU context warnings
+  window.native..." lines while the window kept working: one for
+  `AccessibilityObject.Bounds`, six for `browser.webview` and seven for `ActiveControl`
+  properties, each saying the object can only be accessed from the UI thread, which points
+  at pywebview reading the native window from its bridge thread; not seen on macOS; to look
+  at on a real Windows machine. Linux printed Vulkan and GPU context warnings
   under the virtual display, which has no GPU.
 - Still pending: SmartScreen's dialog and a mouse on Windows, Save PDF there with Edge or
   Chrome, and the `.desktop` launcher on Linux.

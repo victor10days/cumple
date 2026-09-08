@@ -50,15 +50,8 @@ jobs:
           python-version: "3.12"
       - name: Install
         run: uv sync --group dev
-      - name: Restore the EBU test set
-        if: env.EBU_TEST_SET_URL != ''
-        id: cache
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/cumple/ebu-loudness-test-setv05.zip
-          key: ebu-loudness-test-set-v05
       - name: Fetch the EBU test set
-        if: env.EBU_TEST_SET_URL != '' && steps.cache.outputs.cache-hit != 'true'
+        if: env.EBU_TEST_SET_URL != ''
         run: |
           mkdir -p ~/.cache/cumple
           curl -fsSL "$EBU_TEST_SET_URL" -o ~/.cache/cumple/ebu-loudness-test-setv05.zip \
@@ -80,5 +73,5 @@ jobs:
           uv run python scripts/conformance_report.py > /tmp/CONFORMANCE.md
           # Compare the pass marks and the summary lines, not the two-decimal values, which can
           # differ at a rounding boundary between this runner and the machine that wrote the report.
-          diff <(grep -c '✓' docs/CONFORMANCE.md) <(grep -c '✓' /tmp/CONFORMANCE.md)
+          diff <(grep -o '✓' docs/CONFORMANCE.md | wc -l) <(grep -o '✓' /tmp/CONFORMANCE.md | wc -l)
           diff <(grep '^\*\*' docs/CONFORMANCE.md) <(grep '^\*\*' /tmp/CONFORMANCE.md)
