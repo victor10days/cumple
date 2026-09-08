@@ -62,8 +62,12 @@ def test_dialogue_gated_reads_the_speech_not_the_music(tmp_path):
     assert -29 < m.loudness.dialogue_gated < -25  # inside Netflix's window, by construction
     r = evaluate(get("netflix-2.0"), m)
     f = {x.code: x for x in r.findings}
-    assert f["loudness.dialogue_gated"].status is Status.PASS
+    # inside the window, but 3 LU or more under the full-programme value: a pass here may be a
+    # false pass on this kind of material, so the engine flags it for a real meter
+    assert f["loudness.dialogue_gated"].status is Status.WARN
     assert "speech gate" in f["loudness.dialogue_gated"].note
+    assert "false pass" in f["loudness.dialogue_gated"].note
+    assert not f["loudness.dialogue_gated"].failed  # a warning is not a failure
 
 
 def test_music_only_programme_flips_netflix_to_the_minus_24_rule(tmp_path):
@@ -213,3 +217,16 @@ def test_leqm_reports_the_calibration_it_was_given():
     m.feed(np.zeros((FS, 1)))
     r = m.result()
     assert (r.calibration_dbfs, r.calibration_db) == (-18.0, 82.0)
+
+
+def test_dialogue_gated_pass_close_to_the_full_programme_value_is_a_plain_pass(tmp_path):
+    """Speech-led material: the two values sit together, so the pass stands without a warning."""
+    x = stereo(speech_like(12, -32))  # the level that lands inside Netflix's window, as above
+    sf.write(str(tmp_path / "speech.wav"), x, FS, subtype="PCM_24")
+    m = measure(tmp_path / "speech.wav")
+    assert m.speech_fraction > 0.8
+    assert abs(m.loudness.integrated - m.loudness.dialogue_gated) < 3
+    r = evaluate(get("netflix-2.0"), m)
+    f = {x.code: x for x in r.findings}
+    assert f["loudness.dialogue_gated"].status is Status.PASS
+    assert "false pass" not in (f["loudness.dialogue_gated"].note or "")
