@@ -34,16 +34,22 @@ def _tables(text: str, first_header: str) -> list[dict[str, str]]:
     return rows
 
 
+# The meters the strip's gap figure is measured against. loudcheck is left out: its
+# integrated value is libebur128's algorithm run inside ffmpeg, not an independent reading.
+GAP_METERS = ("libebur128", "pyloudnorm", "ffmpeg ebur128")
+
+
 def test_benchmark_gap_on_the_strip():
-    rows = _tables((ROOT / "docs" / "BENCHMARK.md").read_text(encoding="utf-8"), "| file |")
+    rows = _tables((ROOT / "docs" / "BENCHMARK.md").read_text(encoding="utf-8"), "| file | expected I |")
     gaps = []
     for r in rows:
-        c = _num(r["cumple I"])
-        for other in ("ffmpeg I", "pyloudnorm I"):
+        c = _num(r["cumple"])
+        for other in GAP_METERS:
             o = _num(r[other])
             if c is not None and o is not None:
                 gaps.append(abs(c - o))
-    assert len(gaps) >= 20
+    # Every file has a reading from every meter; a dropped cell must fail here, not shrink the figure.
+    assert len(rows) == 22 and len(gaps) == len(GAP_METERS) * len(rows)
     largest = round(max(gaps), 2)
     assert f'<span class="big">{largest:.2f} LU</span>' in PAGE
     assert PAGE.count(f"within {largest:.2f} LU") == 2  # the FAQ answer and its JSON-LD twin
