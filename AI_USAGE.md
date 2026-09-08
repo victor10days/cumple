@@ -71,7 +71,7 @@ says the same.
   detector, Leq(m) from the TASA response table, the rules engine with
   either/or rules and the speech switch, the audio diff, the watch folder,
   the gain-only fix, the QC sheet, the macOS droplet, 39 profiles.
-- **Tests and benchmarks.** 189 tests, including synthetic signals with
+- **Tests and benchmarks.** 190 tests, including synthetic signals with
   analytic answers and the official EBU cases; cross-checks against
   libebur128, pyloudnorm, ffmpeg's `ebur128` filter, loudcheck and an
   independently designed interpolator;
@@ -156,7 +156,8 @@ same day.
 
 After the repository went public, Victor asked for a desktop application for
 macOS, Windows and Linux and a landing page for it. He decided the shape: the
-page hosted from the repository on GitHub Pages, the macOS app finished and
+page hosted from the repository (GitHub Pages at first; since 7 September a
+Render static site serves it and Pages is a mirror), the macOS app finished and
 tried first, Windows and Linux built by CI and verified from its logs, the
 builds unsigned. Claude surveyed the engine for platform-specific code (one
 function, the Chrome lookup for the PDF), read pywebview's source at the tag
@@ -215,8 +216,20 @@ page's 0.05 LU to 0.04 LU on a misread of the table (the checking script
 dropped every cell that carried a pass mark), the code reviewer caught it,
 and a test now derives that figure and the others on the page from the
 reports. One process failure: a pull
-request whose copy test was red merged because the repository has no branch
-protection; the fix followed within minutes, and the rule since is that a
-merge waits for the run's conclusion. Release 0.2.1 exists so that the
-downloads carry the code these documents describe.
+request whose copy test was red merged because the repository then had no
+branch protection; the fix followed within minutes, and since PR #20 main is
+protected: a merge needs the four checks green on the head commit, linear
+history and no direct pushes. Release 0.2.1 exists so that the downloads
+carry the code these documents describe. Later that day Victor ruled that no
+cell of the page's comparison table may read "not checked" (six did), and
+three more cells turned out to overstate: libebur128 passing the EBU set "per
+its README", which makes no such claim; pyloudnorm "integrated only", when it
+also measures loudness range; DeltaWave "yes" for offline use, which its site
+does not state. Claude read the five tools' documentation and source, ran four
+of them on the EBU files beside cumple (the benchmark grew to libebur128
+through ctypes and to loudcheck), and wrote `docs/RELATED.md`, which records
+every source with its date; a test holds the page's table equal to that
+document cell for cell and each run cell equal to the run's summary line. A
+reader of the page took the client list in "Who made it" for the tool's
+customers; the paragraph now says what it meant, a year of studio work.
 

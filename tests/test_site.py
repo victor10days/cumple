@@ -98,6 +98,7 @@ def test_copy_has_no_dashes_and_no_unsupported_claims():
         "dolby compatible",
         "our customers",
         "award",
+        "not checked",
     ):
         assert phrase not in low, phrase
     assert "not yet run by hand" in text  # the Windows and Linux builds, stated as they are
