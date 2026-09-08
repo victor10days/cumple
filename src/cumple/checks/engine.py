@@ -15,6 +15,7 @@ from ..specs.schema import LoudnessRule, Profile
 PADDING_TOLERANCE_S = 0.25  # "not permitted" still allows a few frames of black
 METADATA_TOLERANCE_LU = 0.5
 DC_OFFSET_WARN_DBFS = -60.0
+DIALOGUE_GAP_WARN_LU = 3.0  # a dialogue-gated pass this far under the full-programme value may be a false pass
 SPEECH_ASSUMED_FRACTION = 1.0  # until the speech detector lands, treat programmes as dialogue-led
 LFE_FULL_RANGE_DB = -15.0  # LFE with more high-band energy than this is carrying full-range programme
 
@@ -204,6 +205,26 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
                 status = Status.INFO
             else:
                 status = Status.FAIL
+            if (
+                status is Status.PASS
+                and r.method == "dialogue_gated"
+                and np.isfinite(m.loudness.dialogue_gated)
+                and m.loudness.dialogue_blocks > 0
+            ):
+                # The heuristic gate reads low on dense mixes (1.6 and 6.7 LU low on two open
+                # films, docs/DIALOGUE.md), and reading low turns a too-loud mix into a pass.
+                # Both films' true dialogue-gated values sat under 3 LU from the full-programme
+                # value; the detector's sat 2.8 and 9.5 LU under it. So a pass that far under
+                # the full-programme value is flagged for a real meter.
+                gap = m.loudness.integrated - value
+                if np.isfinite(gap) and gap >= DIALOGUE_GAP_WARN_LU:
+                    status = Status.WARN
+                    note = (note + "; " if note else "") + (
+                        f"reads {gap:.1f} LU under the full-programme value ({m.loudness.integrated:.1f} LUFS); "
+                        "the heuristic speech gate reads low on dense mixes (1.6 and 6.7 LU low on two open films), "
+                        "so this pass may be a false pass: verify with a Dolby Dialogue Intelligence meter before "
+                        f"sending (tool default: warn from {DIALOGUE_GAP_WARN_LU:g} LU)"
+                    )
             fix = None
             if status is Status.FAIL:
                 target = (
