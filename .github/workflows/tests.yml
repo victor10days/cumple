@@ -26,8 +26,47 @@ jobs:
           uv run ruff check src tests scripts
           uv run ruff format --check src tests scripts
       - name: Test
-        # The 29 EBU conformance cases skip here: the EBU test set is free but not redistributed.
+        # The 29 EBU conformance cases skip here: the EBU test set is free but not redistributed;
+        # the conformance job below runs them when the repository holds a link to a copy.
         run: uv run pytest
       - name: Build
         if: runner.os == 'Linux'
         run: uv build
+
+  conformance:
+    # The 29 EBU Tech 3341 and 3342 cases. The set is free from tech.ebu.ch but its terms do
+    # not allow redistribution and the download refuses non-interactive fetchers, so this job
+    # reads the zip from a link kept in the repository secret EBU_TEST_SET_URL (a private copy
+    # the maintainer controls). Without the secret the cases are reported as skipped, exactly
+    # as they are in the test job above.
+    name: EBU conformance
+    runs-on: ubuntu-latest
+    env:
+      EBU_TEST_SET_URL: ${{ secrets.EBU_TEST_SET_URL }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: uv sync --group dev
+      - name: Restore the EBU test set
+        if: env.EBU_TEST_SET_URL != ''
+        id: cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/cumple/ebu-loudness-test-setv05.zip
+          key: ebu-loudness-test-set-v05
+      - name: Fetch the EBU test set
+        if: env.EBU_TEST_SET_URL != '' && steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.cache/cumple
+          curl -fsSL "$EBU_TEST_SET_URL" -o ~/.cache/cumple/ebu-loudness-test-setv05.zip
+          ls -la ~/.cache/cumple
+      - name: Run the 29 cases
+        run: uv run pytest tests/test_ebu_conformance.py -q -rs
+      - name: Regenerate the conformance report and compare it with the committed one
+        if: env.EBU_TEST_SET_URL != ''
+        run: |
+          uv run python scripts/conformance_report.py > /tmp/CONFORMANCE.md
+          diff <(tail -n +4 docs/CONFORMANCE.md) <(tail -n +4 /tmp/CONFORMANCE.md)
