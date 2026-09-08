@@ -459,8 +459,10 @@ silent the profile says so.
 - The PDF needs a local Google Chrome, Chromium or Edge; without one the HTML
   sheet is still written and is the deliverable. The desktop builds come from
   CI, which runs each frozen app's self-test (profiles, fonts, a tone that must
-  read -23 LUFS, a sheet); the macOS build is the one exercised on a real
-  machine, and the hands-on checks are logged in [docs/QA.md](docs/QA.md). The
+  read -23 LUFS, a sheet) and, for Windows and Linux, opens the real window on a
+  test tone and captures the screen (the pictures are in
+  [docs/QA.md](docs/QA.md)); the macOS build is the one exercised on a real
+  machine, and the hands-on checks are logged there too. The
   CLI runs anywhere Python and libsndfile do, and its tests run on macOS,
   Windows and Linux in CI.
 

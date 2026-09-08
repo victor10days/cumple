@@ -25,8 +25,8 @@ mouse.
 | Desktop app, Save PDF and Reveal | Save PDF writes `<name>.qc.pdf` next to the sheet through the local Chrome; Reveal selects it in Finder or Explorer; a clause link in the sheet opens in the browser. | done 2026-09-08 (entry 4); the clause link in the browser not exercised |
 | Desktop app, watch during a bounce | The Watch tab on the bounce folder while a DAW bounces into it: the file is left alone until it settles, then the row, the sheet and the CSV line appear. | partly done 2026-09-08: a copied file that landed at once, not a growing DAW bounce (entry 4) |
 | Desktop app, the diff | Two real versions in the Diff tab, then real stems against their printmaster; the prose and the diff sheet match the CLI. | done 2026-09-08 on the demo versions and stems (entry 4) |
-| Windows build launches | The CI zip on a Windows 10 or 11 machine: SmartScreen's More info, Run anyway; the window opens, a WAV checks, Save PDF works with Edge or Chrome installed. | pending |
-| Linux build launches | The CI tarball on an x86_64 desktop: the window opens (Qt), a WAV checks, the `.desktop` file works from the launcher. | pending |
+| Windows build launches | The CI zip on a Windows 10 or 11 machine: SmartScreen's More info, Run anyway; the window opens, a WAV checks, Save PDF works with Edge or Chrome installed. | CI evidence 2026-09-08 (entry 5); a real Windows machine pending |
+| Linux build launches | The CI tarball on an x86_64 desktop: the window opens (Qt), a WAV checks, the `.desktop` file works from the launcher. | CI evidence 2026-09-08 (entry 5); a real Linux desktop pending |
 
 ## Entries
 
@@ -90,3 +90,23 @@ Format for an entry:
 - Result:
 - Finding (if any) and what was done about it:
 ```
+
+### 2026-09-08, the Windows and Linux builds opened in CI (two rows, partly)
+- Ran by: the release workflow (run 34193335538 on the `ci/launch-screenshots` branch), not
+  a person.
+- Action: after the self-test, each frozen build was launched on a 3 s tone at -20 dBFS
+  against EBU R 128, left for 25 s, and the whole screen captured: the Windows 11 runner
+  (WebView2 runtime 151 already registered) and Ubuntu 22.04 under xvfb with Qt's xcb
+  platform.
+- Result: both windows opened, ran the check at once and rendered the sheet with a FAIL
+  stamp on integrated loudness (-20.0 LUFS against -23 ±1); `tone.qc.html` and
+  `tone.qc.json` landed next to the tone; both apps were still running at 25 s.
+  Screenshots: [docs/launch-windows.png](launch-windows.png) and
+  [docs/launch-linux.png](launch-linux.png).
+- Finding: on the Windows runner pywebview logged fourteen "Error while processing
+  window.native.AccessibilityObject.Bounds" lines while the window kept working; not seen on
+  macOS; to look at on a real Windows machine. Linux printed Vulkan and GPU context warnings
+  under the virtual display, which has no GPU.
+- Still pending: SmartScreen's dialog and a mouse on Windows, Save PDF there with Edge or
+  Chrome, and the `.desktop` launcher on Linux.
+
