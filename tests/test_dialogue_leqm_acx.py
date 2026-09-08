@@ -67,6 +67,8 @@ def test_dialogue_gated_reads_the_speech_not_the_music(tmp_path):
     assert f["loudness.dialogue_gated"].status is Status.WARN
     assert "speech gate" in f["loudness.dialogue_gated"].note
     assert "false pass" in f["loudness.dialogue_gated"].note
+    assert "Dolby" in f["loudness.dialogue_gated"].fix
+    assert any("Dolby" in x for x in r.fixes())
     assert not f["loudness.dialogue_gated"].failed  # a warning is not a failure
 
 
@@ -228,5 +230,20 @@ def test_dialogue_gated_pass_close_to_the_full_programme_value_is_a_plain_pass(t
     assert abs(m.loudness.integrated - m.loudness.dialogue_gated) < 3
     r = evaluate(get("netflix-2.0"), m)
     f = {x.code: x for x in r.findings}
+    assert f["loudness.dialogue_gated"].status is Status.PASS
+    assert "false pass" not in (f["loudness.dialogue_gated"].note or "")
+
+
+def test_no_false_pass_warning_when_the_full_programme_value_is_inside_the_window(tmp_path):
+    """Apple TV+ accepts -31 to -10 LKFS: reading low cannot hide a value above the top when even
+    the full programme sits inside the window, so the same dense mix passes without the warning."""
+    speech = [stereo(speech_like(10, -32)), stereo(speech_like(10, -32, seed=23))]
+    x = np.concatenate([speech[0], stereo(music_like(10, -18)), speech[1]])
+    sf.write(str(tmp_path / "mixed.wav"), x, FS, subtype="PCM_24")
+    m = measure(tmp_path / "mixed.wav")
+    assert m.loudness.integrated > m.loudness.dialogue_gated + 3
+    r = evaluate(get("apple-tv"), m)
+    f = {x.code: x for x in r.findings}
+    assert m.loudness.integrated <= -10
     assert f["loudness.dialogue_gated"].status is Status.PASS
     assert "false pass" not in (f["loudness.dialogue_gated"].note or "")
