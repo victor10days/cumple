@@ -82,6 +82,14 @@ date tells you how old our reading is; delivery specs change without notice.
 By contributing you agree that your contribution is licensed under the MIT
 License in `LICENSE`.
 
+## Merging
+
+`main` is protected: a pull request merges only when the four test checks
+(ubuntu-latest, macos-15, windows-latest, EBU conformance) are green on its
+head, history stays linear (rebase merges), and nobody pushes to `main`
+directly, administrators included. To bypass in an emergency, turn the rule
+off under Settings, Branches, and turn it back on afterwards.
+
 ## Releasing
 
 1. Bump `__version__` in `src/cumple/__init__.py` and the `softwareVersion` in
