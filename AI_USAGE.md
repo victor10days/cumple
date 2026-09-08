@@ -185,5 +185,34 @@ guessed, and never measures two files at once, both by decision.
   the model.
 - **The model cannot listen.** Nothing here decides whether a mix sounds
   right. That is why `fix` never limits, why the dialogue gate is labelled an
-  approximation with its block count printed next to it, and why the manual
-  QA on real bounces in `docs/QA.md` is done by a person.
+  approximation with its block count printed next to it, and why the QA log
+  in `docs/QA.md` says who or what ran each check and which rows still wait
+  for a person with real bounces, a DAW, or a Windows or Linux machine.
+
+## The review loop (8 September)
+
+With the page and the app live, Victor asked for a contrarian pass and a
+loop: a devil's advocate skill (notmanas/claude-code-skills, MIT, installed
+unmodified) run against the submission, its findings applied, then a code
+review and a verification pass, repeated until a pass came back clean. The
+first run returned seven concerns and the verdict "ship with changes". What
+came out of it, under Victor's rule that claims must not outrun evidence: the
+conformance, benchmark and performance reports regenerated for 0.2.0 (the
+performance table now shows the real memory of the current meters and the
+word "constant" is gone); a CI job that runs the 29 EBU cases when a private
+link to the set is provided, and a README sentence saying that no link is set
+yet; the QA log's first entries, each naming who or what ran the check and on
+what; a warning on the false-pass direction of the dialogue gate, narrowed by
+the code reviewer's finding to windows where a false pass is possible; the
+page's caveat under the download button for the two builds nobody had run by
+hand, and then the release workflow opening those two windows in CI with
+screenshots; a test that fails whenever the documented test count drifts
+from what pytest collects. Two things the loop caught in Claude's own work: a
+test count of zero written into the docs when a collection command produced
+no output, fixed within the hour, and a benchmark gap quoted as 0.05 LU
+where the table's largest gap is 0.04 LU. One process failure: a pull
+request whose copy test was red merged because the repository has no branch
+protection; the fix followed within minutes, and the rule since is that a
+merge waits for the run's conclusion. Release 0.2.1 exists so that the
+downloads carry the code these documents describe.
+
