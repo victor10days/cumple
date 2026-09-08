@@ -1,6 +1,8 @@
 # Render Blueprint: the landing page as a static site served from site/.
-# Connected once in the Render dashboard (New, Blueprint, this repository); after that every push
-# to main that changes site/ redeploys. Static sites are free on Render; nothing here is billable.
+# Connected once in the Render dashboard (New, Blueprint, public repository URL) as the Blueprint
+# "cumple"; live at https://cumple-uxa7.onrender.com/. The repository is connected by its public URL,
+# so Render does not auto-deploy on push: after a merge that touches site/, press Manual Deploy in the
+# dashboard (or call a Deploy Hook). Static sites are free on Render; nothing here is billable.
 services:
   - type: web
     name: cumple

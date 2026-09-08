@@ -14,7 +14,7 @@ from cumple.specs import load_all
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
 PAGE = (SITE / "index.html").read_text(encoding="utf-8")
-PAGES_URL = "https://victor10days.github.io/cumple/"
+SITE_URL = "https://cumple-uxa7.onrender.com/"  # Render; the GitHub Pages copy is a mirror
 
 
 class Walk(HTMLParser):
@@ -142,8 +142,8 @@ def test_inline_css_is_token_pure():
 def test_meta_lengths_and_urls():
     w = walk()
     assert 0 < len(w.title.strip()) <= 60 and 0 < len(w.meta["description"]) <= 155
-    assert re.search(r'<link rel="canonical" href="' + re.escape(PAGES_URL) + '">', PAGE)
-    assert w.meta["og:image"].startswith(PAGES_URL) and w.meta["og:url"] == PAGES_URL
+    assert re.search(r'<link rel="canonical" href="' + re.escape(SITE_URL) + '">', PAGE)
+    assert w.meta["og:image"].startswith(SITE_URL) and w.meta["og:url"] == SITE_URL
 
 
 def test_download_links_match_the_release_workflow():
