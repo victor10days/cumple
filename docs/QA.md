@@ -110,3 +110,15 @@ Format for an entry:
 - Still pending: SmartScreen's dialog and a mouse on Windows, Save PDF there with Edge or
   Chrome, and the `.desktop` launcher on Linux.
 
+### 2026-09-08, the 0.2.1 macOS zip from a fresh download (desktop app, one file, repeated)
+- Ran by: Claude Code, in the working session on Victor's Mac, right after release 0.2.1 was built.
+- Action: entry 1's steps on the 0.2.1 asset: `cumple-macos-arm64.zip` downloaded with the
+  quarantine bit set, unzipped with `ditto`, `codesign --verify --deep --strict` valid on the
+  ad-hoc signature, `spctl --assess` rejected it as documented, `xattr -dr
+  com.apple.quarantine cumple.app` cleared it, `--selftest` reported version 0.2.1 with 39
+  profiles and 5 fonts and a PASS on the tone, then the app opened on `hot.wav` against
+  Netflix stereo (2.0) and wrote the sheet next to it stamped "cumple 0.2.1".
+- Result: FAIL on the same three checks as entry 1; the release notes carry the Gatekeeper
+  steps.
+- Finding: none.
+
