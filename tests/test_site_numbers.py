@@ -30,7 +30,7 @@ def _tables(text: str, first_header: str) -> list[dict[str, str]]:
                 break
             cells = [c.strip() for c in body.strip().strip("|").split("|")]
             if len(cells) == len(cols):
-                rows.append(dict(zip(cols, cells)))
+                rows.append(dict(zip(cols, cells, strict=True)))
     return rows
 
 
