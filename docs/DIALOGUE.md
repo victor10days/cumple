@@ -1,6 +1,6 @@
-# The dialogue gate on real programmes, cumple 0.1.0
+# The dialogue gate on real programmes, cumple 0.2.0
 
-Generated 2026-09-05 by `scripts/dialogue_benchmark.py`. cumple's dialogue-gated loudness uses a heuristic speech detector labelled an approximation of Dolby Dialogue Intelligence. This report measures the approximation against films that publish a music-and-effects version of their mix, and shows the speech share the detector reports on clean speech, on music and effects without dialogue, and on dialogue-driven films. Silero VAD (threshold 0.5) was available and is shown as a second, independent opinion. The recordings are fetched by `scripts/fetch_real_dialogue.sh` and are not redistributed.
+Generated 2026-09-08 by `scripts/dialogue_benchmark.py`. cumple's dialogue-gated loudness uses a heuristic speech detector labelled an approximation of Dolby Dialogue Intelligence. This report measures the approximation against films that publish a music-and-effects version of their mix, and shows the speech share the detector reports on clean speech, on music and effects without dialogue, and on dialogue-driven films. Silero VAD (threshold 0.5) was available and is shown as a second, independent opinion. The recordings are fetched by `scripts/fetch_real_dialogue.sh` and are not redistributed.
 
 ## Films with a music-and-effects version as ground truth
 
