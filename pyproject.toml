@@ -1,6 +1,6 @@
 [project]
 name = "cumple"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Delivery QC for audio. Does this file comply with Netflix, Apple TV+, Max, EBU R128, ATSC A/85, a cinema trailer, Spotify? Plus an audio diff that says how two files differ."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -10,8 +10,14 @@ keywords = ["audio", "loudness", "bs1770", "ebu-r128", "true-peak", "delivery", 
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Environment :: Console",
+  "Environment :: MacOS X",
+  "Environment :: Win32 (MS Windows)",
+  "Environment :: X11 Applications :: Qt",
   "Intended Audience :: Other Audience",
   "License :: OSI Approved :: MIT License",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
   "Programming Language :: Python :: 3.12",
   "Topic :: Multimedia :: Sound/Audio :: Analysis",
 ]
@@ -26,6 +32,15 @@ dependencies = [
   "wavinfo>=4.0",
 ]
 
+[project.optional-dependencies]
+app = ["pywebview>=6.2.1"]
+app-qt = ["pywebview[qt]>=6.2.1"]
+
+[project.urls]
+Homepage = "https://victor10days.github.io/cumple/"
+Source = "https://github.com/victor10days/cumple"
+Download = "https://github.com/victor10days/cumple/releases/latest"
+
 [project.scripts]
 cumple = "cumple.cli:app"
 
@@ -37,10 +52,14 @@ dev = [
   "ruff>=0.6",
   "fonttools[woff]>=4.50",
 ]
+packaging = ["pyinstaller>=6.22"]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "src/cumple/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cumple"]

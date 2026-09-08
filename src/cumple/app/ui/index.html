@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cumple</title>
+<style>
+/* Hallmark · genre: modern-minimal · macrostructure: workbench chrome · theme: custom (cumple) · design-system: design.md
+ * nav: none · footer: none · enrichment: none · contrast: pass (40-41) · honest: pass (46) · chrome: pass (47) · tokens: pass (48)
+ * pre-emit critique: P4 H4 E4 S4 R5 V3 · 2026-09-07 */
+/*__TOKENS__*/
+/*__FONTS__*/
+/*__APP_CSS__*/
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="brand"><span class="wordmark">cumple</span><span class="tag">delivery QC for audio</span></div>
+  <label class="dest">
+    <span class="lbl">Destination</span>
+    <select id="spec"><option value="">Choose a destination</option></select>
+  </label>
+  <label class="opt"><input type="checkbox" id="pdf"> PDF too</label>
+  <button type="button" class="link" id="outdir">Output: next to the file</button>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="What to do">
+  <button type="button" role="tab" class="tab is-active" data-tab="check" aria-selected="true">Check</button>
+  <button type="button" role="tab" class="tab" data-tab="watch" aria-selected="false">Watch</button>
+  <button type="button" role="tab" class="tab" data-tab="diff" aria-selected="false">Diff</button>
+</nav>
+
+<main class="work">
+  <section class="pane left">
+    <div class="panel" data-panel="check">
+      <div class="zone" id="zone" tabindex="0">
+        <p class="zone-title">Drop a bounce, a delivery folder or a package here</p>
+        <p class="zone-sub">WAV, BWF, RF64, AIFF, FLAC. Or <button type="button" class="link" id="pick-files">open files</button> or <button type="button" class="link" id="pick-folder">open a folder</button>.</p>
+      </div>
+      <div class="queue-head">
+        <span id="queue-count" class="muted">Nothing queued</span>
+        <span class="grow"></span>
+        <button type="button" class="link" id="cancel" hidden>Cancel</button>
+        <button type="button" class="link" id="clear" hidden>Clear</button>
+        <button type="button" class="btn" id="run" disabled>Check</button>
+      </div>
+      <ol id="queue" class="rows"></ol>
+    </div>
+
+    <div class="panel" data-panel="watch" hidden>
+      <div class="field">
+        <span class="lbl">Folder to watch</span>
+        <div class="row"><input id="watch-folder" type="text" placeholder="Drop a folder here or paste its path"><button type="button" class="link" id="watch-pick">Choose</button></div>
+      </div>
+      <div class="row gap">
+        <label class="row"><span class="lbl">Settle time</span><input id="watch-stable" type="number" min="0" step="1" value="5"><span class="muted">s</span></label>
+        <label class="opt"><input type="checkbox" id="watch-redo"> Re-measure files that already have a sheet</label>
+      </div>
+      <div class="row gap">
+        <button type="button" class="btn" id="watch-start">Start watching</button>
+        <button type="button" class="link" id="watch-stop" hidden>Stop</button>
+        <span id="watch-state" class="muted"></span>
+      </div>
+      <p class="muted small">Every file that lands gets a sheet next to it and a line in the folder's CSV log once its size and modification time have held still for the settle time. Sources are never touched.</p>
+      <table class="log" id="watch-table">
+        <thead><tr><th>Time</th><th>File</th><th>Verdict</th><th>Integrated</th><th>True peak</th><th>Failed</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="muted small mono" id="watch-csv"></p>
+    </div>
+
+    <div class="panel" data-panel="diff" hidden>
+      <div class="mode">
+        <label class="opt"><input type="radio" name="dmode" value="pair" checked> Two versions</label>
+        <label class="opt"><input type="radio" name="dmode" value="stems"> Stems against a printmaster</label>
+      </div>
+      <div id="diff-pair">
+        <div class="field"><span class="lbl">A, the reference</span><div class="row"><input id="diff-a" type="text" placeholder="Drop the first file here"><button type="button" class="link" data-pick="diff-a">Choose</button></div></div>
+        <div class="field"><span class="lbl">B, the new version</span><div class="row"><input id="diff-b" type="text" placeholder="Drop the second file here"><button type="button" class="link" data-pick="diff-b">Choose</button></div></div>
+      </div>
+      <div id="diff-stems" hidden>
+        <div class="field">
+          <span class="lbl">Stems</span>
+          <ul id="stems" class="rows"></ul>
+          <div class="row"><button type="button" class="link" id="stems-pick">Add stems</button><button type="button" class="link" id="stems-clear">Clear</button></div>
+        </div>
+        <div class="field"><span class="lbl">Printmaster</span><div class="row"><input id="diff-pm" type="text" placeholder="Drop the printmaster here"><button type="button" class="link" data-pick="diff-pm">Choose</button></div></div>
+      </div>
+      <div class="row gap"><button type="button" class="btn" id="diff-run">Compare</button><span id="diff-state"></span></div>
+      <p class="muted small">Diff loads whole files into memory and stops at <span id="diff-cap">40</span> minutes. Offset, gain and polarity are corrected before the residual is measured; stems are summed at level.</p>
+      <pre id="diff-summary" class="prose" hidden></pre>
+    </div>
+
+    <p id="msg" class="msg" hidden></p>
+  </section>
+
+  <section class="pane right">
+    <div class="sheet-bar">
+      <span id="sheet-name" class="mono muted">No sheet yet</span>
+      <span class="grow"></span>
+      <button type="button" class="link" id="reveal" disabled>Reveal</button>
+      <button type="button" class="link" id="save-pdf" disabled>Save PDF</button>
+      <button type="button" class="link" id="open-browser" disabled>Open in browser</button>
+    </div>
+    <iframe id="sheet" title="QC sheet"></iframe>
+    <div id="sheet-empty" class="empty"><p>The sheet appears here: the verdict, every finding with its limit and the source's words, what would fix it, and the loudness timeline.</p></div>
+  </section>
+</main>
+
+<div id="nobridge" class="banner" hidden>This page is the app's window. Open it with <span class="mono">cumple app</span>, or download the app.</div>
+
+<script>
+/*__APP_JS__*/
+</script>
+</body>
+</html>
