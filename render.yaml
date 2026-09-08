@@ -20,9 +20,6 @@ services:
       - path: /*
         name: Referrer-Policy
         value: strict-origin-when-cross-origin
-      - path: /
-        name: Cache-Control
-        value: public, max-age=600
       - path: /*.html
         name: Cache-Control
         value: public, max-age=600
