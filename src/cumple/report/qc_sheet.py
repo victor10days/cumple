@@ -8,8 +8,12 @@ design system it follows is design.md at the repository root; the tokens are in 
 from __future__ import annotations
 
 import html
+import ntpath
+import os
+import platform
 import shutil
 import subprocess
+from collections.abc import Mapping
 from datetime import datetime
 from pathlib import Path
 
@@ -209,38 +213,96 @@ def write_sheet(report: Report, out_html: Path, pdf: bool = False) -> tuple[Path
     return out_html, pdf_path
 
 
-CHROME_CANDIDATES = [
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-    "/Applications/Chromium.app/Contents/MacOS/Chromium",
-    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
-]
+def sheet_target(path: Path, out_dir: Path | None = None) -> Path:
+    """Where the QC sheet for ``path`` goes: next to a file, inside a package directory, or in ``out_dir``.
+
+    A package (a directory of discrete channel files) gets ``<dir>/<dir>.qc.html``; a file gets
+    ``<parent>/<stem>.qc.html``. The JSON sits beside it as ``.qc.json`` (``with_suffix(".json")``).
+    """
+    path = Path(path)
+    base = Path(out_dir) if out_dir is not None else (path if path.is_dir() else path.parent)
+    stem = path.name if path.is_dir() else path.stem
+    return base / f"{stem}.qc.html"
+
+
+def chrome_candidates(system: str | None = None, env: Mapping[str, str] | None = None) -> list[str]:
+    """Absolute paths where a Chromium-family browser usually lives, most preferred first.
+
+    Chrome comes before Edge everywhere: Edge 141 and later has a headless print-to-pdf regression
+    that produces no file and no error. A frozen app launched from Finder has a minimal PATH, so
+    these absolute paths matter more than ``shutil.which``.
+    """
+    system = system or platform.system()
+    env = os.environ if env is None else env
+    if system == "Darwin":
+        return [
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "/Applications/Chromium.app/Contents/MacOS/Chromium",
+            "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+        ]
+    if system == "Windows":
+        roots = [env.get(k) for k in ("LOCALAPPDATA", "PROGRAMFILES", "PROGRAMFILES(X86)")]
+        tails = [
+            r"Google\Chrome\Application\chrome.exe",
+            r"Chromium\Application\chrome.exe",
+            r"Microsoft\Edge\Application\msedge.exe",
+        ]
+        return [ntpath.join(root, tail) for tail in tails for root in roots if root]
+    return [
+        "/opt/google/chrome/chrome",
+        "/usr/bin/chromium",
+        "/usr/bin/chromium-browser",
+        "/opt/microsoft/msedge/msedge",
+    ]
+
+
+WHICH_NAMES = (
+    "google-chrome",
+    "google-chrome-stable",
+    "chromium",
+    "chromium-browser",
+    "chrome",
+    "microsoft-edge",
+    "msedge",
+)
 
 
 def find_chrome() -> str | None:
-    for c in CHROME_CANDIDATES:
+    """The first Chromium-family browser on this machine, or None."""
+    for c in chrome_candidates():
         if Path(c).exists():
             return c
-    for name in ("google-chrome", "chromium", "chromium-browser", "chrome"):
+    for name in WHICH_NAMES:
         found = shutil.which(name)
         if found:
             return found
     return None
 
 
-def to_pdf(html_path: Path, pdf_path: Path) -> bool:
+def to_pdf(html_path: Path, pdf_path: Path, timeout: float = 60) -> bool:
+    """Print the sheet to PDF with the local Chrome, Chromium or Edge. False when none is found or it fails.
+
+    No throwaway profile: given a fresh `--user-data-dir`, Chrome writes the PDF and then never exits
+    (measured on macOS, 2026-09-07). The virtual time budget lets the embedded fonts settle first.
+    """
     chrome = find_chrome()
     if chrome is None:
         return False
+    pdf_path = Path(pdf_path)
     cmd = [
         chrome,
         "--headless",
         "--disable-gpu",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-extensions",
+        "--virtual-time-budget=5000",
         "--no-pdf-header-footer",
-        f"--print-to-pdf={pdf_path}",
-        html_path.resolve().as_uri(),
+        f"--print-to-pdf={pdf_path.resolve()}",
+        Path(html_path).resolve().as_uri(),
     ]
     try:
-        subprocess.run(cmd, check=True, capture_output=True, timeout=60)
+        subprocess.run(cmd, check=True, capture_output=True, timeout=timeout)
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
         return False
     return pdf_path.exists() and pdf_path.stat().st_size > 0
