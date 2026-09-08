@@ -51,6 +51,7 @@ dev = [
   "pyloudnorm>=0.2",
   "ruff>=0.6",
   "fonttools[woff]>=4.50",
+  "loudcheck>=0.3.2",
 ]
 packaging = ["pyinstaller>=6.22"]
 

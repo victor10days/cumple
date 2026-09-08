@@ -72,8 +72,9 @@ says the same.
   either/or rules and the speech switch, the audio diff, the watch folder,
   the gain-only fix, the QC sheet, the macOS droplet, 39 profiles.
 - **Tests and benchmarks.** 189 tests, including synthetic signals with
-  analytic answers and the official EBU cases; cross-checks against ffmpeg's
-  `ebur128` filter, pyloudnorm and an independently designed interpolator;
+  analytic answers and the official EBU cases; cross-checks against
+  libebur128, pyloudnorm, ffmpeg's `ebur128` filter, loudcheck and an
+  independently designed interpolator;
   the scripts that regenerate `docs/CONFORMANCE.md`, `docs/BENCHMARK.md` and
   `docs/PERF.md`.
 - **Design.** On 6 September an audit against a checklist of the tells of
@@ -177,7 +178,7 @@ guessed, and never measures two files at once, both by decision.
 - **The standard is the oracle, not the model.** Tests were written from the
   expected values printed in Tech 3341 Table 1 and from signals whose answer
   is known analytically, never from the meter's own output.
-- **Independent cross-checks.** Two other implementations and one
+- **Independent cross-checks.** Four other implementations and one
   independent filter design were run on the same files. Where they disagree
   with cumple, the disagreement is documented rather than hidden
   (`docs/BENCHMARK.md` notes what ffmpeg reports on the case 6 centre channel).
