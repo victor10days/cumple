@@ -20,6 +20,16 @@ Tone: utilitarian.
 - The infographic: Split Studio. Each claim on one side, its proof on the
   other, alternating direction down the page; one full-bleed dark band as the
   single bold move. No nav. Footer archetype Ft2 inline single line.
+- The app window (`src/cumple/app/ui/`): workbench chrome, an instrument
+  panel. A header bar with the wordmark and the destination, three tabs, a
+  drop zone and a list on the left, the sheet on the right inside an iframe
+  that carries its own copy of the system. Light only, 13 px root, no nav,
+  no footer; the only button with a fill is the verb (Check, Compare, Start
+  watching), everything else is a typographic link.
+- The landing page (`site/`): Workbench. Real screenshots are the body and
+  the copy is captions; nav N9 edge-aligned (wordmark, one Download button);
+  footer Ft5 statement. 16 px root. CTA voice: one verb, Download; the other
+  actions are typographic links.
 
 ## Theme
 
@@ -52,7 +62,7 @@ Axes: light / display-condensed-bold / cool.
 - Scale: 1.25 from the root (13 px on the sheets, 16 px on the infographic).
 - The sheets embed woff2 subsets of the five faces from
   `src/cumple/report/fonts/` (SIL Open Font License), so a sheet renders the
-  same offline and in PDF on any machine. The infographic links Google Fonts.
+  same offline and in PDF on any machine. The infographic and the landing page embed the same subsets.
 
 ## Spacing
 
@@ -93,7 +103,7 @@ None. A QC sheet asks for nothing; the fixes list is the only imperative.
 ## What surfaces MAY differ on
 
 - Root size (13 px sheets, 16 px infographic).
-- The dark theme (infographic only).
+- The dark theme (infographic only; the app window and the page stay light).
 - Section rhythm (the infographic alternates halves; the sheets read top to
   bottom).
 

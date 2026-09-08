@@ -71,7 +71,7 @@ says the same.
   detector, Leq(m) from the TASA response table, the rules engine with
   either/or rules and the speech switch, the audio diff, the watch folder,
   the gain-only fix, the QC sheet, the macOS droplet, 39 profiles.
-- **Tests and benchmarks.** 148 tests, including synthetic signals with
+- **Tests and benchmarks.** 171 tests, including synthetic signals with
   analytic answers and the official EBU cases; cross-checks against ffmpeg's
   `ebur128` filter, pyloudnorm and an independently designed interpolator;
   the scripts that regenerate `docs/CONFORMANCE.md`, `docs/BENCHMARK.md` and
@@ -150,6 +150,24 @@ paragraph carries the measured figures instead of a guess. The decision on
 the meter itself (keep the heuristic and label it, or add Silero as an
 optional backend) is Victor's; the numbers went into the documentation the
 same day.
+
+## The desktop app and the page (7 to 9 September)
+
+After the repository went public, Victor asked for a desktop application for
+macOS, Windows and Linux and a landing page for it. He decided the shape: the
+page hosted from the repository on GitHub Pages, the macOS app finished and
+tried first, Windows and Linux built by CI and verified from its logs, the
+builds unsigned. Claude surveyed the engine for platform-specific code (one
+function, the Chrome lookup for the PDF), read pywebview's source at the tag
+for how dropped files carry their paths, wrote the app, its tests, the
+PyInstaller spec, the release and pages workflows, and the page. Three things
+were caught by measuring rather than by reading: a GitHub Action major tag
+that a research pass had reported as current did not exist (the first CI run
+failed in three seconds); Chrome given a throwaway profile wrote the PDF and
+then never exited, so the "safer" flag was dropped; and the install hint for
+the app vanished from the terminal because the console markup read
+`[app]` as a style. The app never runs a check against a destination it
+guessed, and never measures two files at once, both by decision.
 
 ## The day-to-day pattern
 

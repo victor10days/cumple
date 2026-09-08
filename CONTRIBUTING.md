@@ -9,8 +9,12 @@ destination, or report a number that disagrees with a published document.
 git clone https://github.com/victor10days/cumple
 cd cumple
 uv sync            # Python 3.12, runtime and dev dependencies
-uv run pytest      # 148 tests; the 29 EBU cases skip until you fetch the test set
+uv run pytest      # 171 tests; the 29 EBU cases skip until you fetch the test set
 uv run ruff check src tests scripts && uv run ruff format --check src tests scripts
+uv sync --extra app --group packaging     # the desktop app (pywebview) and PyInstaller
+uv run cumple app                         # the window, from the source tree
+uv run pyinstaller packaging/cumple.spec --noconfirm --clean   # dist/cumple.app or dist/cumple-app
+uv run python scripts/make_icons.py       # re-render the app icon from the tokens (needs Chrome)
 ```
 
 The EBU Loudness Test Set v5.0 is free from tech.ebu.ch under EBU terms and is
