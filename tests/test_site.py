@@ -173,3 +173,7 @@ def test_render_blueprint_publishes_the_site_folder():
     assert service["type"] == "web" and service["runtime"] == "static" and service["name"] == "cumple"
     assert service["staticPublishPath"] == "./site" and service["branch"] == "main"
     assert any(e["key"] == "SKIP_INSTALL_DEPS" for e in service["envVars"])
+
+
+def test_the_untested_build_caveat_is_in_the_download_script():
+    assert "nobody has run it by hand on" in PAGE
