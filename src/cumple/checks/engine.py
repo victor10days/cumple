@@ -220,7 +220,8 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
                 # value is a practical ceiling for dialogue in a mix, so when even that sits
                 # inside the window (Apple TV+'s wide window, for one) there is nothing to warn about.
                 gap = m.loudness.integrated - value
-                above_top = r.max is None or m.loudness.integrated > r.max
+                # A rule with no upper bound cannot produce a false pass from reading low.
+                above_top = r.max is not None and m.loudness.integrated > r.max
                 if np.isfinite(gap) and gap >= DIALOGUE_GAP_WARN_LU and above_top:
                     status = Status.WARN
                     note = (note + "; " if note else "") + (

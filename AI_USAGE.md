@@ -71,7 +71,7 @@ says the same.
   detector, Leq(m) from the TASA response table, the rules engine with
   either/or rules and the speech switch, the audio diff, the watch folder,
   the gain-only fix, the QC sheet, the macOS droplet, 39 profiles.
-- **Tests and benchmarks.** 185 tests, including synthetic signals with
+- **Tests and benchmarks.** 189 tests, including synthetic signals with
   analytic answers and the official EBU cases; cross-checks against ffmpeg's
   `ebur128` filter, pyloudnorm and an independently designed interpolator;
   the scripts that regenerate `docs/CONFORMANCE.md`, `docs/BENCHMARK.md` and
@@ -209,8 +209,11 @@ hand, and then the release workflow opening those two windows in CI with
 screenshots; a test that fails whenever the documented test count drifts
 from what pytest collects. Two things the loop caught in Claude's own work: a
 test count of zero written into the docs when a collection command produced
-no output, fixed within the hour, and a benchmark gap quoted as 0.05 LU
-where the table's largest gap is 0.04 LU. One process failure: a pull
+no output, fixed within the hour, and a benchmark figure the loop itself got wrong: a pass changed the
+page's 0.05 LU to 0.04 LU on a misread of the table (the checking script
+dropped every cell that carried a pass mark), the code reviewer caught it,
+and a test now derives that figure and the others on the page from the
+reports. One process failure: a pull
 request whose copy test was red merged because the repository has no branch
 protection; the fix followed within minutes, and the rule since is that a
 merge waits for the run's conclusion. Release 0.2.1 exists so that the
