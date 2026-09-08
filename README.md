@@ -16,9 +16,9 @@ a set of stems still sums to the printmaster.
 Re-recording mixers, mastering engineers, post supervisors, and anyone who has
 bounced a printmaster late at night and wondered whether it will come back from
 the platform's QC. cumple lives where deliveries live: the bounce folder, a QC
-sheet that travels with the files, a watch folder, and a drag-and-drop app on
-the Mac. There is JSON output and an exit code for anyone who wants to script
-it, but nothing here depends on a terminal, a server, or GitHub.
+sheet that travels with the files, a watch folder, and a desktop app for macOS,
+Windows and Linux. There is JSON output and an exit code for anyone who wants
+to script it, but nothing here depends on a terminal, a server, or GitHub.
 
 ## Sixty-second start
 
@@ -30,7 +30,9 @@ uv tool install --python 3.12 git+https://github.com/victor10days/cumple
 cumple check master.wav --spec netflix-2.0
 ```
 
-From a clone, `uv tool install --python 3.12 .` does the same. No audio at
+From a clone, `uv tool install --python 3.12 .` does the same. Prefer a window?
+[The desktop app](#the-desktop-app) is the same engine with a drop zone, built
+for macOS, Windows and Linux. No audio at
 hand? `uv run python scripts/make_demo.py ~/cumple-demo` writes a seeded set of
 synthetic bounces, stems, a 5.1 package and two mix versions to try every
 command on. What you get:
@@ -247,15 +249,49 @@ do it)
 the rules, the clause behind each one, and every source with its grade, URL
 and retrieval date.
 
-### The Mac app
+### The desktop app
 
-```
-zsh integrations/macos/build_app.sh          # builds ~/Applications/cumple QC.app
-```
+<p align="center"><img src="docs/app-window.png" width="720" alt="The cumple window: the Check tab with a queued bounce that failed Netflix on three rules, and the QC sheet open on the right"></p>
 
-Drop a WAV or a delivery folder on it, pick the destination from a list, and
-the sheet opens. It is an AppleScript droplet compiled with `osacompile` that
-calls the same `cumple check --sheet --pdf`; no terminal involved.
+The same engine with a window. Drop a bounce, a folder of bounces or a delivery
+package on it, pick the destination (grouped by family, the source grade next to
+each name), press Check, and the QC sheet appears in the window with Reveal,
+Save PDF and Open in browser. The sheet, the JSON and the optional PDF land next
+to the audio exactly as `cumple check` writes them. The Watch tab is `cumple
+watch` with a live table; the Diff tab is `cumple diff`, two versions or stems
+against the printmaster, with the prose verdict and the diff sheet.
+
+Downloads, one folder per platform, from the
+[latest release](https://github.com/victor10days/cumple/releases/latest):
+[macOS, Apple silicon](https://github.com/victor10days/cumple/releases/latest/download/cumple-macos-arm64.zip),
+[macOS, Intel](https://github.com/victor10days/cumple/releases/latest/download/cumple-macos-x86_64.zip),
+[Windows 10 and 11](https://github.com/victor10days/cumple/releases/latest/download/cumple-windows-x86_64.zip),
+[Linux x86_64](https://github.com/victor10days/cumple/releases/latest/download/cumple-linux-x86_64.tar.gz).
+The builds are unsigned, so the first launch takes one extra step:
+
+- **macOS**: unzip, move `cumple.app` to Applications, open it once and let
+  macOS refuse, then System Settings, Privacy and Security, Open Anyway. The
+  terminal route is `xattr -dr com.apple.quarantine /Applications/cumple.app`.
+  Notarization needs an Apple Developer membership and is on the list.
+- **Windows**: unzip, run `cumple-app.exe`; SmartScreen shows "Windows protected
+  your PC", More info, Run anyway. The app needs the Microsoft Edge WebView2
+  Runtime, which Windows 11 and most Windows 10 machines already have; when it
+  is missing the app says so and opens Microsoft's download page.
+- **Linux**: untar, run `cumple-app/cumple-app`; the folder carries a
+  `cumple.desktop` file and an icon for the launcher.
+
+With Python and uv the app installs like the CLI, `uv tool install --python 3.12
+"cumple[app] @ git+https://github.com/victor10days/cumple"` (on Linux
+`cumple[app-qt]`, which brings PyQt6 and its web engine, about 250 MB), and
+`cumple app` opens the window. `cumple app master.wav --spec netflix-2.0`
+opens it with the check already running; without `--spec` the files wait in the
+queue for a destination, because a verdict against a guessed destination is a
+wrong verdict. A file dropped on the Dock icon or opened with the app reaches
+it on a cold launch; the window's drop zone is the route once it is running.
+The app logs to `~/Library/Logs/cumple/app.log` on macOS,
+`%LOCALAPPDATA%\cumple\app.log` on Windows and `~/.local/state/cumple/app.log`
+on Linux. `integrations/macos/build_app.sh` still builds the older AppleScript
+droplet for a Mac that has the CLI installed.
 
 ## Destinations
 
@@ -371,7 +407,7 @@ silent the profile says so.
   dialogue, with Silero VAD as a second opinion.
   [docs/DIALOGUE.md](docs/DIALOGUE.md), regenerated by
   `scripts/dialogue_benchmark.py` after `scripts/fetch_real_dialogue.sh`.
-- **Tests**: 148, 92 % line coverage on `src/`, run with `uv run pytest`. The
+- **Tests**: 171, 91 % line coverage on `src/`, run with `uv run pytest`. The
   EBU cases run when the test set is in `~/.cache/cumple/` (it is free but not
   redistributed; see CONTRIBUTING).
 - **Manual QA** on real bounces is logged in [docs/QA.md](docs/QA.md).
@@ -410,9 +446,13 @@ silent the profile says so.
   their clauses.
 - Stem null tolerance (-60 dBFS residual) is cumple's default; no studio
   publishes one.
-- The PDF needs a local Google Chrome or Chromium; without one, the HTML sheet
-  is still written. The Mac app is macOS only; the CLI runs anywhere Python
-  and libsndfile do. Tested on macOS; Linux via CI; Windows untested.
+- The PDF needs a local Google Chrome, Chromium or Edge; without one the HTML
+  sheet is still written and is the deliverable. The desktop builds come from
+  CI, which runs each frozen app's self-test (profiles, fonts, a tone that must
+  read -23 LUFS, a sheet); the macOS build is the one exercised on a real
+  machine, and the hands-on checks are logged in [docs/QA.md](docs/QA.md). The
+  CLI runs anywhere Python and libsndfile do, and its tests run on macOS,
+  Windows and Linux in CI.
 
 ## Related work
 
