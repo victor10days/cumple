@@ -153,3 +153,13 @@ def test_download_links_match_the_release_workflow():
     for asset in assets:
         assert f"https://github.com/victor10days/cumple/releases/latest/download/{asset}" in PAGE, asset
     assert (SITE / "robots.txt").is_file() and (SITE / "sitemap.xml").is_file()
+
+
+def test_render_blueprint_publishes_the_site_folder():
+    import yaml
+
+    blueprint = yaml.safe_load((ROOT / "render.yaml").read_text(encoding="utf-8"))
+    (service,) = blueprint["services"]
+    assert service["type"] == "web" and service["runtime"] == "static" and service["name"] == "cumple"
+    assert service["staticPublishPath"] == "./site" and service["branch"] == "main"
+    assert any(e["key"] == "SKIP_INSTALL_DEPS" for e in service["envVars"])
