@@ -1,0 +1,23 @@
+# Render Blueprint: the landing page as a static site served from site/.
+# Connected once in the Render dashboard (New, Blueprint, this repository); after that every push
+# to main that changes site/ redeploys. Static sites are free on Render; nothing here is billable.
+services:
+  - type: web
+    name: cumple
+    runtime: static
+    branch: main
+    buildCommand: echo "site/ is prebuilt; nothing to build"
+    staticPublishPath: ./site
+    envVars:
+      - key: SKIP_INSTALL_DEPS
+        value: "true"
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=600
+      - path: /fonts/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /img/*
+        name: Cache-Control
+        value: public, max-age=86400
