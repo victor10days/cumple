@@ -18,6 +18,7 @@ from .fix import fix_file
 from .io import load_package, probe
 from .meters.measure import measure, measure_args
 from .report import print_report, report_to_dict, write_diff_sheet, write_sheet
+from .report.qc_sheet import sheet_target
 from .report.specs_md import render_specs_markdown
 from .specs import ProfileNotFound, get, load_all
 from .specs.schema import GRADE_LABEL, Profile
@@ -301,15 +302,14 @@ def check(
     else:
         print_report(report, console, show_clauses=clauses)
     if sheet or pdf or out is not None:
-        base_dir = out if out is not None else (path if path.is_dir() else path.parent)
+        target = sheet_target(path, out)
         try:
-            base_dir.mkdir(parents=True, exist_ok=True)
+            target.parent.mkdir(parents=True, exist_ok=True)
         except OSError as e:
-            console.print(f"[red]cannot write to {base_dir}:[/] {e}")
+            console.print(f"[red]cannot write to {target.parent}:[/] {e}")
             raise typer.Exit(2) from None
-        stem = path.name if path.is_dir() else path.stem
-        html_path, pdf_path = write_sheet(report, base_dir / f"{stem}.qc.html", pdf=pdf)
-        (base_dir / f"{stem}.qc.json").write_text(json.dumps(report_to_dict(report), indent=2))
+        html_path, pdf_path = write_sheet(report, target, pdf=pdf)
+        target.with_suffix(".json").write_text(json.dumps(report_to_dict(report), indent=2))
         console.print(
             f"[dim]sheet:[/] {html_path}"
             + (
@@ -452,6 +452,32 @@ def fix(
         + ("" if report.passed else "  (other rules still fail; see `cumple check`)")
     )
     raise typer.Exit(0 if report.passed else 1)
+
+
+@app.command("app")
+def app_cmd(
+    paths: list[Path] | None = typer.Argument(None, help="Files or folders to queue in the app's Check tab."),
+    spec: str | None = typer.Option(
+        None, "--spec", "-s", help="Destination id; with paths, the checks start as soon as the window opens."
+    ),
+) -> None:
+    """Open the desktop app: drag and drop, the sheet in the window, a watch folder, the diff."""
+    if spec is not None:
+        _profile_or_exit(spec)
+    try:
+        import webview  # noqa: F401  (the optional [app] extra)
+
+        from .app.main import run
+    except ImportError:
+        console.print(
+            "[red]the desktop app needs pywebview.[/] Install it with:\n"
+            '  uv tool install --python 3.12 "cumple\\[app] @ git+https://github.com/victor10days/cumple"\n'
+            '  on Linux: "cumple\\[app-qt]" (PyQt6 wheels, about 250 MB), or a venv made with --system-site-packages\n'
+            "  and the distribution's python3-gi, gir1.2-gtk-3.0 and gir1.2-webkit2-4.1 packages.\n"
+            "Or download the app: https://victor10days.github.io/cumple/"
+        )
+        raise typer.Exit(2) from None
+    raise typer.Exit(run(paths or [], spec))
 
 
 if __name__ == "__main__":
