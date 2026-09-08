@@ -474,7 +474,7 @@ def app_cmd(
             '  uv tool install --python 3.12 "cumple\\[app] @ git+https://github.com/victor10days/cumple"\n'
             '  on Linux: "cumple\\[app-qt]" (PyQt6 wheels, about 250 MB), or a venv made with --system-site-packages\n'
             "  and the distribution's python3-gi, gir1.2-gtk-3.0 and gir1.2-webkit2-4.1 packages.\n"
-            "Or download the app: https://victor10days.github.io/cumple/"
+            "Or download the app: https://cumple-uxa7.onrender.com/"
         )
         raise typer.Exit(2) from None
     raise typer.Exit(run(paths or [], spec))

@@ -43,7 +43,7 @@ FAMILY_ORDER = ["streaming", "broadcast", "cinema", "music", "podcast", "audiobo
 AUDIO_FILTER = "Audio files (*.wav;*.bwf;*.rf64;*.w64;*.aif;*.aiff;*.flac)"  # the description must match [\w ]+
 ALL_FILES = "All files (*.*)"
 REPO_URL = "https://github.com/victor10days/cumple"
-SITE_URL = "https://victor10days.github.io/cumple/"
+SITE_URL = "https://cumple-uxa7.onrender.com/"
 NO_PDF = "no Chrome, Chromium or Edge found, or printing failed; the HTML sheet is the deliverable"
 
 

@@ -37,7 +37,7 @@ app = ["pywebview>=6.2.1"]
 app-qt = ["pywebview[qt]>=6.2.1"]
 
 [project.urls]
-Homepage = "https://victor10days.github.io/cumple/"
+Homepage = "https://cumple-uxa7.onrender.com/"
 Source = "https://github.com/victor10days/cumple"
 Download = "https://github.com/victor10days/cumple/releases/latest"
 
