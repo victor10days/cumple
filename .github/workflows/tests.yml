@@ -7,15 +7,21 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15, windows-latest]
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
       - name: Install
-        run: uv sync --all-groups
+        run: uv sync --group dev
       - name: Lint
+        if: runner.os == 'Linux'
         run: |
           uv run ruff check src tests scripts
           uv run ruff format --check src tests scripts
@@ -23,4 +29,5 @@ jobs:
         # The 29 EBU conformance cases skip here: the EBU test set is free but not redistributed.
         run: uv run pytest
       - name: Build
+        if: runner.os == 'Linux'
         run: uv build
