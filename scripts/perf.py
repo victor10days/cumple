@@ -76,7 +76,7 @@ def main() -> None:
             f"| {name} | {ch} | {minutes} min | {size:.2f} GB | {wall:.0f} s | {minutes * 60 / wall:.0f}x | {rss:.0f} MB |"
         )
     print(
-        "\nMemory grows far slower than the file: twelve times the duration costs well under twice the memory, because the meters keep 10 ms energies, per-frame speech features and filter state, never the audio."
+        "\nMemory grows far slower than the file: in this run twelve times the duration cost 1.6 times the memory. The meters never hold the audio; what they keep per programme second has not been profiled."
     )
 
 

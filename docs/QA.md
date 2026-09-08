@@ -1,7 +1,7 @@
 # Manual QA log
 
 Hands-on checks recorded here with a date and with who or what ran them.
-The automated suite (`uv run pytest`, 182 tests) and the conformance report
+The automated suite (`uv run pytest`, 185 tests) and the conformance report
 cover the measurement; this log covers the surfaces an engineer actually
 touches. An item without a dated entry has **not** been done. Rows that need
 a DAW, real mix versions or a Windows or Linux machine stay pending until a
@@ -23,7 +23,7 @@ mouse.
 | Desktop app, one file | Open `cumple.app` (or `cumple app`), drop a real bounce, pick a destination, press Check; the sheet appears in the window and lands next to the file, and its verdict matches `cumple check` in a terminal. | done 2026-09-07 and 2026-09-08 (entries 1 and 4) |
 | Desktop app, a package and a folder | Drop a delivery folder of discrete mono files (one item, the sheet inside the folder) and a folder of bounces (one item per file). | done 2026-09-08 (entry 4) |
 | Desktop app, Save PDF and Reveal | Save PDF writes `<name>.qc.pdf` next to the sheet through the local Chrome; Reveal selects it in Finder or Explorer; a clause link in the sheet opens in the browser. | done 2026-09-08 (entry 4); the clause link in the browser not exercised |
-| Desktop app, watch during a bounce | The Watch tab on the bounce folder while a DAW bounces into it: the file is left alone until it settles, then the row, the sheet and the CSV line appear. | done 2026-09-08 with a copied file, not a DAW bounce (entry 4) |
+| Desktop app, watch during a bounce | The Watch tab on the bounce folder while a DAW bounces into it: the file is left alone until it settles, then the row, the sheet and the CSV line appear. | partly done 2026-09-08: a copied file that landed at once, not a growing DAW bounce (entry 4) |
 | Desktop app, the diff | Two real versions in the Diff tab, then real stems against their printmaster; the prose and the diff sheet match the CLI. | done 2026-09-08 on the demo versions and stems (entry 4) |
 | Windows build launches | The CI zip on a Windows 10 or 11 machine: SmartScreen's More info, Run anyway; the window opens, a WAV checks, Save PDF works with Edge or Chrome installed. | pending |
 | Linux build launches | The CI tarball on an x86_64 desktop: the window opens (Qt), a WAV checks, the `.desktop` file works from the launcher. | pending |
