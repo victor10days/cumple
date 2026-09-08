@@ -198,7 +198,7 @@ table.compare td.no { color: var(--color-muted); }
     { "@type": "Question", "name": "How accurate is the meter?", "acceptedAnswer": { "@type": "Answer", "text": "All 29 cases of the official EBU Loudness Test Set pass, with 66 of 66 Tech 3341 readings inside the published tolerance, and integrated loudness lands within 0.05 LU of ffmpeg and pyloudnorm on the same files. The reports are in the repository and a script regenerates them." } },
     { "@type": "Question", "name": "Does it measure dialogue-gated loudness like the studios?", "acceptedAnswer": { "@type": "Answer", "text": "Approximately. Netflix, Amazon and Disney gate on dialogue with a Dolby algorithm nobody outside Dolby can run. cumple uses a heuristic speech detector, labelled as such on every sheet, that read 1.6 and 6.7 LU low on two open films; the full-programme value is always shown beside it, and Netflix's own fallback rule is applied before anything is flagged." } },
     { "@type": "Question", "name": "Which files does it read?", "acceptedAnswer": { "@type": "Answer", "text": "WAV, BWF, RF64, AIFF and FLAC, mono to 7.1 and packages of discrete mono files. Not AAC, AC-3, MP3 or MXF, and no Dolby Atmos or ADM checks yet. Check the master." } },
-    { "@type": "Question", "name": "Which platforms?", "acceptedAnswer": { "@type": "Answer", "text": "macOS on Apple silicon and Intel, Windows 10 and 11 on x64, Linux on x86_64. The builds come from CI and are unsigned; the macOS build is the one exercised by hand so far. Any machine with Python 3.12 can install the command line with uv." } }
+    { "@type": "Question", "name": "Which platforms?", "acceptedAnswer": { "@type": "Answer", "text": "macOS on Apple silicon and Intel, Windows 10 and 11 on x64, Linux on x86_64. The builds come from CI and are unsigned; the macOS build is the one exercised by hand so far, and the Windows and Linux builds open their window and check a test tone in CI. Any machine with Python 3.12 can install the command line with uv." } }
   ]
 }
 </script>
@@ -371,7 +371,7 @@ table.compare td.no { color: var(--color-muted); }
   <details><summary>How accurate is the meter?</summary><p>All 29 cases of the official EBU Loudness Test Set pass, with 66 of 66 Tech 3341 readings inside the published tolerance, and integrated loudness lands within 0.05 LU of ffmpeg and pyloudnorm on the same files. The reports are in the repository and a script regenerates them.</p></details>
   <details><summary>Does it measure dialogue-gated loudness like the studios?</summary><p>Approximately. Netflix, Amazon and Disney gate on dialogue with a Dolby algorithm nobody outside Dolby can run. cumple uses a heuristic speech detector, labelled as such on every sheet, that read 1.6 and 6.7 LU low on two open films; the full-programme value is always shown beside it, and Netflix's own fallback rule is applied before anything is flagged.</p></details>
   <details><summary>Which files does it read?</summary><p>WAV, BWF, RF64, AIFF and FLAC, mono to 7.1 and packages of discrete mono files. Not AAC, AC-3, MP3 or MXF, and no Dolby Atmos or ADM checks yet. Check the master.</p></details>
-  <details><summary>Which platforms?</summary><p>macOS on Apple silicon and Intel, Windows 10 and 11 on x64, Linux on x86_64. The builds come from CI and are unsigned; the macOS build is the one exercised by hand so far. Any machine with Python 3.12 can install the command line with uv.</p></details>
+  <details><summary>Which platforms?</summary><p>macOS on Apple silicon and Intel, Windows 10 and 11 on x64, Linux on x86_64. The builds come from CI and are unsigned; the macOS build is the one exercised by hand so far, and the Windows and Linux builds open their window and check a test tone in CI. Any machine with Python 3.12 can install the command line with uv.</p></details>
 </section>
 
 <section aria-labelledby="limits">
@@ -381,7 +381,7 @@ table.compare td.no { color: var(--color-muted); }
     <li>No Dolby Atmos or ADM checks yet: cumple reads BWF metadata but does not validate beds, objects or track mappings.</li>
     <li>It does not decode delivery codecs or MXF, does not find the 2-pop, and does not compare the audio to the picture.</li>
     <li>Leq(m) for cinema rests on a stated convention, not a calibrated room; the stem null tolerance is the tool's default, since no studio publishes one.</li>
-    <li>The PDF needs a local Chrome, Chromium or Edge; the HTML sheet is written regardless and is the deliverable. The desktop builds are unsigned; Windows and Linux builds are self-tested in CI and not yet run by hand.</li>
+    <li>The PDF needs a local Chrome, Chromium or Edge; the HTML sheet is written regardless and is the deliverable. The desktop builds are unsigned; Windows and Linux builds are self-tested in CI, where they open their window on a test tone, and have not yet been run by hand.</li>
   </ul>
 </section>
 
@@ -459,7 +459,7 @@ cumple check master.wav --spec netflix-2.0</pre>
   if (!/mac/i.test(p)) {
     var n = document.createElement("span");
     n.className = "also";
-    n.textContent = "This build comes from CI and is self-tested there; nobody has run it by hand on " + (/win/i.test(p) ? "Windows" : "Linux") + " yet. The macOS build has been.";
+    n.textContent = "This build comes from CI, where it opens its window and checks a test tone; nobody has run it by hand on " + (/win/i.test(p) ? "Windows" : "Linux") + " yet. The macOS build has been.";
     a.parentNode.appendChild(n);
   }
   if (/mac/i.test(p) && uad && uad.getHighEntropyValues) {
