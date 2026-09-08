@@ -1,6 +1,6 @@
-# Conformance report for cumple 0.1.0
+# Conformance report for cumple 0.2.0
 
-Generated 2026-09-04. Tolerances are the published ones: EBU Tech 3341 ±0.1 LU for loudness and +0.2/−0.4 dB for true peak; EBU Tech 3342 ±1 LU for loudness range; TASA Standard §1.4.2 per-frequency tolerances for the M-weighting. The EBU Loudness Test Set v5.0 is free from tech.ebu.ch and is not redistributed here.
+Generated 2026-09-08. Tolerances are the published ones: EBU Tech 3341 ±0.1 LU for loudness and +0.2/−0.4 dB for true peak; EBU Tech 3342 ±1 LU for loudness range; TASA Standard §1.4.2 per-frequency tolerances for the M-weighting. The EBU Loudness Test Set v5.0 is free from tech.ebu.ch and is not redistributed here.
 
 ## EBU Tech 3341: loudness and true peak
 

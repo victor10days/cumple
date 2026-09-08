@@ -307,7 +307,7 @@ table.compare td.no { color: var(--color-muted); }
     <div><a href="https://github.com/victor10days/cumple/blob/main/docs/CONFORMANCE.md"><span class="big">66 of 66</span> <span class="what">EBU Tech 3341 readings inside the published tolerance</span></a></div>
     <div><a href="https://github.com/victor10days/cumple/blob/main/docs/CONFORMANCE.md"><span class="big">29 of 29</span> <span class="what">cases of the official EBU Loudness Test Set v5.0</span></a></div>
     <div><a href="https://github.com/victor10days/cumple/blob/main/docs/BENCHMARK.md"><span class="big">0.05 LU</span> <span class="what">the largest gap to ffmpeg ebur128 and to pyloudnorm on integrated loudness</span></a></div>
-    <div><a href="https://github.com/victor10days/cumple/blob/main/docs/PERF.md" aria-label="92 times real time: 60 minutes of stereo measured in 39 seconds at 622 MB peak memory"><span class="big">92x</span> <span class="what">real time: 60 minutes of stereo measured in 39 s at 622 MB peak memory</span></a></div>
+    <div><a href="https://github.com/victor10days/cumple/blob/main/docs/PERF.md" aria-label="91 times real time: 60 minutes of stereo measured in 39 seconds at 704 MB peak memory"><span class="big">91x</span> <span class="what">real time: 60 minutes of stereo measured in 39 s at 704 MB peak memory</span></a></div>
   </div>
   <p class="note">Every measured number on this page comes from a report in the repository, and the disagreements are written down too. The dialogue gate is a labelled approximation of Dolby's algorithm: against two open films it read 1.6 LU low on Tears of Steel and 6.7 LU low on Sintel, whose dialogue sits under an orchestral score. <a href="https://github.com/victor10days/cumple/blob/main/docs/DIALOGUE.md">docs/DIALOGUE.md</a> has the method and the numbers. 171 tests with 91 % line coverage run on macOS, Windows and Linux.</p>
 </section>
@@ -456,6 +456,12 @@ cumple check master.wav --spec netflix-2.0</pre>
   if (!pick) { return; }
   a.href = base + pick[0];
   a.textContent = pick[1];
+  if (!/mac/i.test(p)) {
+    var n = document.createElement("span");
+    n.className = "also";
+    n.textContent = "This build comes from CI and is self-tested there; nobody has run it by hand on " + (/win/i.test(p) ? "Windows" : "Linux") + " yet. The macOS build has been.";
+    a.parentNode.appendChild(n);
+  }
   if (/mac/i.test(p) && uad && uad.getHighEntropyValues) {
     uad.getHighEntropyValues(["architecture"]).then(function (h) {
       if (h.architecture === "x86") { a.href = base + "cumple-macos-x86_64.zip"; a.textContent = "Download for Intel Mac"; }
