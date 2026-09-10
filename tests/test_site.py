@@ -178,3 +178,92 @@ def test_render_blueprint_publishes_the_site_folder():
 
 def test_the_untested_build_caveat_is_in_the_download_script():
     assert "nobody has run it by hand on" in PAGE
+
+
+TABS = [
+    ("#features", "What it does"),
+    ("#proof", "How we know"),
+    ("#destinations", "Destinations"),
+    ("#compare", "Compare"),
+    ("#questions", "Questions"),
+]
+
+
+class Outline(HTMLParser):
+    """Ids, in-page links, the tabs and the header/nav/main order; Walk does not track nesting."""
+
+    def __init__(self):
+        super().__init__()
+        self.ids: list[str] = []
+        self.fragments: list[str] = []
+        self.navs: list[dict] = []
+        self.tabs: list[tuple[str, str]] = []
+        self.order: list[str] = []
+        self._in_nav = 0
+        self._tab: list[str] | None = None
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if a.get("id"):
+            self.ids.append(a["id"])
+        href = a.get("href") or ""
+        if tag == "a" and href.startswith("#"):
+            self.fragments.append(href)
+        if tag in ("header", "nav", "main"):
+            self.order.append(tag)
+        if tag == "nav":
+            self.navs.append(a)
+            self._in_nav += 1
+        if tag == "a" and self._in_nav:
+            self._tab = [href, ""]
+
+    def handle_endtag(self, tag):
+        if tag in ("header", "nav", "main"):
+            self.order.append("/" + tag)
+        if tag == "nav":
+            self._in_nav -= 1
+        if tag == "a" and self._tab is not None:
+            self.tabs.append((self._tab[0], self._tab[1].strip()))
+            self._tab = None
+
+    def handle_data(self, data):
+        if self._tab is not None:
+            self._tab[1] += data
+
+
+def outline() -> Outline:
+    o = Outline()
+    o.feed(PAGE)
+    return o
+
+
+def test_every_in_page_link_points_at_one_existing_id():
+    o = outline()
+    repeated = sorted(i for i, n in Counter(o.ids).items() if n > 1)
+    assert not repeated, repeated
+    assert "#main" in o.fragments and "#download" in o.fragments
+    missing = sorted({h for h in o.fragments if h[1:] not in o.ids})
+    assert not missing, missing
+    labelled = re.findall(r'aria-labelledby="([^"]+)"', PAGE)
+    assert labelled and all(i in o.ids for i in labelled), labelled
+
+
+def test_the_section_tabs_are_the_five_agreed_ones_in_order():
+    o = outline()
+    assert len(o.navs) == 1 and o.navs[0].get("aria-label") == "Sections"
+    assert o.tabs == TABS
+    positions = [PAGE.index(f' id="{h[1:]}"') for h, _ in TABS]
+    assert positions == sorted(positions)  # the tabs run in the page's own order
+
+
+def test_the_nav_sits_in_the_header_before_main():
+    o = outline()
+    assert o.order == ["header", "nav", "/nav", "/header", "main", "/main"]
+
+
+def test_the_bar_is_sticky_and_anchor_jumps_clear_it():
+    css = re.search(r"<style>(.*?)</style>", PAGE, re.S).group(1)
+    assert re.search(r"\.nav\s*\{[^}]*position: sticky;[^}]*top: 0;", css)
+    assert re.search(r"html\s*\{[^}]*scroll-padding-top: calc\(var\(--bar-h\)", css)
+    assert re.search(r"\.tabs a\[aria-current\]\s*\{[^}]*var\(--color-accent\)", css)
+    assert PAGE.count('setAttribute("aria-current", "true")') == 1 and "IntersectionObserver" in PAGE

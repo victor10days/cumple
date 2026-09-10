@@ -27,8 +27,9 @@
 <link rel="preload" href="fonts/BarlowCondensed-Bold.woff2" as="font" type="font/woff2" crossorigin>
 <style>
 /* Hallmark · genre: modern-minimal · macrostructure: Workbench · theme: custom (cumple) · design-system: design.md
- * nav: N9 edge-aligned · footer: Ft5 statement · enrichment: none (real screenshots) · contrast: pass (40-41) · honest: pass (46)
- * chrome: pass (47) · tokens: pass (48) · active: pass (26) · mobile: 320/375/414/768 · pre-emit critique: P4 H3 E4 S5 R3 V3 · 2026-09-07 */
+ * nav: N1b three-section (5 links · no dropdowns · always-solid, sticky · tabs in the app's rule-under treatment) · footer: Ft5 statement
+ * enrichment: none (real screenshots) · contrast: pass (40-41) · honest: pass (46)
+ * chrome: pass (47) · tokens: pass (48) · active: pass (26) · mobile: 320/375/414/768 · pre-emit critique: P4 H3 E4 S5 R3 V3 · 2026-09-10 */
 @font-face { font-family: "Barlow Condensed"; font-weight: 600; font-style: normal; font-display: swap; src: url(fonts/BarlowCondensed-SemiBold.woff2) format("woff2"); }
 @font-face { font-family: "Barlow Condensed"; font-weight: 700; font-style: normal; font-display: swap; src: url(fonts/BarlowCondensed-Bold.woff2) format("woff2"); }
 @font-face { font-family: "IBM Plex Sans"; font-weight: 400; font-style: normal; font-display: swap; src: url(fonts/IBMPlexSans-Regular.woff2) format("woff2"); }
@@ -43,7 +44,7 @@ a { color: var(--color-accent); text-decoration: underline; text-underline-offse
 a:hover { color: var(--color-focus); }
 a:active { color: var(--color-ink); }
 :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
-.skip { position: absolute; left: -9999px; top: 0; padding: var(--space-xs) var(--space-md); background: var(--color-paper); color: var(--color-accent); z-index: var(--z-sticky); }
+.skip { position: absolute; left: -9999px; top: 0; padding: var(--space-xs) var(--space-md); background: var(--color-paper); color: var(--color-accent); z-index: calc(var(--z-sticky) + 1); }
 .skip:focus { left: 0; }
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 h1, h2, h3 { font-family: var(--font-display); font-weight: 700; font-style: normal; letter-spacing: -0.01em; line-height: var(--lh-tight); margin: 0; overflow-wrap: break-word; min-width: 0; text-wrap: balance; }
@@ -54,18 +55,30 @@ p { margin: 0 0 var(--space-md); max-width: 62ch; }
 code, pre, .mono { font-family: var(--font-mono); font-size: 0.92em; }
 code { overflow-wrap: anywhere; }
 pre { margin: 0; padding: var(--space-md); background: var(--color-paper-2); border-left: var(--rule-thick) solid var(--color-accent); white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-sm); line-height: var(--lh-body); }
-.wrap { max-width: 74rem; margin: 0 auto; padding: 0 var(--space-lg); }
+.wrap { --gutter: var(--space-lg); max-width: 74rem; margin: 0 auto; padding: 0 var(--gutter); }
 section { padding: var(--space-2xl) 0; border-top: var(--rule-hair) solid var(--color-rule); }
 section.tight { padding: var(--space-xl) 0; }
 .lbl { font-weight: 600; font-size: var(--text-xs); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--color-muted); }
 
-.nav { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-md) 0; }
+/* The bar. --bar-h is its own height (one 44 px row, two below 56rem) so an anchor jump lands under it, not behind it. */
+html { --bar-h: calc(44px + 2 * var(--space-sm) + var(--rule-hair)); scroll-padding-top: calc(var(--bar-h) + var(--space-md)); }
+.nav { position: sticky; top: 0; z-index: var(--z-sticky); display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "mark tabs btn"; align-items: center; column-gap: var(--space-lg); background: var(--color-paper); border-bottom: var(--rule-hair) solid var(--color-rule); }
 .wordmark { font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); letter-spacing: -0.01em; color: var(--color-ink); text-decoration: none; }
+.nav .wordmark { grid-area: mark; line-height: var(--lh-tight); margin: var(--space-sm) 0; }
+.nav .btn { grid-area: btn; display: inline-flex; align-items: center; padding-top: 0; padding-bottom: 0; margin: var(--space-sm) 0; }
+.tabs { grid-area: tabs; justify-self: center; align-self: stretch; max-width: 100%; display: flex; margin-bottom: calc(-1 * var(--rule-hair)); overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs ul { display: flex; gap: var(--space-2xs); margin: 0; padding: 0; list-style: none; }
+.tabs li { display: flex; }
+.tabs a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--space-sm); font-family: var(--font-display); font-weight: 600; font-size: var(--text-md); letter-spacing: 0.02em; line-height: var(--lh-tight); color: var(--color-muted); text-decoration: none; white-space: nowrap; border-bottom: var(--rule-thick) solid transparent; }
+.tabs a:hover, .tabs a:active { color: var(--color-ink); }
+.tabs a:focus-visible { outline-offset: -2px; }
+.tabs a[aria-current] { color: var(--color-ink); border-bottom-color: var(--color-accent); }
 .btn { display: inline-block; padding: var(--space-sm) var(--space-lg); min-height: 44px; border: var(--rule-thick) solid var(--color-accent); background: var(--color-accent); color: var(--color-accent-ink); font-weight: 600; text-decoration: none; white-space: nowrap; border-radius: var(--radius-none); }
 .btn:hover { background: var(--color-focus); border-color: var(--color-focus); color: var(--color-accent-ink); }
 .btn:active { background: var(--color-focus); border-color: var(--color-ink); color: var(--color-accent-ink); }
 
-.hero { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--space-2xl); align-items: start; padding: var(--space-xl) 0 var(--space-2xl); border-top: var(--rule-thick) solid var(--color-ink); }
+.hero { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--space-2xl); align-items: start; padding: var(--space-xl) 0 var(--space-2xl); }
 .hero h1 { margin-bottom: var(--space-lg); }
 .lede { font-size: var(--text-md); max-width: 56ch; }
 .cta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm) var(--space-md); margin: var(--space-lg) 0 var(--space-sm); max-width: none; }
@@ -141,6 +154,10 @@ table.compare td.no { color: var(--color-muted); }
 .foot-row .wordmark { font-size: var(--text-lg); }
 
 @media (max-width: 56rem) {
+  html { --bar-h: calc(2 * 44px + 2 * var(--space-xs) + var(--rule-hair)); }
+  .nav { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "mark btn" "tabs tabs"; margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter); }
+  .nav .wordmark, .nav .btn { margin: var(--space-xs) 0; }
+  .tabs { justify-self: stretch; max-width: none; margin-left: calc(-1 * var(--gutter)); margin-right: calc(-1 * var(--gutter)); padding: 0 var(--gutter) 0 calc(var(--gutter) - var(--space-sm)); scroll-padding-inline: var(--gutter); }
   .hero, .feature, .feature.flip, .free, .two { grid-template-columns: minmax(0, 1fr); gap: var(--space-lg); }
   .feature.flip .text { order: 0; }
   .problems, .steps { grid-template-columns: minmax(0, 1fr); }
@@ -148,7 +165,7 @@ table.compare td.no { color: var(--color-muted); }
   section { padding: var(--space-xl) 0; }
 }
 @media (max-width: 40rem) {
-  .wrap { padding: 0 var(--space-md); }
+  .wrap { --gutter: var(--space-md); }
   .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .strip > div:nth-child(2n) { border-right: 0; }
   .strip .big { font-size: var(--text-2xl); }
@@ -209,6 +226,15 @@ table.compare td.no { color: var(--color-muted); }
 
 <header class="nav" id="top">
   <a class="wordmark" href="#main">cumple</a>
+  <nav class="tabs" aria-label="Sections">
+    <ul>
+      <li><a href="#features">What it does</a></li>
+      <li><a href="#proof">How we know</a></li>
+      <li><a href="#destinations">Destinations</a></li>
+      <li><a href="#compare">Compare</a></li>
+      <li><a href="#questions">Questions</a></li>
+    </ul>
+  </nav>
   <a class="btn" href="#download">Download</a>
 </header>
 
@@ -309,7 +335,7 @@ table.compare td.no { color: var(--color-muted); }
     <div><a href="https://github.com/victor10days/cumple/blob/main/docs/BENCHMARK.md"><span class="big">0.05 LU</span> <span class="what">the largest gap to libebur128, ffmpeg ebur128 and pyloudnorm on integrated loudness</span></a></div>
     <div><a href="https://github.com/victor10days/cumple/blob/main/docs/PERF.md" aria-label="91 times real time: 60 minutes of stereo measured in 39 seconds at 704 MB peak memory"><span class="big">91x</span> <span class="what">real time: 60 minutes of stereo measured in 39 s at 704 MB peak memory</span></a></div>
   </div>
-  <p class="note">Every measured number on this page comes from a report in the repository, and the disagreements are written down too. The dialogue gate is a labelled approximation of Dolby's algorithm: against two open films it read 1.6 LU low on Tears of Steel and 6.7 LU low on Sintel, whose dialogue sits under an orchestral score. <a href="https://github.com/victor10days/cumple/blob/main/docs/DIALOGUE.md">docs/DIALOGUE.md</a> has the method and the numbers. 190 tests with 91 % line coverage run on macOS, Windows and Linux.</p>
+  <p class="note">Every measured number on this page comes from a report in the repository, and the disagreements are written down too. The dialogue gate is a labelled approximation of Dolby's algorithm: against two open films it read 1.6 LU low on Tears of Steel and 6.7 LU low on Sintel, whose dialogue sits under an orchestral score. <a href="https://github.com/victor10days/cumple/blob/main/docs/DIALOGUE.md">docs/DIALOGUE.md</a> has the method and the numbers. 194 tests with 91 % line coverage run on macOS, Windows and Linux.</p>
 </section>
 
 <section aria-labelledby="destinations">
@@ -467,6 +493,40 @@ cumple check master.wav --spec netflix-2.0</pre>
       if (h.architecture === "x86") { a.href = base + "cumple-macos-x86_64.zip"; a.textContent = "Download for Intel Mac"; }
     }).catch(function () {});
   }
+})();
+</script>
+<script>
+/* Underlines the tab whose section is under the reading line just below the bar. Without it the tabs are plain anchors. */
+(function () {
+  if (!("IntersectionObserver" in window) || !Element.prototype.closest) { return; }
+  var bar = document.querySelector(".nav");
+  var pairs = [];
+  Array.prototype.forEach.call(document.querySelectorAll('.tabs a[href^="#"]'), function (tab) {
+    var target = document.getElementById(tab.getAttribute("href").slice(1));
+    var section = target && target.closest("section");
+    if (section) { pairs.push({ section: section, tab: tab }); }
+  });
+  var current = null, io = null;
+  function mark(tab) {
+    if (tab === current) { return; }
+    if (current) { current.removeAttribute("aria-current"); }
+    if (tab) { tab.setAttribute("aria-current", "true"); }
+    current = tab;
+  }
+  function watch() {
+    if (io) { io.disconnect(); }
+    var line = Math.round(bar.getBoundingClientRect().height) + 8;
+    var below = Math.max(0, window.innerHeight - line - 1);
+    io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        var hit = pairs.filter(function (p) { return p.section === e.target; })[0];
+        if (e.isIntersecting) { mark(hit.tab); } else if (hit.tab === current) { mark(null); }
+      });
+    }, { rootMargin: "-" + line + "px 0px -" + below + "px 0px" });
+    pairs.forEach(function (p) { io.observe(p.section); });
+  }
+  watch();
+  window.addEventListener("resize", watch);
 })();
 </script>
 </body>

@@ -9,7 +9,7 @@ destination, or report a number that disagrees with a published document.
 git clone https://github.com/victor10days/cumple
 cd cumple
 uv sync            # Python 3.12, runtime and dev dependencies
-uv run pytest      # 190 tests; the 29 EBU cases skip until you fetch the test set into ~/.cache/cumple
+uv run pytest      # 194 tests; the 29 EBU cases skip until you fetch the test set into ~/.cache/cumple
 uv run ruff check src tests scripts && uv run ruff format --check src tests scripts
 uv sync --extra app --group packaging     # the desktop app (pywebview) and PyInstaller
 uv run cumple app                         # the window, from the source tree

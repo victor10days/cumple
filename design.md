@@ -27,9 +27,13 @@ Tone: utilitarian.
   no footer; the only button with a fill is the verb (Check, Compare, Start
   watching), everything else is a typographic link.
 - The landing page (`site/`): Workbench. Real screenshots are the body and
-  the copy is captions; nav N9 edge-aligned (wordmark, one Download button);
-  footer Ft5 statement. 16 px root. CTA voice: one verb, Download; the other
-  actions are typographic links.
+  the copy is captions; nav N1b three-section, always solid and sticky: the
+  wordmark left, five section tabs in the middle set in the display face with
+  the app's 2 px accent underline on the section under the reader, one
+  Download button right, a hairline rule under the bar; below 56 rem the tabs
+  drop to a second row that scrolls sideways. Footer Ft5 statement. 16 px
+  root. CTA voice: one verb, Download; the other actions are typographic
+  links.
 
 ## Theme
 
@@ -73,13 +77,19 @@ px so print and screen agree. Surfaces use the names, never raw values.
 
 - Easings: `--ease-out` cubic-bezier(0.16, 1, 0.3, 1), `--ease-in`
   cubic-bezier(0.7, 0, 0.84, 0).
-- Reveal pattern: none. The sheets are still; the infographic is composed.
-- Reduced-motion fallback: not needed while nothing moves.
+- Reveal pattern: none. The sheets are still; the infographic is composed;
+  the landing page's bar stays put while the page scrolls under it, and its
+  current-tab underline switches, it does not slide.
+- Reduced-motion fallback: the landing page's smooth anchor scrolling turns
+  off under `prefers-reduced-motion: reduce`; nothing else moves.
 
 ## Microinteractions stance
 
 - The sheets have no interactive elements beyond source links.
 - Links: accent colour, underline on hover, an instant 2 px focus ring.
+- Section tabs (landing page): muted ink at rest, ink on hover, a 2 px
+  accent underline on the tab whose section is under the reader, set by a
+  small script; without it the tabs are plain anchors.
 
 ## CTA voice
 
