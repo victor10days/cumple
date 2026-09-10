@@ -9,7 +9,7 @@ destination, or report a number that disagrees with a published document.
 git clone https://github.com/victor10days/cumple
 cd cumple
 uv sync            # Python 3.12, runtime and dev dependencies
-uv run pytest      # 194 tests; the 29 EBU cases skip until you fetch the test set into ~/.cache/cumple
+uv run pytest      # 195 tests; the 29 EBU cases skip until you fetch the test set into ~/.cache/cumple
 uv run ruff check src tests scripts && uv run ruff format --check src tests scripts
 uv sync --extra app --group packaging     # the desktop app (pywebview) and PyInstaller
 uv run cumple app                         # the window, from the source tree
@@ -89,6 +89,17 @@ License in `LICENSE`.
 head, history stays linear (rebase merges), and nobody pushes to `main`
 directly, administrators included. To bypass in an emergency, turn the rule
 off under Settings, Branches, and turn it back on afterwards.
+
+## The landing page
+
+`site/` is hand written and shipped as it stands; there is no build step. A
+merge to `main` deploys it twice over: the Pages mirror redeploys itself when
+`site/` changes, and the `deploy` job in `.github/workflows/tests.yml` calls
+Render's deploy hook once the suite is green, which is what serves
+[cumple-uxa7.onrender.com](https://cumple-uxa7.onrender.com/). Nothing is
+pressed by hand. The job needs the repository secret `RENDER_DEPLOY_HOOK`, and
+says so in the log if it is missing. Editing `render.yaml` itself still needs
+Blueprints, cumple, Manual sync, Approve: a deploy does not re-read that file.
 
 ## Releasing
 

@@ -267,3 +267,17 @@ def test_the_bar_is_sticky_and_anchor_jumps_clear_it():
     assert re.search(r"html\s*\{[^}]*scroll-padding-top: calc\(var\(--bar-h\)", css)
     assert re.search(r"\.tabs a\[aria-current\]\s*\{[^}]*var\(--color-accent\)", css)
     assert PAGE.count('setAttribute("aria-current", "true")') == 1 and "IntersectionObserver" in PAGE
+
+
+def test_the_live_page_is_deployed_by_the_workflow_and_only_when_green():
+    """Render cannot deploy itself here, so the push is announced from CI, after the suite passes."""
+    import yaml
+
+    workflow = yaml.safe_load((ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8"))
+    deploy = workflow["jobs"]["deploy"]
+    assert set(deploy["needs"]) == {"test", "conformance"}, "a red commit must never reach the live page"
+    assert deploy["if"] == "github.event_name == 'push' && github.ref == 'refs/heads/main'"
+    (step,) = deploy["steps"]
+    assert step["env"]["HOOK"] == "${{ secrets.RENDER_DEPLOY_HOOK }}"
+    assert "exit 1" in step["run"], "a missing hook must fail, not pass quietly"
+    assert not re.search(r"echo[^\n]*\$HOOK", step["run"]), "the hook URL is a credential; never print it"
