@@ -1,7 +1,7 @@
 # Manual QA log
 
 Hands-on checks recorded here with a date and with who or what ran them.
-The automated suite (`uv run pytest`, 194 tests) and the conformance report
+The automated suite (`uv run pytest`, 195 tests) and the conformance report
 cover the measurement; this log covers the surfaces an engineer actually
 touches. An item without a dated entry has **not** been done. Rows that need
 a DAW, real mix versions or a Windows or Linux machine stay pending until a

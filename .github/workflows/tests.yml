@@ -75,3 +75,29 @@ jobs:
           # differ at a rounding boundary between this runner and the machine that wrote the report.
           diff <(grep -o '✓' docs/CONFORMANCE.md | wc -l) <(grep -o '✓' /tmp/CONFORMANCE.md | wc -l)
           diff <(grep '^\*\*' docs/CONFORMANCE.md) <(grep '^\*\*' /tmp/CONFORMANCE.md)
+
+  deploy:
+    # Render does not deploy this service on its own. It was connected by the repository's public
+    # URL rather than through a GitHub account, so nothing tells Render a commit landed and every
+    # deploy in its history was pressed by hand. The push is announced here instead, through a
+    # deploy hook, which has the better shape anyway: a commit that fails lint, the suite on any
+    # of the three operating systems, the build or the EBU cases never reaches the live page.
+    # The hook URL is a credential and lives in the repository secret RENDER_DEPLOY_HOOK
+    # (Render dashboard, the cumple static site, Settings, Deploy Hook). Without it this job
+    # fails on purpose: a silent skip would look like a deploy that happened.
+    needs: [test, conformance]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Tell Render to deploy
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::error::RENDER_DEPLOY_HOOK is not set on this repository, so the live page still serves the previous commit."
+            exit 1
+          fi
+          # Only the status code is printed; the hook URL must never reach the log.
+          code=$(curl -sS -X POST -o /dev/null -w '%{http_code}' "$HOOK")
+          echo "Render answered $code"
+          [ "$code" = "200" ] || exit 1

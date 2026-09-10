@@ -71,7 +71,7 @@ says the same.
   detector, Leq(m) from the TASA response table, the rules engine with
   either/or rules and the speech switch, the audio diff, the watch folder,
   the gain-only fix, the QC sheet, the macOS droplet, 39 profiles.
-- **Tests and benchmarks.** 194 tests, including synthetic signals with
+- **Tests and benchmarks.** 195 tests, including synthetic signals with
   analytic answers and the official EBU cases; cross-checks against
   libebur128, pyloudnorm, ffmpeg's `ebur128` filter, loudcheck and an
   independently designed interpolator;

@@ -1,8 +1,11 @@
 # Render Blueprint: the landing page as a static site served from site/.
 # Connected once in the Render dashboard (New, Blueprint, public repository URL) as the Blueprint
-# "cumple"; live at https://cumple-uxa7.onrender.com/. The repository is connected by its public URL,
-# so Render does not auto-deploy on push: after a merge that touches site/, press Manual Deploy in the
-# dashboard (or call a Deploy Hook). Static sites are free on Render; nothing here is billable.
+# "cumple"; live at https://cumple-uxa7.onrender.com/. The repository is connected by its public URL
+# rather than through a GitHub account, so Render never hears about a push and cannot deploy on its
+# own. The deploy job in .github/workflows/tests.yml calls a deploy hook on every push to main once
+# the suite is green, so a merge reaches the live page by itself and a red commit never does. Changes
+# to THIS file still need Blueprints, cumple, Manual sync, Approve: a deploy does not re-read it.
+# Static sites are free on Render; nothing here is billable.
 services:
   - type: web
     name: cumple
