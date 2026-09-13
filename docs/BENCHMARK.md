@@ -1,6 +1,6 @@
 # cumple against libebur128, pyloudnorm, ffmpeg ebur128 and loudcheck on the EBU Loudness Test Set v5.0
 
-Generated 2026-09-08 with cumple 0.2.1, libebur128 1.2.6, pyloudnorm 0.2.0, `ffmpeg version 8.0 Copyright (c) 2000-2025 the FFmpeg developers` and loudcheck 0.3.2. Expected values from EBU Tech 3341 Table 1 (±0.1 LU; true peak +0.2/−0.4 dBTP) and Tech 3342 (±1 LU). ✓ means inside the published tolerance, ✗ outside; a value without a mark has no expectation on that file. Every tool ran once on every file on the same machine. pyloudnorm has no true peak, so it is absent from that table. loudcheck's readings are ffmpeg's loudnorm filter as loudcheck runs it: loudness and range at 192 kHz, true peak as the sample peak after resampling to 192 kHz, two decimals.
+Generated 2026-09-12 with cumple 0.2.1, libebur128 1.2.6, pyloudnorm 0.2.0, `ffmpeg version 9.0.1 Copyright (c) 2000-2026 the FFmpeg developers` and loudcheck 0.3.2. Expected values from EBU Tech 3341 Table 1 (±0.1 LU; true peak +0.2/−0.4 dBTP) and Tech 3342 (±1 LU). ✓ means inside the published tolerance, ✗ outside; a value without a mark has no expectation on that file. Every tool ran once on every file on the same machine. pyloudnorm has no true peak, so it is absent from that table. loudcheck's readings are ffmpeg's loudnorm filter as loudcheck runs it: loudness and range at 192 kHz, true peak as the sample peak after resampling to 192 kHz, two decimals.
 
 ## Integrated loudness, LUFS
 
@@ -34,13 +34,13 @@ Generated 2026-09-08 with cumple 0.2.1, libebur128 1.2.6, pyloudnorm 0.2.0, `ffm
 | file | expected TP | cumple | libebur128 | ffmpeg ebur128 | loudcheck |
 |---|---|---|---|---|---|
 | seq-3341-1-16bit.wav |  | -22.93 | -22.94 | -22.90 | -22.94 |
-| seq-3341-2-16bit.wav |  | -32.74 | -32.74 | -32.80 | -32.75 |
+| seq-3341-2-16bit.wav |  | -32.74 | -32.74 | -32.70 | -32.75 |
 | seq-3341-3-16bit-v02.wav |  | -22.99 | -23.00 | -23.00 | -23.00 |
 | seq-3341-4-16bit-v02.wav |  | -22.99 | -23.00 | -23.00 | -23.00 |
 | seq-3341-5-16bit-v02.wav |  | -19.99 | -20.00 | -20.00 | -20.00 |
-| seq-3341-6-5channels-16bit.wav |  | -24.00 | -24.00 | -28.00 | -24.00 |
-| seq-3341-6-6channels-WAVEEX-16bit.wav |  | -24.00 | -24.00 | -28.00 | -24.00 |
-| seq-3341-7_seq-3342-5-24bit.wav |  | -8.90 | -8.91 | -9.10 | -8.91 |
+| seq-3341-6-5channels-16bit.wav |  | -24.00 | -24.00 | -24.00 | -24.00 |
+| seq-3341-6-6channels-WAVEEX-16bit.wav |  | -24.00 | -24.00 | -24.00 | -24.00 |
+| seq-3341-7_seq-3342-5-24bit.wav |  | -8.90 | -8.91 | -8.90 | -8.91 |
 | seq-3341-2011-8_seq-3342-6-24bit-v02.wav |  | -2.64 | -2.64 | -2.60 | -2.64 |
 | seq-3341-15-24bit.wav.wav | -6 | -6.00 ✓ | -6.00 ✓ | -6.00 ✓ | -6.00 ✓ |
 | seq-3341-16-24bit.wav.wav | -6 | -5.96 ✓ | -6.03 ✓ | -6.00 ✓ | -6.00 ✓ |
