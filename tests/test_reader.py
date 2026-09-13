@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+import soundfile as sf
 
 from cumple.io import iter_blocks, load_package, probe, read
 from cumple.io.reader import role_from_name
@@ -59,3 +60,15 @@ def test_package_with_a_stereo_pair_on_the_bed(make_wav, tmp_path):
     assert pkg.layout_guess == "5.1+lt-rt" and pkg.consistent() == []
     m = measure(tmp_path)
     assert m.layout == "5.1+lt-rt" and m.roles[-2:] == ["Lt", "Rt"]
+
+
+def test_mp3_reads_through_libsndfile_and_says_so(tmp_path):
+    """libsndfile 1.2 decodes MP3 itself; the fallback is never consulted for it, on any platform."""
+    n = 48000
+    t = np.arange(n) / 48000
+    tone = 0.1 * np.sin(2 * np.pi * 1000 * t)
+    mp3 = tmp_path / "tone.mp3"
+    sf.write(str(mp3), np.repeat(tone[:, None], 2, axis=1), 48000, format="MP3", subtype="MPEG_LAYER_III")
+    info = probe(mp3)
+    assert info.container == "MP3" and info.decoder == "libsndfile" and info.codec is None
+    assert info.bit_depth is None and not info.is_pcm

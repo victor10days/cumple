@@ -11,7 +11,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 import soundfile as sf
+from typer.testing import CliRunner
 
+from cumple.checks.engine import evaluate
+from cumple.cli import app
 from cumple.io.ffmpeg import (
     FFMPEG_SUFFIXES,
     Ffmpeg,
@@ -23,9 +26,15 @@ from cumple.io.ffmpeg import (
     probe_ffmpeg,
     safe_path,
 )
+from cumple.io.reader import iter_blocks, probe
+from cumple.meters.measure import measure
+from cumple.report import render_html
+from cumple.report.json_out import report_to_dict
+from cumple.specs import load_all
 
 TOOLS = find_ffmpeg()
 needs_ffmpeg = pytest.mark.skipif(TOOLS is None, reason="ffmpeg and ffprobe are not on PATH")
+runner = CliRunner()
 
 
 def encode(tools, wav: Path, out: Path, *codec_args: str) -> Path:
@@ -166,3 +175,110 @@ def test_wav_written_by_soundfile_is_the_reference_for_the_aac_test(make_wav):
     wav = make_wav("tone.wav", seconds=2.0, amplitude=10 ** (-23 / 20))
     data, sr = sf.read(str(wav))
     assert sr == 48000 and abs(float(np.abs(data).max()) - 10 ** (-23 / 20)) < 1e-3
+
+
+@pytest.fixture
+def mp3_file(tmp_path, make_wav):
+    """libsndfile 1.2 writes and reads MP3 itself; no ffmpeg involved."""
+    n = 48000 * 2
+    t = np.arange(n) / 48000
+    tone = 10 ** (-23 / 20) * np.sin(2 * np.pi * 1000 * t)
+    path = tmp_path / "tone.mp3"
+    sf.write(str(path), np.repeat(tone[:, None], 2, axis=1), 48000, format="MP3", subtype="MPEG_LAYER_III")
+    return path
+
+
+@needs_ffmpeg
+def test_probe_falls_back_to_ffmpeg_for_aac(aac_file):
+    info = probe(aac_file)
+    assert info.container == "M4A" and info.codec == "aac"
+    assert info.decoder.startswith("ffmpeg ") and info.subtype == "AAC"
+    assert info.bit_depth is None and not info.is_float
+    assert info.samplerate == 48000 and info.channels == 2 and abs(info.frames - 96000) < 4800
+
+
+@needs_ffmpeg
+def test_iter_blocks_uses_the_decoder_the_info_names(aac_file):
+    info = probe(aac_file)
+    frames = sum(len(b) for b in iter_blocks(aac_file, block_frames=8192, info=info))
+    assert abs(frames - 96000) <= 4096
+
+
+@needs_ffmpeg
+def test_an_aac_delivery_measures_like_its_wav(aac_file, make_wav):
+    wav = make_wav("ref.wav", seconds=2.0, amplitude=10 ** (-23 / 20))
+    a = measure(aac_file)
+    w = measure(wav)
+    assert abs(a.loudness.integrated - w.loudness.integrated) < 0.5
+    assert a.info is not None and a.info.decoder.startswith("ffmpeg ")
+
+
+@needs_ffmpeg
+def test_an_aac_delivery_fails_netflix_and_its_bit_depth_says_not_pcm(aac_file):
+    profiles = load_all()
+    report = evaluate(profiles["netflix-2.0"], measure(aac_file))
+    container = next(f for f in report.findings if f.code == "format.container")
+    assert container.status.name == "FAIL"
+    assert "M4A" in container.measured and "aac" in container.measured and "ffmpeg" in container.measured
+    assert "compression is never allowed" in (container.clause or "")
+    depth = next(f for f in report.findings if f.code == "format.bit_depth")
+    assert depth.status.name == "FAIL" and "not PCM" in depth.measured and "None" not in depth.measured
+
+
+def test_an_mp3_fails_netflix_with_the_clause_and_passes_acx(mp3_file):
+    """The MP3 -> mp3 token is load-bearing for every audiobook delivery; no ffmpeg needed."""
+    profiles = load_all()
+    netflix = evaluate(profiles["netflix-2.0"], measure(mp3_file))
+    container = next(f for f in netflix.findings if f.code == "format.container")
+    assert container.status.name == "FAIL" and container.measured == "MP3"
+    assert "compression is never allowed" in (container.clause or "")
+    acx = evaluate(profiles["acx"], measure(mp3_file))
+    container = next(f for f in acx.findings if f.code == "format.container")
+    assert container.status.name == "PASS" and container.measured == "MP3"
+
+
+@needs_ffmpeg
+def test_json_and_sheet_name_the_decoder_even_without_a_container_clause(aac_file):
+    """youtube has no containers clause, so the finding never exists; the report must still say."""
+    profiles = load_all()
+    report = evaluate(profiles["youtube"], measure(aac_file))
+    doc = report_to_dict(report)
+    assert doc["measurement"]["container"] == "M4A" and doc["measurement"]["codec"] == "aac"
+    assert doc["measurement"]["decoder"].startswith("ffmpeg ")
+    html = render_html(report)
+    assert "M4A" in html and "via ffmpeg" in html and "None-bit" not in html
+
+
+def test_json_and_sheet_name_the_container_for_a_wav(make_wav):
+    profiles = load_all()
+    report = evaluate(profiles["youtube"], measure(make_wav("tone.wav")))
+    doc = report_to_dict(report)
+    assert doc["measurement"]["container"] == "WAV" and doc["measurement"]["codec"] is None
+    assert doc["measurement"]["decoder"] == "libsndfile"
+    assert "24-bit WAV" in render_html(report)
+
+
+@needs_ffmpeg
+def test_info_prints_the_decoder(aac_file):
+    result = runner.invoke(app, ["info", str(aac_file)])
+    assert result.exit_code == 0, result.output
+    assert "decoded by ffmpeg" in result.output and "aac" in result.output
+
+
+def test_without_ffmpeg_the_error_names_what_to_install(tmp_path, monkeypatch):
+    import cumple.io.reader as reader_mod
+
+    monkeypatch.setattr(reader_mod, "find_ffmpeg", lambda: None)
+    fake = tmp_path / "mix.m4a"
+    fake.write_bytes(b"\x00" * 64)
+    with pytest.raises(RuntimeError) as e:
+        probe(fake)
+    assert "ffmpeg" in str(e.value).lower()
+
+
+def test_a_broken_wav_still_reports_libsndfiles_error_not_ffmpegs(tmp_path):
+    bad = tmp_path / "broken.wav"
+    bad.write_bytes(b"RIFF\x00\x00\x00\x00WAVEjunk")
+    with pytest.raises(RuntimeError) as e:
+        probe(bad)
+    assert "ffmpeg" not in str(e.value).lower()

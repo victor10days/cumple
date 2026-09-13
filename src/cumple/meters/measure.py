@@ -196,7 +196,7 @@ def measure(
         info.samplerate,
         info.channels,
         roles,
-        iter_blocks(path, block_frames),
+        iter_blocks(path, block_frames, info=info),
         info=info,
         leqm=leqm,
         lfe_corner_hz=lfe_corner_hz,

@@ -42,6 +42,9 @@ def report_to_dict(report: Report) -> dict[str, Any]:
         "verdict": report.verdict,
         "measurement": {
             "samplerate": m.samplerate,
+            "container": m.info.container if m.info else None,
+            "codec": m.info.codec if m.info else None,
+            "decoder": m.info.decoder if m.info else None,
             "channels": m.channels,
             "roles": m.roles,
             "layout": m.layout,
