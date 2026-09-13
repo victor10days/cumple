@@ -46,18 +46,20 @@ def test_every_tool_section_states_a_source_and_a_read_date():
         assert DATE.search(body), name
 
 
-def test_every_documentation_row_carries_a_url_and_the_read_date():
+def test_every_documentation_row_carries_a_url_and_each_table_its_read_date():
     sections = _sections(RELATED)
     for name in DOCUMENTATION_SECTIONS:
         assert name in sections, name
-        header = next(line for line in sections[name].splitlines() if line.startswith("|"))
+        lines = sections[name].splitlines()
+        header = next(line for line in lines if line.startswith("|"))
         rows = _tables(sections[name], header)
-        assert rows, name
+        body = [line for line in lines if line.startswith("|")][2:]  # header and rule excluded
+        assert rows and len(rows) == len(body), (name, len(rows), len(body))  # a dropped row fails loudly
         source_col = next(c for c in rows[0] if c.lower().startswith("source"))
+        assert DATE.search(source_col), (name, source_col)  # the read date is stated once, in the column name
         for r in rows:
             cell = r[source_col]
             assert "http" in cell or "not run here" in cell or "not read here" in cell, (name, r)
-            assert DATE.search(cell) or DATE.search(source_col), (name, r)
 
 
 def test_the_page_note_names_the_documentation_sections():
@@ -73,7 +75,9 @@ def test_roadmap_rows_carry_a_status_and_the_run_folder_exists():
     for r in rows:
         assert re.fullmatch(r"R\d+", r["Id"]), r
         assert any(r["Status"].startswith(s) for s in STATUSES), r
-    for folder in re.findall(r"`docs/graph-runs/([^`/]+)/`", ROADMAP):
+    folders = re.findall(r"`docs/graph-runs/([^`/]+)/`", ROADMAP)
+    assert folders, "the roadmap names no run folder"
+    for folder in folders:
         assert (ROOT / "docs" / "graph-runs" / folder / "01-frame.md").exists(), folder
 
 

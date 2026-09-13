@@ -490,10 +490,11 @@ offsets between recordings; [DeltaWave](https://deltaw.org/) is free Windows
 software for null tests that also reports R 128 loudness;
 [leqm-nrt](https://github.com/lucaTrv/leqm-nrt) measures Leq(m). Nugen VisLM2
 is the reference meter Amazon's own delivery specs name, and Dolby Dialogue
-Intelligence, which Netflix, Amazon and Disney name in their loudness clauses
-(Apple TV names "Dialogue Intelligence" without the Dolby attribution), is an
-algorithm licensed inside other vendors' tools rather than a Dolby meter; no
-Dolby meter by the name DPLM was found. What each
+Intelligence, which Amazon and Disney name in their quoted loudness clauses
+(Apple TV as "Dialogue Intelligence" without the Dolby attribution) and which
+cumple's two Netflix profiles record in their rule notes, is an algorithm
+licensed inside other vendors' tools rather than a Dolby meter; no Dolby meter
+by the name DPLM was found. What each
 tool does and does not do, with the pages and source read for the landing
 page's comparison table and the dates they were read, is in
 [docs/RELATED.md](docs/RELATED.md).

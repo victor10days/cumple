@@ -1,6 +1,6 @@
 # Roadmap
 
-What cumple does not do yet, ranked by the gap the competitive landscape found, and the rule by which this list advances. The evidence is [RELATED.md](RELATED.md) (what 21 documented tools list, and what three more open-source meters read when run here) and the run folder `docs/graph-runs/2026-09-12-competitive-landscape/`. Status moves in one direction: queued, proposed, building, merged, accepted. The loop moves a row as far as merged; accepted is Victor's word.
+What cumple does not do yet, ranked by the gap the competitive landscape found, and the rule by which this list advances. The evidence is [RELATED.md](RELATED.md) (what 21 documented tools list, and what three more open-source meters read when run here) and the run folder `docs/graph-runs/2026-09-12-competitive-landscape/`. Status moves in one direction: queued, proposed, building, merged, accepted; "out of scope" is the one status outside that ladder. The loop moves a row as far as merged; accepted is Victor's word.
 
 ## Items
 
@@ -8,9 +8,9 @@ What cumple does not do yet, ranked by the gap the competitive landscape found, 
 |---|---|---|---|---|---|
 | R1 | Dialogue gate of the Dolby Dialogue Intelligence class: Silero VAD as an optional `cumple[vad]` backend, the heuristic stays the default | 3 of 21 tools list one (LM-Correct 2, Vantage, Pulsar); 6 profiles name the algorithm (netflix x2, amazon x2, disney-plus-5.1, apple-tv) | proposed for this loop | | |
 | R2 | Delivery codec and container conformance (AAC, AC-3, MP3, MXF) through an optional local ffmpeg, so a lossy file fails the clause instead of refusing to open | 3 of 9 QC platforms list it (Vidchecker, Pulsar, Netflix), 4 with Baton's codec list | proposed for this loop | | |
-| R3 | Dolby E detection (presence only; decoding is licensed) | 3 of 9 QC platforms (eFF, Aurora, Vantage Pro) | queued | | |
-| R4 | ADM and Atmos checks: chna track map, bed and object labels, per-track true peak; no rendering | 2 of 9 QC platforms (Baton, Vantage Pro), 0 of 12 meters; 4 profiles accept `adm-bwf` (apple-tv, apple-immersive, disney-plus-5.1, netflix-5.1) | queued | | |
-| R5 | Silence, dual mono, test tones, channel identifier against filename, mosquito tone | 3, 2, 2, 1 and 1 of 9 QC platforms | queued | | |
+| R3 | Dolby E detection (presence only; decoding is licensed) | 4 of 9 QC platforms handle it (eFF reads and writes it, Aurora checks its guard band, Vantage Pro detects it, Baton lists it as a codec) | queued | | |
+| R4 | ADM and Atmos checks: chna track map, bed and object labels, per-track true peak; no rendering | 2 of 9 QC platforms (Baton, Vantage Pro), 0 of 12 meters; 3 profiles accept `adm-bwf` (apple-tv, apple-immersive, disney-plus-5.1); netflix-5.1 admits an ADM container only as a muxed-source exception | queued | | |
+| R5 | Silence, dual mono, test tones, channel placement, mosquito tone | 3, 2, 2, 2 and 1 of 9 QC platforms | queued | | |
 | R6 | 2-pop, leader and slate detection from the audio alone | 1 of 9 (Baton, container side); Amazon's two profiles forbid a leader without a number | queued | | |
 | R7 | Audio-to-video duration and sync | 1 of 9 (Baton); needs the picture | out of scope until cumple reads picture | | |
 | R8 | PyPI publishing through a trusted-publisher workflow | distribution, not a capability | queued; the last step needs Victor's PyPI account | | |
