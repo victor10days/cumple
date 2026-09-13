@@ -145,6 +145,13 @@ def test_a_stalled_decoder_is_killed_when_the_budget_expires(tmp_path, make_wav,
 
 
 @needs_ffmpeg
+def test_block_frames_below_one_is_refused_before_ffmpeg_starts(make_wav):
+    wav = make_wav("tone.wav")
+    with pytest.raises(FfmpegError, match="block_frames must be at least 1"):
+        list(iter_blocks_ffmpeg(wav, TOOLS, 2, 1.0, block_frames=0))
+
+
+@needs_ffmpeg
 def test_the_version_is_read_from_the_binary():
     assert re.match(r"^[nN]?\d", TOOLS.version), TOOLS.version
 
@@ -170,6 +177,30 @@ def test_each_claimed_container_probes_and_decodes(tmp_path, make_wav, args, suf
     assert info.channels == channels and info.samplerate == 48000
     frames = sum(len(b) for b in iter_blocks_ffmpeg(out, TOOLS, info.channels, info.duration_s, block_frames=8192))
     assert abs(frames - 48000) <= 4096
+
+
+@needs_ffmpeg
+def test_a_container_with_two_audio_streams_is_refused_with_the_count(tmp_path, make_wav):
+    """Two mono PCM tracks in one OP1a MXF, the shape a broadcast delivery takes, must be refused
+    with the stream count named rather than measured on the first track silently. ffmpeg 9.0.1's
+    mxf muxer insists on a picture track, so a 64x64 black MPEG-2 track rides along; it also proves
+    a video stream is not counted as audio. Plain `-f mxf` with audio only is refused by the muxer.
+    """
+    wav = make_wav("tone.wav", seconds=1.0, amplitude=10 ** (-23 / 20))
+    out = encode(
+        TOOLS,
+        wav,
+        tmp_path / "two-track.mxf",
+        *("-f", "lavfi", "-i", "color=black:s=64x64:r=25"),
+        *("-filter_complex", "[0:a]channelsplit=channel_layout=stereo[l][r]"),
+        *("-map", "1:v", "-map", "[l]", "-map", "[r]", "-t", "1"),
+        *("-c:v", "mpeg2video", "-c:a", "pcm_s24le", "-f", "mxf"),
+    )
+    with pytest.raises(FfmpegError, match="2 audio streams"):
+        probe_ffmpeg(out, TOOLS)
+    with pytest.raises(RuntimeError) as e:
+        probe(out)
+    assert "2 audio streams" in str(e.value) and "one WAV or one-track MXF" in str(e.value)
 
 
 def test_wav_written_by_soundfile_is_the_reference_for_the_aac_test(make_wav):
@@ -265,6 +296,13 @@ def test_info_prints_the_decoder(aac_file):
     result = runner.invoke(app, ["info", str(aac_file)])
     assert result.exit_code == 0, result.output
     assert "decoded by ffmpeg" in result.output and "aac" in result.output
+
+
+@needs_ffmpeg
+def test_info_does_not_call_a_lossy_codec_integer(aac_file):
+    result = runner.invoke(app, ["info", str(aac_file)])
+    assert result.exit_code == 0, result.output
+    assert "AAC (not PCM)" in result.output and "integer, not PCM" not in result.output
 
 
 def test_without_ffmpeg_the_error_names_what_to_install(tmp_path, monkeypatch):

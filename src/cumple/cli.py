@@ -264,8 +264,10 @@ def info(
     table.add_row("container", i.container)
     if i.via_ffmpeg:
         table.add_row("decoder", f"{i.codec}, decoded by {i.decoder}")
-    depth = f"{i.bit_depth}-bit" if i.bit_depth is not None else "not PCM"
-    table.add_row("encoding", f"{i.subtype} ({'float' if i.is_float else 'integer'}, {depth})")
+    if i.bit_depth is None:
+        table.add_row("encoding", f"{i.subtype} (not PCM)")
+    else:
+        table.add_row("encoding", f"{i.subtype} ({'float' if i.is_float else 'integer'}, {i.bit_depth}-bit)")
     table.add_row("sample rate", f"{i.samplerate} Hz")
     table.add_row("channels", str(i.channels))
     table.add_row("frames", f"{i.frames}")

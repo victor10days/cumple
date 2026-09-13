@@ -44,8 +44,8 @@ def _mmss(seconds: float) -> str:
 
 
 def _encoding(m) -> str:
-    """ "24-bit WAV", "24-bit MXF via ffmpeg 9.0.1", "M4A (AAC) via ffmpeg 9.0.1", "MP3", or "" when
-    nothing is known about the file."""
+    """ "24-bit WAV", "24-bit MXF via ffmpeg 9.0.1", "M4A (AAC) via ffmpeg 9.0.1", "MP3 via ffmpeg 9.0.1",
+    "MP3", or "" when nothing is known about the file."""
     i = m.info
     if i is None:
         return ""
@@ -54,7 +54,9 @@ def _encoding(m) -> str:
         return f"{pcm} via {i.decoder}" if i.via_ffmpeg else pcm
     if i.via_ffmpeg:
         codec = (i.codec or i.subtype).upper()
-        return f"{i.container} ({codec}) via {i.decoder}"
+        # An MP3 ffmpeg decoded names its codec and its container the same; say it once.
+        named = i.container if codec == i.container else f"{i.container} ({codec})"
+        return f"{named} via {i.decoder}"
     return i.container
 
 

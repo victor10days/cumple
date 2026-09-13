@@ -143,7 +143,7 @@ class Dynamics(Strict):
 
 
 Layout = Literal["mono", "stereo", "lt-rt", "5.1", "7.1", "5.1+lt-rt", "atmos-adm"]
-Container = Literal["wav", "bwf", "rf64", "aiff", "flac", "mxf", "mp3", "aac", "adm-bwf"]
+Container = Literal["wav", "bwf", "rf64", "aiff", "flac", "mxf", "mp3", "aac", "adm-bwf", "mov", "ac3", "eac3"]
 
 
 class Format(Strict):

@@ -2,7 +2,7 @@
 
 ffmpeg is optional. Nothing here runs unless libsndfile refused the file, and every call is an
 argument list to a resolved executable with stdin closed, a protocol whitelist, a timeout and a
-bounded error buffer. Read-only, like the rest of the io package: nothing is written or moved.
+bounded error buffer. Read-only, like the rest of the io package: no file is written.
 """
 
 from __future__ import annotations
@@ -65,12 +65,17 @@ class Ffmpeg:
     version: str  # "9.0.1", or "unknown"
 
 
+def _search_path() -> str:
+    """PATH as the environment gives it; passed explicitly so Windows does not prepend the current directory."""
+    return os.environ.get("PATH", os.defpath)
+
+
 def find_ffmpeg() -> Ffmpeg | None:
     """The ffmpeg and ffprobe pair under CUMPLE_FFMPEG (a directory or the ffmpeg binary), else on PATH.
 
     Cached per environment: one `ffmpeg -version` per process, not one per file.
     """
-    return _locate(os.environ.get("CUMPLE_FFMPEG") or "", shutil.which("ffmpeg") or "")
+    return _locate(os.environ.get("CUMPLE_FFMPEG") or "", shutil.which("ffmpeg", path=_search_path()) or "")
 
 
 @functools.lru_cache(maxsize=8)
@@ -81,7 +86,7 @@ def _locate(hint: str, on_path: str) -> Ffmpeg | None:
         directory = str(p.parent if p.is_file() else p)
         pairs.append((shutil.which("ffmpeg", path=directory), shutil.which("ffprobe", path=directory)))
     if on_path:
-        pairs.append((on_path, shutil.which("ffprobe")))
+        pairs.append((on_path, shutil.which("ffprobe", path=_search_path())))
     for exe, probe in pairs:
         if exe and probe:
             return Ffmpeg(Path(exe), Path(probe), _version(Path(exe)))
@@ -141,7 +146,12 @@ def _tail(stderr_file) -> str:
 
 
 def probe_ffmpeg(path: str | Path, tools: Ffmpeg) -> FfprobeInfo:
-    """Container, codec and shape of the first audio stream, from ffprobe's JSON."""
+    """Container, codec and shape of the file's one audio stream, from ffprobe's JSON.
+
+    A file with no audio stream, or with more than one, is refused with the count named: cumple
+    measures one interleaved stream, and picking the first of several would measure the wrong thing
+    silently.
+    """
     p = safe_path(path)
     argv = [
         str(tools.ffprobe),
@@ -153,8 +163,6 @@ def probe_ffmpeg(path: str | Path, tools: Ffmpeg) -> FfprobeInfo:
         "json",
         "-show_format",
         "-show_streams",
-        "-select_streams",
-        "a:0",
         str(p),
     ]
     try:
@@ -166,10 +174,18 @@ def probe_ffmpeg(path: str | Path, tools: Ffmpeg) -> FfprobeInfo:
         raise FfmpegError(f"ffprobe could not read {p.name}: {err or 'no message'}")
     try:
         doc = json.loads(done.stdout.decode("utf-8", "replace"))
-        stream = doc["streams"][0]
+        streams = [s for s in doc.get("streams", []) if s.get("codec_type") == "audio"]
         fmt = doc.get("format", {})
-    except (ValueError, KeyError, IndexError) as e:
-        raise FfmpegError(f"ffprobe found no audio stream in {p.name}: {err or 'no message'}") from e
+    except (ValueError, AttributeError) as e:
+        raise FfmpegError(f"ffprobe returned unreadable JSON for {p.name}: {err or 'no message'}") from e
+    if not streams:
+        raise FfmpegError(f"ffprobe found no audio stream in {p.name}: {err or 'no message'}")
+    if len(streams) > 1:
+        raise FfmpegError(
+            f"{p.name} carries {len(streams)} audio streams; cumple reads a single interleaved stream, "
+            "bounce the programme as one WAV or one-track MXF first"
+        )
+    stream = streams[0]
     names = str(fmt.get("format_name", "")).lower()
     container = p.suffix.lstrip(".").upper() if names == _MOV_FAMILY else names.split(",")[0].upper()
     duration = float(stream.get("duration") or fmt.get("duration") or 0.0)
@@ -194,6 +210,9 @@ def iter_blocks_ffmpeg(
     p = safe_path(path)
     if channels < 1:
         raise FfmpegError(f"{p.name}: no audio channels to decode")
+    if block_frames < 1:
+        raise FfmpegError(f"{p.name}: block_frames must be at least 1")
+    # The probe refused any file with more than one audio stream, so a:0 is the only one there is.
     argv = [
         str(tools.ffmpeg),
         "-nostdin",
@@ -224,7 +243,8 @@ def iter_blocks_ffmpeg(
 
         def on_budget() -> None:  # runs on the timer thread; the kill unblocks the read below
             expired.set()
-            _kill(proc)
+            if proc.poll() is None:
+                _kill(proc)
 
         timer = threading.Timer(budget, on_budget)
         timer.daemon = True
@@ -241,10 +261,7 @@ def iter_blocks_ffmpeg(
                     continue
                 block, carry = carry[:whole], carry[whole:]
                 yield np.frombuffer(block, dtype="<f4").reshape(-1, channels).astype(dtype, copy=False)
-            if carry:
-                whole = len(carry) - len(carry) % frame_bytes
-                if whole:
-                    yield np.frombuffer(carry[:whole], dtype="<f4").reshape(-1, channels).astype(dtype, copy=False)
+            # carry is shorter than one frame here: a trailing partial frame was dropped inside the loop.
             code = proc.wait(timeout=5)
             if expired.is_set():
                 raise FfmpegError(f"ffmpeg exceeded its {budget:g} s budget on {p.name}")

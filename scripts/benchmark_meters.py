@@ -254,17 +254,21 @@ CASE6_FILES = ("seq-3341-6-5channels-16bit.wav", "seq-3341-6-6channels-WAVEEX-16
 def case6_note(results: dict[str, dict[str, Reading]]) -> str:
     """The case 6 true-peak sentence, read from the run instead of hardcoded, so it cannot
     contradict the table above it: ffmpeg's true-peak reading against cumple's on both the
-    five- and six-channel files, within 0.05 dB.
+    five- and six-channel files, within 0.05 dB. The comparison uses the two-decimal values the
+    table prints, so this and tests/test_site_numbers.py decide from the same numbers.
     """
-    ffmpeg_tp = [results[name]["ffmpeg ebur128"].tp for name in CASE6_FILES]
-    cumple_tp = [results[name]["cumple"].tp for name in CASE6_FILES]
-    mismatch = any(abs(ff - cu) > 0.05 for ff, cu in zip(ffmpeg_tp, cumple_tp, strict=True))
-    if mismatch:
-        return (
-            f"On the five- and six-channel case 6 files it reports a true peak of {minus(ffmpeg_tp[0])} dBFS "
-            f"where the centre channel sits at {minus(cumple_tp[0])} dBFS; cumple, libebur128 and loudcheck "
-            "report the centre channel."
+    mismatched = []
+    for name in CASE6_FILES:
+        ff = round(results[name]["ffmpeg ebur128"].tp, 2)
+        cu = round(results[name]["cumple"].tp, 2)
+        if abs(ff - cu) > 0.05:
+            mismatched.append((name, ff, cu))
+    if mismatched:
+        each = "; ".join(
+            f"on {name} it reports a true peak of {minus(ff)} dBFS where the centre channel sits at {minus(cu)} dBFS"
+            for name, ff, cu in mismatched
         )
+        return f"{each[0].upper()}{each[1:]}; cumple, libebur128 and loudcheck report the centre channel."
     return (
         "On the five- and six-channel case 6 files it reports the centre channel's true peak "
         "(−24 dBFS), as cumple, libebur128 and loudcheck do; ffmpeg 8.0 reported −28 dBFS there on "
