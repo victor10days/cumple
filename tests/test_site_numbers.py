@@ -101,6 +101,14 @@ def test_dialogue_gate_errors_in_the_note():
     for d in deltas:
         assert f"{d:.1f} LU" in PAGE
 
+    pairs = _tables(text, "| programme | integrated (BS.1770-4) |")
+    assert len(pairs) == 2
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    for row in pairs:
+        ref = float(re.match(r"-?\d+\.\d+", row["dialogue-gated: reference"]).group())
+        silero = float(re.match(r"-?\d+\.\d+", row["Silero-gated"]).group())
+        assert f"{abs(silero - ref):.1f} LU" in readme, row["programme"]
+
 
 def _page_compare_table() -> list[dict[str, str]]:
     """The page's comparison table as rows of column header to cell text, tags stripped."""

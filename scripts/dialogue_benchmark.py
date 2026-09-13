@@ -45,26 +45,44 @@ from scipy.signal import butter, fftconvolve, resample_poly, sosfilt
 
 from cumple import __version__
 from cumple.diff.align import estimate_offset
-from cumple.io.reader import iter_blocks
+from cumple.io.reader import iter_blocks, probe
 from cumple.meters.bs1770 import SUB_HOP_S, LoudnessMeter, default_roles
-from cumple.meters.dialogue import BAND_HI, BAND_LO, CONTEXT_MIN_DENSITY, CONTEXT_S, FRAME_S, SILENCE_DBFS
+from cumple.meters.dialogue import BAND_HI, BAND_LO, FRAME_S, SILENCE_DBFS, dilate_mask
 from cumple.meters.measure import measure
-
-try:
-    import onnxruntime as ort
-except ImportError:  # the second opinion is optional
-    ort = None
+from cumple.meters.vad import THRESHOLD as SILERO_THRESHOLD
+from cumple.meters.vad import SileroDetector, VadUnavailable, load_session
 
 CACHE = Path.home() / ".cache" / "cumple" / "real-dialogue"
 DOC = Path(__file__).resolve().parents[1] / "docs" / "DIALOGUE.md"
 ABOVE_ME_DB = 3.0  # dialogue is present when the mix sits this far above its M&E in the speech band
 ABOVE_ME_DBS = (2.0, 3.0, 6.0)  # the reference is also shown at these, to show its sensitivity
 BASELINE_PERCENTILE = 10  # the mix-minus-M&E level offset in frames without dialogue
-VAD_FS = 16000
-SILERO_MODEL = Path.home() / ".cache" / "cumple" / "silero_vad.onnx"  # fetched by fetch_real_dialogue.sh
-SILERO_CHUNK, SILERO_CONTEXT, SILERO_THRESHOLD = 512, 64, 0.5  # the model's own frame and default threshold
 AGREE_LU = 1.0  # a dialogue-gated reading within this of the reference counts as agreeing
 NETFLIX = (-27.0, 2.0)
+
+_SESSION = None  # one onnxruntime session for the whole run
+
+
+def silero_available() -> bool:
+    global _SESSION
+    if _SESSION is None:
+        try:
+            _SESSION = load_session()
+        except VadUnavailable:
+            return False
+    return True
+
+
+def vad_mask(path: Path) -> np.ndarray | None:
+    """Silero VAD decisions on the detector's 20 ms grid, from the same detector `check --vad silero` runs."""
+    if not silero_available():
+        return None
+    info = probe(path)
+    det = SileroDetector(info.samplerate, info.channels, roles=default_roles(info.channels), session=_SESSION)
+    for block in iter_blocks(path, info=info):
+        det.feed(block)
+    return det.result().mask
+
 
 # EBU Tech 3253 (SQAM) track numbers used here: the six speech tracks, a few solo instruments
 # that carry syllable-rate rhythm or a voice-like band, and two sung pieces. Singing is neither
@@ -122,12 +140,6 @@ def ffmpeg_decode(src: Path, out: Path, *extra: str) -> Path | None:
     return out
 
 
-def mono16k(src: Path) -> Path | None:
-    return ffmpeg_decode(
-        src, CACHE / "vad16k" / (src.stem + ".wav"), "-ac", "1", "-ar", str(VAD_FS), "-c:a", "pcm_s16le"
-    )
-
-
 def frame_levels(m: np.ndarray, fs: int) -> np.ndarray:
     """Level per 20 ms frame of a mono signal, in dBFS, on the detector's grid."""
     n = int(round(fs * FRAME_S))
@@ -140,17 +152,6 @@ def frame_levels(m: np.ndarray, fs: int) -> np.ndarray:
 def speech_band(m: np.ndarray, fs: int) -> np.ndarray:
     sos = butter(4, [BAND_LO, BAND_HI], btype="bandpass", fs=fs, output="sos")
     return sosfilt(sos, m.astype(np.float64))
-
-
-def dilate(voiced: np.ndarray) -> np.ndarray:
-    """The detector's own rule: a pause inside dialogue is still dialogue."""
-    w = max(int(CONTEXT_S / FRAME_S), 1)
-    c = np.concatenate([[0.0], np.cumsum(voiced.astype(float))])
-    idx = np.arange(len(voiced))
-    lo = np.maximum(idx - w // 2, 0)
-    hi = np.minimum(idx + w // 2, len(voiced))
-    density = (c[hi] - c[lo]) / np.maximum(hi - lo, 1)
-    return voiced | (density >= CONTEXT_MIN_DENSITY)
 
 
 def at_hops(mask20: np.ndarray, n_hops: int) -> np.ndarray:
@@ -199,33 +200,6 @@ def shift_whole(x: np.ndarray, k: int) -> np.ndarray:
     if k < 0:
         return np.concatenate([np.zeros((-k, x.shape[1]), x.dtype), x[:k]])
     return x
-
-
-def silero_available() -> bool:
-    return ort is not None and SILERO_MODEL.exists()
-
-
-def vad_mask(path16k: Path | None) -> np.ndarray | None:
-    """Silero VAD decisions on the detector's 20 ms grid, dilated like the detector's own mask."""
-    if not silero_available() or path16k is None or not path16k.exists():
-        return None
-    x, fs = sf.read(str(path16k), dtype="float32", always_2d=False)
-    if fs != VAD_FS:
-        return None
-    sess = ort.InferenceSession(str(SILERO_MODEL), providers=["CPUExecutionProvider"])
-    n = len(x) // SILERO_CHUNK
-    state = np.zeros((2, 1, 128), dtype=np.float32)
-    context = np.zeros((1, SILERO_CONTEXT), dtype=np.float32)
-    sr = np.array(VAD_FS, dtype=np.int64)
-    probs = np.empty(n, dtype=np.float32)
-    for i in range(n):
-        inp = np.concatenate([context, x[i * SILERO_CHUNK : (i + 1) * SILERO_CHUNK][None, :]], axis=1)
-        out, state = sess.run(None, {"input": inp, "state": state, "sr": sr})
-        probs[i] = out[0, 0]
-        context = inp[:, -SILERO_CONTEXT:]
-    n20 = int(len(x) / VAD_FS / FRAME_S)
-    idx = np.minimum((np.arange(n20) * FRAME_S / (SILERO_CHUNK / VAD_FS)).astype(int), max(n - 1, 0))
-    return dilate(probs[idx] > SILERO_THRESHOLD) if n else np.zeros(n20, dtype=bool)
 
 
 def share(mask: np.ndarray | None, programme: np.ndarray) -> float | None:
@@ -309,12 +283,12 @@ def analyse_pair(item: Item) -> PairResult:
     d = band_mix - band_me
     usable = programme & np.isfinite(d)
     offset = float(np.percentile(d[usable], BASELINE_PERCENTILE)) if usable.any() else 0.0
-    refs = {db: dilate(usable & (d > offset + db)) for db in ABOVE_ME_DBS}
+    refs = {db: dilate_mask(usable & (d > offset + db)) for db in ABOVE_ME_DBS}
     ref = refs[ABOVE_ME_DB]
 
     m = measure(item.path())
     heur = m.speech.mask if m.speech is not None else np.zeros(0, bool)
-    vad = vad_mask(mono16k(item.path()))
+    vad = vad_mask(item.path())
 
     mix_meter = meter_over_array(mix, fs, roles)
     n_hops = len(mix_meter._hop_energies())
@@ -371,7 +345,7 @@ def analyse_file(item: Item) -> FileResult:
     vad_share_v = None
     vad_gated = None
     if path.is_file():
-        vad = vad_mask(mono16k(path))
+        vad = vad_mask(path)
         if vad is not None and m.speech is not None:
             programme = m.speech.level_db > SILENCE_DBFS
             lm = meter_over_file(path)
@@ -488,9 +462,9 @@ def catalogue() -> tuple[list[Item], list[Item]]:
 def write_report(pairs: list[PairResult], files: list[FileResult], missing: list[str]) -> str:
     today = dt.date.today().isoformat()
     vad_note = (
-        f"Silero VAD (threshold {SILERO_THRESHOLD}) was available and is shown as a second, independent opinion."
+        f"Silero VAD, the detector behind check --vad silero (threshold {SILERO_THRESHOLD}), is shown beside the heuristic."
         if silero_available()
-        else "Silero VAD was not available (onnxruntime or the model missing), so its columns read n/a."
+        else "Silero VAD was not available (onnxruntime missing), so its columns read n/a."
     )
     out: list[str] = []
     out.append(f"# The dialogue gate on real programmes, cumple {__version__}")
