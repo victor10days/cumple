@@ -248,7 +248,7 @@ trace back to the cells they claimed to count. All of it was corrected before
 anything was written into this file's neighbours, `docs/RELATED.md`, the
 README's Related work and the page's note under the comparison table. One side
 effect is recorded as it happened: installing rsgain through Homebrew upgraded
-the machine's ffmpeg from 8.0 to 9.0.1, the version the published benchmark is
-pinned to, and the older binary no longer starts; nothing was restored or
+the machine's ffmpeg from 8.0, the version the published benchmark is pinned
+to, to 9.0.1, and the 8.0 binary no longer starts; nothing was restored or
 re-pinned, and the choice is left for Victor. The roadmap now lives in
 `docs/ROADMAP.md`.
