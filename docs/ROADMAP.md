@@ -39,7 +39,7 @@ Damping and stop: three CI fix rounds, one skeptic fix round, then stop and repo
 
 ## Open for Victor
 
-Installing rsgain during the research relinked this machine's ffmpeg from 8.0 to 9.0.1 (the 8.0 keg is still in the Cellar but cannot load its libvpx). RELATED.md and BENCHMARK.md pin ffmpeg 8.0. Either restore the pin by relinking libvpx 1.15.2 and ffmpeg 8.0 by hand, or accept 9.0.1 and re-run `scripts/benchmark_meters.py` so the report scripts re-pin the figures. The recommendation in the run folder is to restore.
+Closed 12 September: Victor chose to accept the machine's ffmpeg 9.0.1 (exact 8.0 was not restorable; its libraries had been upgraded) and the benchmark was re-run and re-pinned in this pull request.
 
 ## Runs
 
