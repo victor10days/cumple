@@ -112,6 +112,10 @@ def apply(src: Path, dst: Path, gain_db: float, block: int = 1 << 18) -> None:
 
 def fix_file(src: Path, profile: Profile, dst: Path | None = None) -> tuple[FixPlan, Path | None, Measurement | None]:
     m = measure(src, **measure_args(profile))
+    if m.info is not None and m.info.via_ffmpeg:
+        raise ValueError(
+            f"{src.name} is {m.info.codec} decoded by {m.info.decoder}; fix writes PCM only, bounce it as WAV first"
+        )
     fp = plan(profile, m)
     if fp.gain_db is None or fp.gain_db == 0.0:
         return fp, None, None

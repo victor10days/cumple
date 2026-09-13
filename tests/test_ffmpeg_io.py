@@ -15,6 +15,7 @@ from typer.testing import CliRunner
 
 from cumple.checks.engine import evaluate
 from cumple.cli import app
+from cumple.fix import fix_file
 from cumple.io.ffmpeg import (
     FFMPEG_SUFFIXES,
     Ffmpeg,
@@ -235,6 +236,7 @@ def test_an_mp3_fails_netflix_with_the_clause_and_passes_acx(mp3_file):
     acx = evaluate(profiles["acx"], measure(mp3_file))
     container = next(f for f in acx.findings if f.code == "format.container")
     assert container.status.name == "PASS" and container.measured == "MP3"
+    assert "MP3" in render_html(acx) and "MPEG_LAYER_III MP3" not in render_html(acx)
 
 
 @needs_ffmpeg
@@ -274,6 +276,7 @@ def test_without_ffmpeg_the_error_names_what_to_install(tmp_path, monkeypatch):
     with pytest.raises(RuntimeError) as e:
         probe(fake)
     assert "ffmpeg" in str(e.value).lower()
+    assert "CUMPLE_FFMPEG" in str(e.value)
 
 
 def test_a_broken_wav_still_reports_libsndfiles_error_not_ffmpegs(tmp_path):
@@ -282,3 +285,35 @@ def test_a_broken_wav_still_reports_libsndfiles_error_not_ffmpegs(tmp_path):
     with pytest.raises(RuntimeError) as e:
         probe(bad)
     assert "ffmpeg" not in str(e.value).lower()
+
+
+def test_a_zero_shape_from_ffprobe_raises_instead_of_reaching_the_meter(tmp_path, monkeypatch):
+    """A shape ffprobe could not fill in (0 Hz, 0 channels) must never reach LoudnessMeter,
+    which divides by the sample rate and the channel count."""
+    import cumple.io.reader as reader_mod
+
+    monkeypatch.setattr(reader_mod, "find_ffmpeg", lambda: Ffmpeg(Path("/x"), Path("/x"), "0"))
+    monkeypatch.setattr(reader_mod, "probe_ffmpeg", lambda path, tools: FfprobeInfo("M4A", "aac", 0, 0, 1.0))
+    fake = tmp_path / "mix.m4a"
+    fake.write_bytes(b"\x00" * 64)
+    with pytest.raises(RuntimeError) as e:
+        probe(fake)
+    assert "no usable audio stream" in str(e.value)
+
+
+@needs_ffmpeg
+def test_fix_refuses_an_ffmpeg_decoded_file_and_says_bounce_it_first(aac_file):
+    profiles = load_all()
+    with pytest.raises(ValueError, match="PCM only"):
+        fix_file(aac_file, profiles["youtube"])
+
+
+@needs_ffmpeg
+def test_a_pcm_stream_ffmpeg_decoded_still_names_the_decoder_in_the_sheet(tmp_path, make_wav):
+    """MXF wraps PCM: bit_depth is not None, but the decoder is still ffmpeg and the sheet must say."""
+    wav = make_wav("tone.wav", seconds=1.0, amplitude=10 ** (-23 / 20))
+    out = encode(TOOLS, wav, tmp_path / "tone.mxf", "-ac", "1", "-c:a", "pcm_s24le", "-f", "mxf_opatom")
+    profiles = load_all()
+    report = evaluate(profiles["youtube"], measure(out))
+    html = render_html(report)
+    assert "24-bit MXF" in html and "via ffmpeg" in html

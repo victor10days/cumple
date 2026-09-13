@@ -111,6 +111,10 @@ def probe(path: str | Path) -> AudioInfo:
         pi = probe_ffmpeg(path, tools)
     except FfmpegError as e:
         raise RuntimeError(str(e)) from e
+    if pi.samplerate < 1 or pi.channels < 1:
+        raise RuntimeError(
+            f"{path.name}: ffprobe reported no usable audio stream ({pi.samplerate} Hz, {pi.channels} channels)"
+        )
     return AudioInfo(
         path=path,
         container=pi.container,

@@ -44,14 +44,18 @@ def _mmss(seconds: float) -> str:
 
 
 def _encoding(m) -> str:
-    """ "24-bit WAV", "M4A (AAC) via ffmpeg 9.0.1", or "" when nothing is known about the file."""
+    """ "24-bit WAV", "24-bit MXF via ffmpeg 9.0.1", "M4A (AAC) via ffmpeg 9.0.1", "MP3", or "" when
+    nothing is known about the file."""
     i = m.info
     if i is None:
         return ""
     if i.bit_depth:
-        return f"{i.bit_depth}-bit {i.container}"
-    codec = (i.codec or i.subtype).upper()
-    return f"{i.container} ({codec}) via {i.decoder}" if i.via_ffmpeg else f"{codec} {i.container}"
+        pcm = f"{i.bit_depth}-bit {i.container}"
+        return f"{pcm} via {i.decoder}" if i.via_ffmpeg else pcm
+    if i.via_ffmpeg:
+        codec = (i.codec or i.subtype).upper()
+        return f"{i.container} ({codec}) via {i.decoder}"
+    return i.container
 
 
 def _pct(v: float, total: float) -> str:
