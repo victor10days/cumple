@@ -30,7 +30,8 @@ uv tool install --python 3.12 git+https://github.com/victor10days/cumple
 cumple check master.wav --spec netflix-2.0
 ```
 
-From a clone, `uv tool install --python 3.12 .` does the same. Prefer a window?
+From a clone, `uv tool install --python 3.12 .` does the same; add `[vad]` for
+the Silero speech detector. Prefer a window?
 [The desktop app](#the-desktop-app) is the same engine with a drop zone, built
 for macOS, Windows and Linux. No audio at
 hand? `uv run python scripts/make_demo.py ~/cumple-demo` writes a seeded set of
@@ -112,6 +113,14 @@ stereo peak at 428 MB, sixty minutes at 704 MB,
 A directory of discrete mono files is one deliverable. Channel roles come from
 the filename suffixes (`_L`, `_R`, `_C`, `_LFE`, `_Ls`, `_Rs`, `_Lt`, `_Rt`),
 which is how Amazon asks for 5.1.
+
+`--vad silero` (or `CUMPLE_VAD=silero`) swaps the heuristic speech detector for
+Silero VAD v6.2 (Silero Team, MIT), a small neural voice-activity model that ships
+with cumple and runs offline through onnxruntime: install with
+`uv tool install --python 3.12 "cumple[vad] @ git+https://github.com/victor10days/cumple"`.
+Only `check` takes the flag; `watch` and the desktop app keep the heuristic.
+Every report names which detector made the mask. Neither is Dolby's algorithm;
+[docs/DIALOGUE.md](docs/DIALOGUE.md) measures both on the same films.
 
 ```
 $ cumple info ./EP101_delivery
@@ -435,8 +444,11 @@ generated on 8 September 2026, and 0.2.1 changed no measurement code.
   read 1.6 LU low on Tears of Steel and 6.7 LU low on Sintel, whose dialogue
   sits quietly under an orchestral score: it finds dialogue in quiet scenes and
   misses it under music. On clean speech it is right, and on music and effects
-  without dialogue it stays under the 15 % switch. Silero VAD, the standard
-  open voice detector, is more precise and no better on the quiet dialogue.
+  without dialogue it stays under the 15 % switch. Silero VAD, available as
+  `--vad silero`, reads 0 % speech on the music-and-effects versions and comes
+  within 1.2 LU of the reference on Tears of Steel, but on Sintel, whose
+  dialogue sits under the same orchestral score, it misses by about 9.2 LU:
+  worse than the heuristic's 6.7 LU there.
   Method and numbers: [docs/DIALOGUE.md](docs/DIALOGUE.md). The speech share
   and the number of speech blocks are printed next to every dialogue-gated
   value so you can judge, and the full-programme value is always shown beside

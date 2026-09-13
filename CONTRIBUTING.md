@@ -17,6 +17,11 @@ uv run pyinstaller packaging/cumple.spec --noconfirm --clean   # dist/cumple.app
 uv run python scripts/make_icons.py       # re-render the app icon from the tokens (needs Chrome)
 ```
 
+`uv sync`'s dev group installs onnxruntime, so the Silero VAD tests and
+`scripts/dialogue_benchmark.py` run without a separate extra; `uv sync --extra
+vad` installs the same dependency for a checkout that only wants `cumple[vad]`
+itself.
+
 The EBU Loudness Test Set v5.0 is free from tech.ebu.ch under EBU terms and is
 not redistributed here. Download `ebu-loudness-test-setv05.zip` in a browser
 (the site refuses command-line downloads) and put the zip or its unpacked

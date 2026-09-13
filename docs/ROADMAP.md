@@ -6,7 +6,7 @@ What cumple does not do yet, ranked by the gap the competitive landscape found, 
 
 | Id | Item | Gap, from RELATED.md | Status | PR | Receipt |
 |---|---|---|---|---|---|
-| R1 | Dialogue gate of the Dolby Dialogue Intelligence class: Silero VAD as an optional `cumple[vad]` backend, the heuristic stays the default | 3 of 21 tools list one (LM-Correct 2, Vantage, Pulsar); 6 profiles name the algorithm (netflix x2, amazon x2, disney-plus-5.1, apple-tv) | proposed for this loop | | |
+| R1 | Dialogue gate of the Dolby Dialogue Intelligence class: Silero VAD as an optional `cumple[vad]` backend, the heuristic stays the default | 3 of 21 tools list one (LM-Correct 2, Vantage, Pulsar); 6 profiles name the algorithm (netflix x2, amazon x2, disney-plus-5.1, apple-tv) | building | | |
 | R2 | Delivery codec and container conformance (AAC, AC-3, MP3, MXF) through an optional local ffmpeg, so a lossy file fails the clause instead of refusing to open | 3 of 9 QC platforms list it (Vidchecker, Pulsar, Netflix), 4 with Baton's codec list | merged | #27 | `docs/graph-runs/2026-09-12-ffmpeg-codec-conformance/05-receipt.md` |
 | R3 | Dolby E detection (presence only; decoding is licensed) | 4 of 9 QC platforms handle it (eFF reads and writes it, Aurora checks its guard band, Vantage Pro detects it, Baton lists it as a codec) | queued | | |
 | R4 | ADM and Atmos checks: chna track map, bed and object labels, per-track true peak; no rendering | 2 of 9 QC platforms (Baton, Vantage Pro), 0 of 12 meters; 3 profiles accept `adm-bwf` (apple-tv, apple-immersive, disney-plus-5.1); netflix-5.1 admits an ADM container only as a muxed-source exception | queued | | |

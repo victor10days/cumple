@@ -265,3 +265,18 @@ plus a minute, and caps what it keeps of ffmpeg's error output; a reviewer
 with the security checklist read it before merge. The decode tests run on
 this Mac and on the Linux CI runner, which installs ffmpeg with apt; the
 macOS and Windows jobs skip them.
+
+## A second speech detector (13 September)
+
+The roadmap's first item by the landscape's count. Silero VAD had been a
+second opinion inside the benchmark script since 5 September; now it is a
+detector cumple can run, behind an extra, with the model bundled under its
+MIT licence and the same 20 ms grid and dilation rule as the heuristic, so
+the meter cannot tell them apart except by name, and every report says the
+name. The benchmark script runs the same detector instead of its own copy of
+the inference, so there is one implementation to be wrong. The default did
+not change: the heuristic installs in seconds and is measured; Silero is
+more precise on clean speech and worse on quiet dialogue under music,
+and the README carries both numbers from the same run. On Sintel, whose
+dialogue sits under an orchestral score, Silero reads further under the
+reference than the heuristic does; the README says by how much.

@@ -1,6 +1,6 @@
-# The dialogue gate on real programmes, cumple 0.2.0
+# The dialogue gate on real programmes, cumple 0.2.1
 
-Generated 2026-09-08 by `scripts/dialogue_benchmark.py`. cumple's dialogue-gated loudness uses a heuristic speech detector labelled an approximation of Dolby Dialogue Intelligence. This report measures the approximation against films that publish a music-and-effects version of their mix, and shows the speech share the detector reports on clean speech, on music and effects without dialogue, and on dialogue-driven films. Silero VAD (threshold 0.5) was available and is shown as a second, independent opinion. The recordings are fetched by `scripts/fetch_real_dialogue.sh` and are not redistributed.
+Generated 2026-09-13 by `scripts/dialogue_benchmark.py`. cumple's dialogue-gated loudness uses a heuristic speech detector labelled an approximation of Dolby Dialogue Intelligence. This report measures the approximation against films that publish a music-and-effects version of their mix, and shows the speech share the detector reports on clean speech, on music and effects without dialogue, and on dialogue-driven films. Silero VAD, the detector behind check --vad silero (threshold 0.5), is shown beside the heuristic. The recordings are fetched by `scripts/fetch_real_dialogue.sh` and are not redistributed.
 
 ## Films with a music-and-effects version as ground truth
 
@@ -18,8 +18,8 @@ The M&E is aligned to the mix, both are band-passed to the detector's 150 Hz to 
 
 | programme | integrated (BS.1770-4) | dialogue-gated: reference | detector | delta | within 1 LU | Silero-gated | Netflix -27 ±2: reference / detector |
 |---|---|---|---|---|---|---|---|
-| Sintel (2010), stereo master | -16.1 | -18.8 (891 blocks) | -25.6 (928 blocks) | -6.73 LU | ✗ | -28.1 | FAIL / PASS |
-| Tears of Steel (2012), stereo mix | -11.6 | -12.8 (1425 blocks) | -14.4 (579 blocks) | -1.64 LU | ✗ | -14.1 | FAIL / FAIL |
+| Sintel (2010), stereo master | -16.1 | -18.8 (891 blocks) | -25.6 (928 blocks) | -6.73 LU | ✗ | -28.0 | FAIL / PASS |
+| Tears of Steel (2012), stereo mix | -11.6 | -12.8 (1425 blocks) | -14.4 (579 blocks) | -1.64 LU | ✗ | -14.0 | FAIL / FAIL |
 
 Sensitivity of the reference to how far above the M&E a frame must sit (share, gated value):
 
@@ -52,12 +52,12 @@ Several profiles switch from the dialogue rule to the full-programme rule under 
 | Sintel, music and effects (no dialogue) | Blender Foundation, CC BY 3.0 | 14:48 | 2 | no dialogue | -13.0 | -22.7 (574) | 7 % | 0 % | ✓ |
 | Tears of Steel, music and effects (no dialogue) | Blender Foundation, CC BY 3.0 | 12:14 | 2 | no dialogue | -14.9 | -26.4 (36) | 1 % | 0 % | ✓ |
 | Sintel, stereo master | Blender Foundation, CC BY 3.0 | 14:48 | 2 | mixed | -16.1 | -25.6 (928) | 11 % | 4 % |  |
-| Sintel, 5.1 master | Blender Foundation, CC BY 3.0 | 14:48 | 6 | mixed | -17.2 | -22.2 (1878) | 23 % | 4 % |  |
-| Sintel, trailer | Blender Foundation, CC BY 3.0 | 0:52 | 2 | mixed | -12.8 | -15.0 (13) | 3 % | 14 % |  |
+| Sintel, 5.1 master | Blender Foundation, CC BY 3.0 | 14:48 | 6 | mixed | -17.2 | -22.2 (1878) | 23 % | 5 % |  |
+| Sintel, trailer | Blender Foundation, CC BY 3.0 | 0:52 | 2 | mixed | -12.8 | -15.0 (13) | 3 % | 13 % |  |
 | Tears of Steel, stereo mix | Blender Foundation, CC BY 3.0 | 12:14 | 2 | mixed | -11.6 | -14.4 (579) | 8 % | 13 % |  |
 | Tears of Steel, 5.1 discrete package (6 mono AIFF) | Blender Foundation, CC BY 3.0 | 12:14 | 6 | package | -14.3 | -15.4 (1303) | 26 % | n/a |  |
 | Sprite Fright (2021) | Blender Studio, CC BY 4.0 | 10:30 | 2 | mixed | -12.2 | -15.1 (2698) | 44 % | 42 % |  |
 | His Girl Friday (1940) | public domain, Internet Archive | 91:44 | 1 | mixed | -35.1 | -35.7 (48684) | 89 % | 88 % |  |
-| Night of the Living Dead (1968) | public domain, Internet Archive | 96:05 | 1 | mixed | -28.8 | -30.4 (25110) | 44 % | 35 % |  |
+| Night of the Living Dead (1968) | public domain, Internet Archive | 95:52 | 1 | mixed | -28.8 | -30.4 (25104) | 44 % | 35 % |  |
 
 **Against the M&E reference the detector's dialogue-gated reading is within 1 LU on 0 of 2 programmes.** The largest gap is -6.73 LU on Sintel (2010), stereo master, where the detector marks 11 % of the programme as speech against the reference's 11 %, but in the wrong places: 36 % of its speech frames are dialogue and it finds 36 % of the dialogue. Clean speech reads 86 to 100 % speech (8 of 8 at or above 80 %). Material without dialogue reads 1 to 92 % (3 of 7 under 15 %). Silero VAD reads 0 % on all of it.
