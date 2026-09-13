@@ -53,7 +53,8 @@ dev = [
   "ruff>=0.6",
   "fonttools[woff]>=4.50",
   "loudcheck>=0.3.2",
-  "onnxruntime>=1.17",
+  # No macOS Intel wheel exists for onnxruntime 1.30; a contributor there still gets the rest.
+  "onnxruntime>=1.17; sys_platform != 'darwin' or platform_machine != 'x86_64'",
 ]
 packaging = ["pyinstaller>=6.22"]
 

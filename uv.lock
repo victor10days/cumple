@@ -335,7 +335,7 @@ vad = [
 dev = [
     { name = "fonttools", extra = ["woff"] },
     { name = "loudcheck" },
-    { name = "onnxruntime" },
+    { name = "onnxruntime", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
     { name = "pyloudnorm" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -365,7 +365,7 @@ provides-extras = ["app", "app-qt", "vad"]
 dev = [
     { name = "fonttools", extras = ["woff"], specifier = ">=4.50" },
     { name = "loudcheck", specifier = ">=0.3.2" },
-    { name = "onnxruntime", specifier = ">=1.17" },
+    { name = "onnxruntime", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'", specifier = ">=1.17" },
     { name = "pyloudnorm", specifier = ">=0.2" },
     { name = "pytest", specifier = ">=8" },
     { name = "pytest-cov", specifier = ">=5" },

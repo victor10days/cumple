@@ -25,6 +25,7 @@ Pull request #28, https://github.com/victor10days/cumple/pull/28, branch `loop/0
 - Task 1 review: a sub-window file reported 0 % instead of unknown; a session per detector. Both carried into Task 2.
 - Task 3 review, Important: the benchmark script's docstring still described the old flow the task replaced.
 - Whole-branch review, Critical: the chunked test still could not fail because the tiled fixture had no pauses (every frame speech after dilation); rebuilt with 1 s of silence per repeat and proven by mutation (doubled skip: 33 frames differ; a never-carried tail is a documented blind spot). And README's "three reports headed 0.2.0, all 8 September" was false at head.
+- CI, after the PR opened: the macOS Intel release build failed. The job's own `uv sync --no-default-groups` was fine, but the later bare `uv run pyinstaller` re-synced the default dev group, whose onnxruntime has no Intel-Mac wheel. The plan skeptic and the branch reviewer had both reasoned that the release job never syncs the dev group; the second `uv run` was the step nobody read. Fixed with `--no-sync` on the release job's `uv run` calls and a platform marker on the dev-group entry so an Intel-Mac contributor can still `uv sync`.
 - The measurement itself: with the shipped detector Silero reads 1.2 LU low on Tears of Steel and 9.2 LU low on Sintel (the script's earlier inference over 16 kHz intermediates said 1.3 and 9.3); worse than the heuristic's 6.7 on Sintel, and 0 % on music and effects where the heuristic reads up to 92 %. The README says both.
 
 ## Rulings
