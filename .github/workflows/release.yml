@@ -56,7 +56,9 @@ jobs:
           UV_PYTHON: ${{ steps.py.outputs.python-path }}
         run: uv sync --extra ${{ matrix.extra }} --group packaging --no-default-groups
       - name: Build
-        run: uv run pyinstaller packaging/cumple.spec --noconfirm --clean
+        # --no-sync: the step above chose the groups; a bare `uv run` would re-sync the default (dev)
+        # group, whose onnxruntime has no macOS Intel wheel.
+        run: uv run --no-sync pyinstaller packaging/cumple.spec --noconfirm --clean
       - name: Self-test the frozen app (macOS)
         if: runner.os == 'macOS'
         run: dist/cumple.app/Contents/MacOS/cumple-app --selftest
@@ -82,7 +84,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p launch
-          uv run python - <<'EOF'
+          uv run --no-sync python - <<'EOF'
           import numpy as np
           import soundfile as sf
 
