@@ -252,3 +252,16 @@ the machine's ffmpeg from 8.0, the version the published benchmark is pinned
 to, to 9.0.1, and the 8.0 binary no longer starts; nothing was restored or
 re-pinned, and the choice is left for Victor. The roadmap now lives in
 `docs/ROADMAP.md`.
+
+## Compressed deliveries (12 September)
+
+The roadmap's second item. A finding on the way in: libsndfile 1.2.2 already
+reads MP3, so the README's line that cumple "does not decode MP3" had been
+wrong since the soundfile wheel bundled it; the line now says what is read
+natively and what needs ffmpeg. The ffmpeg wrapper is one module that never
+builds a command from user text beyond the resolved file path, closes stdin,
+whitelists the file protocol, keeps a wall budget of ten times the duration
+plus a minute, and caps what it keeps of ffmpeg's error output; a reviewer
+with the security checklist read it before merge. The decode tests run on
+this Mac and on the Linux CI runner, which installs ffmpeg with apt; the
+macOS and Windows jobs skip them.

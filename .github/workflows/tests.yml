@@ -20,6 +20,12 @@ jobs:
           python-version: "3.12"
       - name: Install
         run: uv sync --group dev
+      - name: Install ffmpeg (the decode tests run only where it exists)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          ffmpeg -version | head -1
       - name: Lint
         if: runner.os == 'Linux'
         run: |
@@ -27,7 +33,9 @@ jobs:
           uv run ruff format --check src tests scripts
       - name: Test
         # The 29 EBU conformance cases skip here: the EBU test set is free but not redistributed;
-        # the conformance job below runs them when the repository holds a link to a copy.
+        # the conformance job below runs them when the repository holds a link to a copy. The
+        # ffmpeg-gated decode tests run on Linux, where the step above installs ffmpeg, and skip
+        # on macOS and Windows.
         run: uv run pytest
       - name: Build
         if: runner.os == 'Linux'
