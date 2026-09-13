@@ -51,6 +51,7 @@ excludes = [
     "gi",
     "cefpython3",
     "webview.platforms.cef",
+    "onnxruntime",
 ]
 if LINUX:
     excludes += [
