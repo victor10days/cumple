@@ -130,3 +130,56 @@ What to do: `idx = np.minimum(np.arange(n20) * round(FRAME_S * VAD_FS) // WINDOW
 **Ship with changes.** The architecture and the numerical core are right; I ran the plan's detector against the real model and could not make the resampler or the grid mapping disagree with a one-pass reference. What is wrong is checkable text: the model's version on every report surface, one assertion in the dilation test, a rich markup escape the `app` command already knows about, an install command that does not exist for this project, and a test that cannot fail on the path it names. Each is a few lines; none changes the design. Fix 1 to 5 in the plan before the first implementer runs; 6 and 7 can ride in the tasks or the fix wave.
 
 Counts: Critical 4 (concerns 1 to 4), High 1 (concern 5), Medium 2 (concerns 6 and 7). Blocking: 1, 2, 3, 5. Concern 4 is Critical by the run's scale and non-blocking in effect because the code under it is verified; it should still be fixed before merge so the suite guards the resampler.
+
+## Re-check after the amendment
+
+Commit 913623a. Both files re-read from disk (`git diff f485625 913623a` on the plan and the frame, then the plan by line). Scratch scripts `skeptic/recheck.py` and `skeptic/recheck2.py` in the session scratchpad; the worktree is unchanged (`git status --short` shows only this file and the pre-existing `.superpowers/`).
+
+### Per-concern status
+
+1. Model version. **Addressed.** Plan lines 5, 9, 41, 49, 227, 261, 447, 449 and 604 say v6.2, with line 9 recording that the file is the one at tags v6.2 and v6.2.1 and that v5.1.2 is a different file; the frame line 12 says v6.2. The fetch script still pulls `master` (plan line 9 only names it; `scripts/fetch_real_dialogue.sh` line 54 is untouched), so the pin to a tag was not taken; non-blocking, because `test_the_bundled_model_is_the_known_file` pins the bundled bytes by sha256 and size, and that is the file the label describes.
+2. Dilate test. **Addressed.** Plan line 98: `assert not mask[110:140].any()`. Run against the plan's `dilate_mask`: all four assertions True; the last dilated frame after the phrases is 105 (check (a) below).
+3. Rich markup. **Addressed.** Plan line 524 instructs `escape(str(e))` in the `check` print and any other print that interpolates an exception; line 520 words the help as "needs the vad extra" (no brackets); line 479 gives the test's message with the git route. Verified: the escaped message renders with `cumple[vad]` intact (check (3) below).
+4. Block-size test. **Partly.** Plan lines 174 to 178 tile the fixture to 27 s at 44.1 kHz, and the `_tail` path now runs (three `_resample` calls on both sides; check (b) below). But both block sizes still cut chunks at the same multiples of `_chunk`, so the two runs are the same computation and the test passes for a broken resampler too: with `_tail` and `skip` removed it passes; with `skip` doubled (800 samples dropped per chunk, 840 windows instead of 843) it passes. The comparison the first review asked for, chunked against unchunked, was not taken. Severity now High, non-blocking (the code was verified in the first pass and again here); details and the verified fix under "New findings".
+5. Install route. **Addressed in the plan**, plan lines 305 to 306 (`VadUnavailable` message), 520 (help), 479 (test), 604 to 606 (README paragraph); `grep -n "pip install"` on the plan returns nothing. **Still open in the frame**: line 12 still says the failure names `pip install "cumple[vad]"`; the plan now contradicts its spec on that one string (New finding N2).
+6. Wording and the README pin. **Addressed** for the wording: AI_USAGE draft lines 634 to 637 say "worse on quiet dialogue under music" and "reads further under the reference than the heuristic does"; README instruction line 613 says to state it plainly with both deltas. **Partly** for the test extension (check (d) below): the header string is right and `_tables` returns the two rows with keys `dialogue-gated: reference` and `Silero-gated`, but the reference cell reads `-18.8 (891 blocks)` so the existing `_num` returns None for it, and the stated subtraction (Silero-gated minus reference) yields -9.30 and -1.30 while README will carry magnitudes ("within 1.3 LU", "by about 9.3 LU"). Two words are missing from the instruction: parse the leading number of the reference cell, and take `abs()` as the heuristic pin already does. Medium, non-blocking (a `None` in a subtraction fails loudly on the first run).
+7. Hygiene bullets:
+   - 20 ms to 32 ms mapping: **addressed**, plan line 378; `np.arange(n) * 320 // 512` equals `i * 5 // 8` on 2,000,000 frames with 0 mismatches, and `round(FRAME_S * VAD_FS)` is the int 320.
+   - Memory comment: **addressed**, plan line 285 ("about 4 MB of float64 at 48 kHz").
+   - One list of backend names: **addressed**, plan line 280 (`BACKENDS = tuple(BACKEND_NAMES)`) and line 505 (`describe_backend(vad)` validates in `_run`, the `elif` and its second message are gone). Check (c): the ValueError text is `unknown speech detector 'dolby'; choose one of heuristic, silero` and `re.search("heuristic, silero", ...)` matches.
+   - `packaging/cumple.spec` excludes onnxruntime: **addressed**, plan line 386 and the `git add` at line 395.
+   - `CUMPLE_VAD` scope: **addressed**, plan line 607 ("Only `check` takes the flag; `watch` and the desktop app keep the heuristic").
+   - One session in the benchmark: **addressed**, plan lines 569 to 587 (`_SESSION`, passed as `session=`).
+   - NOTICE wording: **addressed**, plan line 61 (public domain in the United States; the author's death year and the caveat).
+
+### Checks run
+
+(a) `dilate_mask` on the plan's arrays, amended assertions: `mask[70:75].all()` True, `mask[50:95].all()` True, `not mask[110:140].any()` True, `mask[150] and not mask[130:149].any()` True; last True frame after the phrases: 105.
+
+(b) 27 s at 44.1 kHz: `np.tile(x16, 9)` is 432,000 samples at 16 kHz; `resample_poly(..., 441, 160)` gives 1,190,700 native samples (exact, 432000 x 441 / 160). `1 << 20` is 1,048,576, so the "large" run is two blocks, not one (the comment on plan line 176 is wrong, harmless). `_resample` calls: 3 and 3. `27 / FRAME_S` is `1350.0` and `int()` gives 1350; the heuristic returns 1190700 // 882 = 1350 frames, so no off-by-one. Masks identical (0 differ), probabilities identical. Then with `_resample` replaced by a version that carries no tail and skips nothing: 1350 and 1350 frames, 0 differ, the amended test passes. With `skip` doubled: 840 windows instead of 843 on both sides, 0 frames differ, the amended test passes.
+
+(b2) The recommended test, run with the plan's code: 28 s of (3 s speech, 1 s pause) x 7 at 44.1 kHz, a default chunked detector against one with an unreachable chunk (`_chunk = 10**9`), both fed in 4096-sample blocks. Correct code: 875 and 875 windows, 0 mask frames differ, max |dprob| 0.0001. `skip` doubled: 871 against 875 windows, 33 mask frames differ, max |dprob| 0.99, so this comparison catches the realistic bug class. No tail and no skip: 0 frames differ, max |dprob| 0.0005 (that variant is benign on this model, so no mask test can or needs to catch it).
+
+(c) `f"unknown speech detector {'dolby'!r}; choose one of {', '.join(BACKEND_NAMES)}"` with the plan's `BACKEND_NAMES` order: `... choose one of heuristic, silero`; `re.search("heuristic, silero", msg)` True.
+
+(d) `_tables(DIALOGUE.md, "| programme | integrated (BS.1770-4) |")`: 2 rows; keys include `dialogue-gated: reference` and `Silero-gated`. Cells: Sintel reference `-18.8 (891 blocks)` (`_num` gives None), Silero `-28.1`; Tears of Steel reference `-12.8 (1425 blocks)`, Silero `-14.1`. Silero minus the leading number of the reference: -9.30 and -1.30.
+
+(e) `grep -n "pip install"` on the plan: no match. On the frame: line 12, one match.
+
+(3) `Console.print(f"[red]cannot measure x.wav:[/] {escape(str(e))}")` with the plan's new message: output `cannot measure x.wav: the silero backend needs onnxruntime: uv tool install --python 3.12 "cumple[vad] @ git+https://github.com/victor10days/cumple" (a checkout: uv sync --extra vad)`; `cumple[vad]` present.
+
+### New findings
+
+N1. Severity: High, non-blocking. Framework: pre-mortem ("a wrong `skip` ships and the suite is green"). Plan lines 168 to 178. The test now runs the chunk path but cannot fail on it (check (b)). What to do, verified in check (b2): give `SileroDetector.__init__` a keyword `chunk_s: float = CHUNK_S` (one line, `self._chunk = int(self.fs * chunk_s)`), build the signal with pauses (`np.tile(np.concatenate([x16[:, 0], np.zeros(16000)]), 7)`, 28 s), run `SileroDetector(44100, 1, chunk_s=10.0)` against `SileroDetector(44100, 1, chunk_s=60.0)` with the same block size, and assert `np.array_equal(a.mask, b.mask)` and `len(a.mask) == len(b.mask) == int(28 / FRAME_S)`. Rename the test to "chunked resampling matches one pass" and delete the "block size" docstring claim; keep a one-line block-size assertion if wanted, it costs nothing. Fix the comment on line 176 or use `1 << 21` (2,097,152, which is one block).
+
+N2. Severity: Medium, non-blocking. Frame line 12 still promises a message naming `pip install "cumple[vad]"`; the plan (lines 305 to 306) names the git route. Amend the frame line to the git route, or note the correction in the receipt, so the spec and the plan agree.
+
+N3. Severity: Medium, non-blocking. Plan line 613: the test extension needs two more words so the implementer computes what README says: take the leading number of the reference cell (`float(cell.split()[0])`, since `_num` returns None on `-18.8 (891 blocks)`) and assert `abs(silero - reference)` at one decimal, the convention the heuristic pin already uses.
+
+N4. Severity: Medium, non-blocking. The long label (`Silero VAD v6.2, a neural speech detector (MIT)`, plan line 227) lands inside three sentences (lines 528 to 530); the WARN then reads "the Silero VAD v6.2, a neural speech detector (MIT) reads low on dense mixes". A mix engineer reads this on the sheet. Consider a short label for the notes (`Silero VAD v6.2 speech gate`) and keep the licence words for the footer and README, still from one dict (two keys per backend, or a second small function beside `describe_backend`). Wording only; not raised in the first pass.
+
+### Verdict after re-check
+
+**Verdict after re-check: Ship with changes.** No Critical remains and nothing blocks the first implementer; concerns 1, 2, 3, 5 (plan side) and all seven hygiene bullets are addressed and verified. The one change worth making in the plan before Task 1 starts is N1 (the chunked-against-unchunked test, verified to catch a wrong `skip`); N2 and N3 are two sentences each, N4 is a wording choice.
+
+Counts remaining: Critical 0, High 1 (N1, the successor of concern 4), Medium 3 (N2, N3, N4). Blocking: none.
