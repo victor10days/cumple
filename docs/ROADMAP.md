@@ -24,6 +24,7 @@ Victor's own list, not the loop's:
 - The ffmpeg question below.
 - Whether apple-immersive's containers list gains `mov` (its quoted clause permits LPCM in .mov containers; a PCM MOV now fails the clause it quotes).
 - A Finder-launched cumple.app has a minimal PATH and will not see Homebrew's ffmpeg; the app needs a way to set CUMPLE_FFMPEG or a bundled decoder before compressed deliveries work from the desktop.
+- Between one 32 ms window and 1.28 s, `--vad silero` reports a speech share where the heuristic reports unknown; the engine may then pick a different loudness rule for the same short file (R1, a known difference).
 
 Decided against, and why: new landing-page columns for ffmpeg-normalize, r128gain or rsgain (each re-measures an engine already in the table: loudnorm, ffmpeg's ebur128, libebur128 1.2.6); watermark detection and automatic repair (outside a read-only QC tool); more presets (39 destinations is a strength, not a gap).
 

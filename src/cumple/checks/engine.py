@@ -214,7 +214,7 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
                 and np.isfinite(m.loudness.dialogue_gated)
                 and m.loudness.dialogue_blocks > 0
             ):
-                # The heuristic gate reads low on dense mixes (two open films, docs/DIALOGUE.md),
+                # The speech gate (either backend) reads low on dense mixes (two open films, docs/DIALOGUE.md),
                 # and reading low turns a too-loud mix into a pass. On those two films the true
                 # dialogue-gated value sat within 3 LU of the full-programme value while the
                 # detector's sat 2.8 and 9.5 LU under it, so 3 LU is the tool default (n = 2).

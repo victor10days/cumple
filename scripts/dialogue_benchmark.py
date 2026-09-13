@@ -14,11 +14,12 @@ from two references on real material:
    loudness of the mix over the blocks that mask marks, computed by the same
    LoudnessMeter.dialogue_gated the product uses, so the only thing that differs between
    the reference and the product is the mask.
-2. Silero VAD (Silero Team, MIT licence), the standard open voice-activity model, as an
-   independent design. It needs `onnxruntime` (run with `uv run --with onnxruntime ...`) and
-   the 2.3 MB model that scripts/fetch_real_dialogue.sh places in ~/.cache/cumple/. It is
-   optional; the report says when it was absent. Its mask is dilated over one second the way
-   the product's detector dilates its own, so the two are compared on the same terms.
+2. Silero VAD (Silero Team, MIT licence), the standard open voice-activity model, run
+   through the shipped SileroDetector (src/cumple/meters/vad.py): the same code as
+   `check --vad silero`, with the model bundled in the package. It needs onnxruntime, from
+   the dev group (`uv sync`) or the `vad` extra; when onnxruntime is missing the Silero
+   columns read n/a. Its mask sits on the same 20 ms grid and is dilated by the same rule as
+   the heuristic's, so the two are compared on the same terms.
 
 It also runs clean speech, music-only and dialogue-driven programmes through the detector
 to show the speech share each regime produces, because Netflix and Disney+ switch rules at

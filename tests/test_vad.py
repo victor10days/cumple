@@ -28,6 +28,12 @@ needs_onnx = pytest.mark.skipif(importlib.util.find_spec("onnxruntime") is None,
 runner = CliRunner()
 
 
+@pytest.fixture(autouse=True)
+def _no_model_override(monkeypatch):
+    """A developer's CUMPLE_SILERO_MODEL must not redirect the hash test or the detector tests."""
+    monkeypatch.delenv("CUMPLE_SILERO_MODEL", raising=False)
+
+
 def test_dilate_mask_fills_a_pause_inside_dialogue_and_leaves_an_isolated_frame_alone():
     voiced = np.zeros(200, dtype=bool)
     voiced[50:70] = True
@@ -108,20 +114,28 @@ def test_silero_reads_no_speech_on_white_noise_at_48k():
 
 @needs_onnx
 def test_chunked_resampling_gives_the_unchunked_decisions(monkeypatch):
-    """Three 10 s chunks with the carried tail must decide like one resample of the whole signal."""
+    """Three 10 s chunks with the carried tail must decide like one resample of the whole signal.
+
+    The signal is 3 s of speech then 1 s of silence, seven times over, so the mask has fourteen
+    edges that a shifted or repeated resampler tail would move; a fixture without pauses is all
+    speech after dilation whatever the resampler does, and could not fail.
+    """
     from scipy.signal import resample_poly
 
     import cumple.meters.vad as mod
 
-    x16, _ = sf.read(str(FIXTURE), dtype="float64", always_2d=True)
-    x441 = resample_poly(np.tile(x16[:, 0], 9), 441, 160)[:, None]  # 27 s at 44.1 kHz, pauses at the joins
+    x16, fs = sf.read(str(FIXTURE), dtype="float64", always_2d=True)
+    assert fs == 16000 and len(x16) == 3 * fs
+    x16 = np.concatenate([x16[:, 0], np.zeros(fs)])  # 3 s of speech, 1 s of silence
+    x441 = resample_poly(np.tile(x16, 7), 441, 160)[:, None]  # 28 s at 44.1 kHz
     chunked = _feed(SileroDetector(44100, 1), x441, 1024).mask  # CHUNK_S 10: three resample calls, the tail path runs
     monkeypatch.setattr(mod, "CHUNK_S", 1000.0)  # one resample of everything at result(): the reference
     whole = _feed(SileroDetector(44100, 1), x441, 1024).mask
-    assert len(chunked) == len(whole) == int(27 / FRAME_S)
+    assert len(chunked) == len(whole) == int(28 / FRAME_S)
+    assert chunked.any() and not chunked.all()  # the mask has edges to move
     assert (
         int((chunked != whole).sum()) <= 2
-    )  # a doubled or dropped tail shifts the windows and dozens of frames differ
+    )  # a tail resampled twice or skipped twice shifts every later window: 33 to 35 frames differ
 
 
 @needs_onnx

@@ -275,8 +275,10 @@ MIT licence and the same 20 ms grid and dilation rule as the heuristic, so
 the meter cannot tell them apart except by name, and every report says the
 name. The benchmark script runs the same detector instead of its own copy of
 the inference, so there is one implementation to be wrong. The default did
-not change: the heuristic installs in seconds and is measured; Silero is
-more precise on clean speech and worse on quiet dialogue under music,
-and the README carries both numbers from the same run. On Sintel, whose
-dialogue sits under an orchestral score, Silero reads further under the
-reference than the heuristic does; the README says by how much.
+not change: the heuristic installs in seconds and is measured. The 5
+September entry above called Silero more precise on both films; the run with
+the shipped detector says otherwise: Silero reads 0 % speech on the
+music-and-effects material where the heuristic reads up to 92 %, and it is
+worse on quiet dialogue under music, 9.2 LU under the reference on Sintel
+against the heuristic's 6.7. The README carries both numbers from the same
+run.

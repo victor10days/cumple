@@ -10,7 +10,6 @@
 #   LibriVox, William Again: public domain narration.
 #   NASA, Houston We Have a Podcast: a work of the U.S. government, public domain.
 #   EBU SQAM (Tech 3253): the EBU's terms allow use as an R&D tool only.
-#   Silero VAD model: Silero Team, MIT.
 #
 # Files are written to <name>.part and renamed when complete, so an interrupted run resumes
 # and the benchmark never reads a half-downloaded file. About 1.9 GB in total.
@@ -48,9 +47,5 @@ get "https://archive.org/download/Night.Of.The.Living.Dead_1080p/NightOfTheLivin
 get "https://archive.org/download/williamagain_1902_librivox/williamagain_01_crompton_64kb.mp3" "$C/librivox/william_again_ch01.mp3"
 get "https://traffic.megaphone.fm/NATIONALAERONAUTICSANDSPACEADMINISTRATION7649878096.mp3"      "$C/nasa/hwhap_national_lab_15.mp3"
 get "https://qc.ebu.io/testmaterials/523/1/download/"                                           "$C/sqam/TECH3253_SQAM_FLAC.zip"
-
-# Silero VAD v5 (Silero Team, MIT licence), the independent voice detector the benchmark compares
-# against when onnxruntime is installed: uv run --with onnxruntime scripts/dialogue_benchmark.py
-get "https://github.com/snakers4/silero-vad/raw/master/src/silero_vad/data/silero_vad.onnx" "$C/../silero_vad.onnx"
 
 echo "done: $(du -sh "$C" | cut -f1) in $C"
