@@ -71,7 +71,7 @@ says the same.
   detector, Leq(m) from the TASA response table, the rules engine with
   either/or rules and the speech switch, the audio diff, the watch folder,
   the gain-only fix, the QC sheet, the macOS droplet, 39 profiles.
-- **Tests and benchmarks.** 195 tests, including synthetic signals with
+- **Tests and benchmarks.** 200 tests, including synthetic signals with
   analytic answers and the official EBU cases; cross-checks against
   libebur128, pyloudnorm, ffmpeg's `ebur128` filter, loudcheck and an
   independently designed interpolator;
@@ -233,3 +233,22 @@ document cell for cell and each run cell equal to the run's summary line. A
 reader of the page took the client list in "Who made it" for the tool's
 customers; the paragraph now says what it meant, a year of studio work.
 
+## The competitive landscape (12 September)
+
+Victor asked for a loop that continues the roadmap and researches the tools
+cumple competes with: the meters and QC platforms the studios name in their
+delivery specifications, which the page's table did not cover. Three research
+agents wrote the tables, one running open-source meters on the EBU files here
+and two reading vendor documentation, and a separate model with no history of
+the work re-fetched eighteen cited cells and found two false claims in Claude's
+work: that r128gain "has no read-only flag", when it has `--dry-run`, and that
+r128gain is an "independent engine", when it measures through ffmpeg's ebur128
+filter, already a column on the page; plus counts in the ranking that did not
+trace back to the cells they claimed to count. All of it was corrected before
+anything was written into this file's neighbours, `docs/RELATED.md`, the
+README's Related work and the page's note under the comparison table. One side
+effect is recorded as it happened: installing rsgain through Homebrew upgraded
+the machine's ffmpeg from 8.0 to 9.0.1, the version the published benchmark is
+pinned to, and the older binary no longer starts; nothing was restored or
+re-pinned, and the choice is left for Victor. The roadmap now lives in
+`docs/ROADMAP.md`.
