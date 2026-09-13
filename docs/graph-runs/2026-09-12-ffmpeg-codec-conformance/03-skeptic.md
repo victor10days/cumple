@@ -127,3 +127,74 @@ Framework: Blind spots (environment gaps, cross-platform, tests passing for the 
 Ship with changes. Two of the concerns are mechanical and would stop the first `uv run pytest` of Tasks 1 and 2 cold (a name that does not exist, an assertion that cannot be true); the third is a real hang in the one place the frame promised a timeout; the fourth and sixth are the frame's own promises left without a run. None of them argue against the design, which is the right one: one module, one argv, resolve-then-whitelist, and a fallback that only wakes when libsndfile has already said no. Fix 1, 2, 3, 4 and 6 before the implementers start; 5 and 7 can ride in the same tasks or be listed in the receipt as accepted residue.
 
 Counts: Critical 2, High 4, Medium 1 (bundled).
+
+## Re-check after the amendment
+
+Plan re-read from disk at commit `ab68adb` (1042 lines). Same reviewer, same scale, still reading only the files named above plus the amended plan.
+
+### Status per concern
+
+1. `measure_file` does not exist. Addressed. Global Constraints line 19 says so outright; the tests import `measure` (line 501) and call it (540, 541, 549, 561, 565, 574, 584); the edit instruction names `measure` (line 764).
+2. The drive-letter regex test. Addressed. `_SCHEME` now uses the star quantifier (line 249, constraint line 17); the test at lines 103 to 111 asserts the four shapes the regex and the carve-out now produce, and `safe_path`'s refusal list gains `C:relative.m4a` (line 94). All four assertions and the two refusals evaluate True on this machine (check 5 below).
+3. The budget only checked between reads. Partly. The design is fixed: a daemon `threading.Timer` sets `expired` and kills the child (lines 420 to 431), the loop reads until EOF, the `expired` check wins over the exit code (449 to 452), the `finally` cancels the timer, kills a survivor and closes stdout (453 to 458). Against a real ffmpeg this works: a 600 s file decoded with `-re` and a 1 s budget unblocked at 1.02 s with exit -9 and no ffmpeg left behind, and closing the generator after one block ran the `finally` in 2 ms with the timer thread gone (checks 1 and 2). The test that is supposed to prove it cannot pass: see new finding A.
+4. MP3 promises untested and the fixture gated on ffmpeg. Addressed. `mp3_file` is written by libsndfile (lines 510 to 518), the acx pass and the netflix fail are asserted on an MP3 with no ffmpeg (558 to 567), the reader test writes its own MP3 and never skips (620 to 630), and the netflix M4A test is renamed to what it does (547). Fixture verified: check 6.
+5. Decoder named only inside one finding. Addressed. JSON gains `container`, `codec`, `decoder` after `samplerate` (lines 766 to 772; the anchor key exists at `json_out.py:44`), the sheet gets `_encoding()` for the Format cell and the meta line (774 to 795), and two tests cover youtube (no containers clause) for an AAC and a WAV (571 to 588). `render_html` and `report_to_dict` import from where the tests say (check 7). No existing test pins the old "24-bit" text (check 7).
+6. README's CI sentence. Partly. The sentence is rewritten with a per-platform count and the workflow comment is corrected (lines 912 to 919, 974 to 984), but the command that derives G undercounts and the path to `uv` in it does not exist on this Mac: new findings B and C.
+7. The bundle:
+   - E402 from appended imports: addressed (line 493, "TOP import block", with the sorted list at 496 to 504).
+   - `CUMPLE_FFMPEG` on Windows and the resolved-symlink ffprobe: addressed (lines 289 to 301, `shutil.which` for both binaries, no `resolve()`; PATHEXT-aware by `which`). Verified with the hint as the binary, as its directory and as a symlinked directory (check 4). Residue: a hint naming a binary not called `ffmpeg` is silently ignored and the PATH pair is used instead; the docstring at 282 should say the binary must be named `ffmpeg`.
+   - `subfile,,` passing vacuously: addressed by removal (line 94 no longer lists it); the whitelist still refuses that form (first-pass check 6).
+   - Two `ffmpeg -version` spawns per file: addressed (lines 284 to 290, `lru_cache` keyed on the hint and `which("ffmpeg")`). The key changes when PATH changes and comes back (check 4: two cache misses across a PATH change and its reversal, no stale hit).
+   - FAQ omits the diff and fix clause: addressed (line 948).
+   - Only M4A fixtured: addressed (lines 178 to 198, four containers parametrized; the MXF row uses the mono OPAtom shape I verified in the first pass).
+   - Version regex: addressed (line 175, `^[nN]?\d`).
+
+### Checks run
+
+1. The amended loop, reproduced verbatim in shape, against the plan's stand-in `#!/bin/sh\nsleep 30\n` (chmod 755, `Popen([path])`, no shell) with a 0.5 s budget on this Mac (`/bin/sh` is bash 3.2.57): `budget: exceeded 0.5 s elapsed=30.02s`. The Timer killed `sh` on time; `sleep 30`, forked by `sh`, inherited the pipe's write end and held it open, so `read()` returned only when sleep exited. `pgrep` showed the orphaned `sleep 30` still running after the kill. The shebang itself was honoured (the script ran without a shell), which answers the (b) question in the affirmative; the stall is the problem.
+2. The same loop with two candidate fixes and the real binary. Stand-in changed to `exec sleep 30` with `proc.kill()`: `elapsed=0.51s`. Original forking stand-in with `start_new_session=True` and `os.killpg(proc.pid, SIGKILL)`: `elapsed=0.52s`. Real ffmpeg on a 600 s WAV with `-re` (throttled to real time) and a 1 s Timer: `expired=True exit=-9 bytes=589824 elapsed=1.02s`, no ffmpeg process left. GeneratorExit: `next()` once then `close()` on the generator: `close() took 0.002s`, no ffmpeg left, `threading.active_count()` back to 1.
+3. `pytest -rs -q` on a scratch file with the plan's marker shape (two plain gated tests and one parametrized over four cases): the summary prints `SKIPPED [1] ...:6`, `SKIPPED [1] ...:11`, `SKIPPED [4] ...:16` and `6 skipped`; `grep -c "ffmpeg and ffprobe are not on PATH"` prints `3`.
+4. `shutil.which("ffmpeg", path=d)` and `which("ffprobe", path=d)` for the hint `/opt/homebrew/bin/ffmpeg` (a file, so `d` is its parent), `/opt/homebrew/bin` and `/opt/homebrew/opt/ffmpeg/bin`: both binaries found in all three; `which("ffmpeg", path="/usr/bin")` is None. An `lru_cache` keyed on `("", which("ffmpeg") or "")` across `PATH=/usr/bin:/bin` and back: 2 misses, keys `('', '/opt/homebrew/bin/ffmpeg')` and `('', '')`.
+5. The amended regexes on the plan's strings: lines 108, 109, 110, 111 all True; `C:relative.m4a` and `data:audio/aac;base64,AAAA` refused; `/Users/Victor/mix.m4a` untouched. Side effect noted: a relative name such as `Mix:final.m4a` is refused before `resolve()` runs.
+6. The plan's `mp3_file` fixture verbatim (`sf.write(..., 48000, format="MP3", subtype="MPEG_LAYER_III")`): 9288 bytes; `sf.SoundFile` reports `MP3 MPEG_LAYER_III 48000 2 96000`; the current `probe()` returns container `MP3`, bit depth None, 96000 frames.
+7. `grep -n "bit\b|-bit|24-bit|WAV\b|· stereo|Format" tests/test_qc_sheet.py tests/test_pdf.py`: nothing; `test_qc_sheet.py`'s assertions pin "FAIL", the profile name, the SVG, the source URL and CSS tokens, not the depth text. `uv run python -c "from cumple.report import render_html; from cumple.report.json_out import report_to_dict"`: both import. `tests/test_app.py` exists for Step 4.
+8. `ls ~/.local/bin/uv`: `No such file or directory`; `which uv` is `/opt/homebrew/bin/uv`. `PATH=/usr/bin:/bin /opt/homebrew/bin/uv run pytest tests/test_reader.py --collect-only -q`: collects 6 tests; on that PATH `shutil.which("ffmpeg")` is None, so the hiding works once uv is addressed by its real path (the venv's python is the Framework 3.12 at an absolute path, so uv needs nothing from PATH).
+
+### New findings
+
+#### A. The stalling-child test blocks for 30 s and fails its own timing assertion
+Severity: Critical. Blocking.
+Framework: Pre-mortem on the test itself; the integration-point blind spot (a child of a child).
+
+What I see: `test_a_stalled_decoder_is_killed_when_the_budget_expires` (plan lines 154 to 170) writes `#!/bin/sh\nsleep 30\n` and asserts the call returns in under 5 s. `sh` forks `sleep` and waits for it; SIGKILL to `sh` leaves `sleep` alive holding the pipe's write end, so `read()` blocks until sleep exits (check 1: 30.02 s on this Mac; dash on the Linux runner forks the same way). The test raises the right error with the right word in it, 25 s too late, and leaves an orphan `sleep`. Task 1 Step 4 would be red here and on Linux CI.
+
+Why it matters: the test exists to prove concern 3 fixed; as written it proves the opposite. The same shape bites in production wherever `ffmpeg` on PATH is a wrapper script that forks the real binary (snap's `/snap/bin/ffmpeg` on Ubuntu desktops does exactly this): the budget kills the wrapper and the decode runs on.
+
+What to do: two options, and I would take both. (i) In the module, open the child with `start_new_session=True` and kill with `os.killpg(proc.pid, signal.SIGKILL)` when `hasattr(os, "killpg")`, falling back to `proc.kill()` (Windows); check 2 shows the forking stand-in then dies in 0.52 s. Keep the stand-in as it is, since it now proves the group kill. (ii) If only the test is to change, write `#!/bin/sh\nexec sleep 30\n` (0.51 s in check 2) and accept the wrapper case as residue in the receipt. Also catch `subprocess.TimeoutExpired` from the two `proc.wait(timeout=5)` calls and re-raise as `FfmpegError`: a child stuck in uninterruptible I/O (a dead network mount is one of the stalls this budget exists for) survives SIGKILL until the I/O returns, the wait raises after 5 s, and today that surfaces as a `SubprocessError` that `reader.iter_blocks` does not translate.
+
+#### B. The command that derives G counts summary lines, not skipped tests
+Severity: High. Blocking (a checkable README number that would be wrong on the day it merges, the exact failure the last receipt recorded).
+Framework: Socratic evidence ("what does this command actually count?").
+
+What I see: Task 3 Step 5 (plan line 980) pipes `pytest -rs -q` into `grep -c "ffmpeg and ffprobe are not on PATH"`. pytest folds skips that share a file, line and reason into one line with a bracketed count, and every case of a parametrized test shares its definition line, so `test_each_claimed_container_probes_and_decodes` prints once as `SKIPPED [4]`. Check 3 reproduces it: six gated tests, `grep -c` says 3. With the plan's own tests G would come out three short. A second inaccuracy: the sentence says "G fewer on macOS and Windows", but the stall test carries its own `win32` skip (line 154), so Windows runs G+1 fewer.
+
+What to do: take G from pytest's last line instead (`... passed, G skipped in ...`) with `tail -1`, or sum the bracketed counts (`grep -o 'SKIPPED \[[0-9]*\]' | awk -F'[][]' '{s+=$2} END {print s}'`). Then either word the sentence so it is true on all three runners ("runs N-29 of them on Ubuntu; macOS skips G more that need ffmpeg, Windows G+1") or drop the per-platform figure and say "the ffmpeg-gated decode tests skip on macOS and Windows", keeping the `runs (\d+) of them on Ubuntu` shape the counts test matches.
+
+#### C. `~/.local/bin/uv` does not exist on this Mac
+Severity: Medium. Non-blocking (the step fails loudly and the fix is the path).
+Framework: White hat (missing data about the machine).
+
+What I see: plan line 980 addresses uv as `~/.local/bin/uv`; the binary is `/opt/homebrew/bin/uv` (check 8), and the plan's own bare PATH excludes Homebrew on purpose. The command as written prints `no such file or directory`.
+
+What to do: write `UV=$(command -v uv); PATH=/usr/bin:/bin "$UV" run pytest ...`, which captures uv before the PATH is narrowed and works on any machine. Check 8 shows `uv run` needs nothing else from PATH here.
+
+#### D. Small residue, for the receipt
+Severity: Medium, non-blocking.
+- A relative path whose first characters are letters followed by a colon (`Mix:final.m4a`) is refused as a protocol before `resolve()` runs (check 5). Checking the resolved string instead of the raw one keeps the whole defence (the resolved string is what ffmpeg sees) without the false refusal. Rare on macOS, where Finder writes such names with a slash internally.
+- `_locate` ignores a `CUMPLE_FFMPEG` that names a binary not called `ffmpeg` and silently uses PATH; say so in the docstring or in the "install ffmpeg" message.
+
+### Verdict after re-check: Ship with changes
+
+The amendment took every one of the seven findings and the design is now the right one, including the budget kill that check 2 shows working against the real ffmpeg. What remains is one test that cannot pass as written (A: a forking stand-in the kill does not reach), one number derived by a command that does not count what the sentence claims (B), and a wrong path to uv (C). Fix A and B before Task 1 and Task 3 run; C rides with B.
+
+Counts remaining: Critical 1, High 1, Medium 2 (C, and the D bundle).

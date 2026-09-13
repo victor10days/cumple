@@ -226,6 +226,7 @@ import json
 import os
 import re
 import shutil
+import signal
 import subprocess
 import tempfile
 import threading
@@ -419,12 +420,15 @@ def iter_blocks_ffmpeg(
     want = block_frames * frame_bytes
     expired = threading.Event()
     with tempfile.TemporaryFile() as err:
-        proc = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=err)
+        # Its own session on POSIX, so a wrapper script's children die with it and the pipe closes.
+        proc = subprocess.Popen(
+            argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=err, start_new_session=(os.name != "nt")
+        )
         assert proc.stdout is not None
 
         def on_budget() -> None:  # runs on the timer thread; the kill unblocks the read below
             expired.set()
-            proc.kill()
+            _kill(proc)
 
         timer = threading.Timer(budget, on_budget)
         timer.daemon = True
@@ -453,12 +457,25 @@ def iter_blocks_ffmpeg(
         finally:
             timer.cancel()
             if proc.poll() is None:
-                proc.kill()
+                _kill(proc)
                 proc.wait(timeout=5)
             proc.stdout.close()
+
+
+def _kill(proc: subprocess.Popen) -> None:
+    """Kill the child and, on POSIX, everything in the session it started."""
+    if os.name != "nt":
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+            return
+        except ProcessLookupError:
+            return
+        except PermissionError:
+            pass
+    proc.kill()
 ```
 
-Note for the implementer: `np.frombuffer(...).astype(dtype, copy=False)` returns a read-only view when `dtype` is float32; the meters only read blocks, and the float64 default copies. Keep it that way. The `assert proc.stdout is not None` is for the type checker; leave it. When the timer kills the child mid-read, `read()` returns what it has or an empty bytes object and the loop falls through to the `expired` check, which wins over the exit code (a killed child exits -9). `data:` and `concat:` are refused by `_SCHEME`; `C:relative.m4a` is refused because `_DRIVE` wants a separator after the colon.
+Note for the implementer: `np.frombuffer(...).astype(dtype, copy=False)` returns a read-only view when `dtype` is float32; the meters only read blocks, and the float64 default copies. Keep it that way. The `assert proc.stdout is not None` is for the type checker; leave it. When the timer kills the child mid-read, `read()` returns what it has or an empty bytes object and the loop falls through to the `expired` check, which wins over the exit code (a killed child exits -9). The kill is a process-group kill on POSIX (`start_new_session=True` plus `os.killpg`): a plain `proc.kill()` on a wrapper script leaves its child holding the pipe and the read never returns, which is exactly what the stalled-decoder test reproduces with `sh` and `sleep`. `data:` and `concat:` are refused by `_SCHEME`; `C:relative.m4a` is refused because `_DRIVE` wants a separator after the colon.
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
@@ -975,13 +992,13 @@ macOS and Windows jobs skip them.
 
 Run: `uv run pytest --collect-only 2>/dev/null | grep 'tests collected'` and put that number in the five places (`**Tests**: N,` in README, `# N tests;` in CONTRIBUTING, `` `uv run pytest`, N tests`` in docs/QA.md, `N tests, including` in AI_USAGE, `N tests with 91 %` in site/index.html).
 
-Then count the ffmpeg-gated tests by running the two files with ffmpeg hidden (PATH without Homebrew, uv by its full path):
+Then count the ffmpeg-gated tests by running the two files with ffmpeg hidden (PATH without Homebrew; uv addressed by the path it has before PATH is stripped):
 
-`PATH=/usr/bin:/bin ~/.local/bin/uv run pytest tests/test_ffmpeg_io.py tests/test_reader.py -rs -q 2>&1 | grep -c "ffmpeg and ffprobe are not on PATH"`
+`UV="$(command -v uv)"; PATH=/usr/bin:/bin "$UV" run pytest tests/test_ffmpeg_io.py tests/test_reader.py -q -rs 2>&1 | tail -3`
 
-That number is G. README.md:413-414 currently reads "CI runs 171 of them on Ubuntu, macOS and Windows on every push. The 29 EBU cases ...". Rewrite it (keeping the regex shape `runs (\d+) of them on Ubuntu` that tests/test_counts.py matches) to:
+Read G from the summary line's "G skipped" (parametrized cases count one each there; a `grep -c` over the `-rs` lines would fold them). That is the macOS number; Windows skips one more, the stalled-decoder test. README.md:413-414 currently reads "CI runs 171 of them on Ubuntu, macOS and Windows on every push. The 29 EBU cases ...". Rewrite it (keeping the regex shape `runs (\d+) of them on Ubuntu` that tests/test_counts.py matches) to:
 
-`runs N-29 of them on Ubuntu, and G fewer on macOS and Windows, which have no ffmpeg for the decode tests, on every push. The 29 EBU cases ...` with N-29 and G as digits.
+`runs N-29 of them on Ubuntu, G fewer on macOS, which has no ffmpeg for the decode tests, and G+1 fewer on Windows, on every push. The 29 EBU cases ...` with N-29, G and G+1 as digits.
 
 - [ ] **Step 6: Run the suite and the site tests**
 
