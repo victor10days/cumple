@@ -243,6 +243,35 @@ def fmt(x: float | None, expected: float | None, kind: str) -> str:
     return s + (" ✓" if ok else " ✗")
 
 
+def minus(x: float) -> str:
+    """Two-decimal reading with a typographic minus sign, for prose rather than a table cell."""
+    return f"{x:.2f}".replace("-", "−")
+
+
+CASE6_FILES = ("seq-3341-6-5channels-16bit.wav", "seq-3341-6-6channels-WAVEEX-16bit.wav")
+
+
+def case6_note(results: dict[str, dict[str, Reading]]) -> str:
+    """The case 6 true-peak sentence, read from the run instead of hardcoded, so it cannot
+    contradict the table above it: ffmpeg's true-peak reading against cumple's on both the
+    five- and six-channel files, within 0.05 dB.
+    """
+    ffmpeg_tp = [results[name]["ffmpeg ebur128"].tp for name in CASE6_FILES]
+    cumple_tp = [results[name]["cumple"].tp for name in CASE6_FILES]
+    mismatch = any(abs(ff - cu) > 0.05 for ff, cu in zip(ffmpeg_tp, cumple_tp, strict=True))
+    if mismatch:
+        return (
+            f"On the five- and six-channel case 6 files it reports a true peak of {minus(ffmpeg_tp[0])} dBFS "
+            f"where the centre channel sits at {minus(cumple_tp[0])} dBFS; cumple, libebur128 and loudcheck "
+            "report the centre channel."
+        )
+    return (
+        "On the five- and six-channel case 6 files it reports the centre channel's true peak "
+        "(−24 dBFS), as cumple, libebur128 and loudcheck do; ffmpeg 8.0 reported −28 dBFS there on "
+        "8 September 2026."
+    )
+
+
 def print_table(
     title: str,
     field: str,
@@ -307,8 +336,7 @@ def main() -> None:
         print(f"**{tool}: {inside} of {total} readings inside tolerance**\n")
     print(
         "Notes: ffmpeg's ebur128 is an independent implementation with no published conformance report. "
-        "On the five- and six-channel case 6 files it reports a true peak of −28 dBFS where the centre channel "
-        "sits at −24 dBFS; cumple, libebur128 and loudcheck report the centre channel. "
+        f"{case6_note(results)} "
         "On the true-peak burst files ffmpeg reports a loudness range of about 20 LU, and pyloudnorm 2.7 LU, for "
         "what is a single steady tone; those files carry no LRA expectation in Tech 3342, so this is noted, not "
         "scored. loudcheck reads case 5 at −23.14 LUFS, 0.04 LU outside the tolerance, where ffmpeg's own "

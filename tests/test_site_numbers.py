@@ -58,6 +58,21 @@ def test_benchmark_gap_on_the_strip():
     assert PAGE.count(f"within {largest:.2f} LU") == 2  # the FAQ answer and its JSON-LD twin
 
 
+def test_benchmark_note_agrees_with_its_table():
+    """The case 6 sentence in the Notes paragraph must not contradict the true-peak table above it."""
+    text = (ROOT / "docs" / "BENCHMARK.md").read_text(encoding="utf-8")
+    rows = {r["file"]: r for r in _tables(text, "| file | expected TP |")}
+    case6 = (
+        rows["seq-3341-6-5channels-16bit.wav"],
+        rows["seq-3341-6-6channels-WAVEEX-16bit.wav"],
+    )
+    mismatch = any(abs(_num(r["ffmpeg ebur128"]) - _num(r["cumple"])) > 0.05 for r in case6)
+    if mismatch:
+        assert "where the centre channel sits at" in text
+    else:
+        assert "reports the centre channel's true peak" in text
+
+
 def test_conformance_totals_on_the_strip():
     text = (ROOT / "docs" / "CONFORMANCE.md").read_text(encoding="utf-8")
     m = re.search(r"\*\*(\d+) of (\d+) readings inside tolerance", text)
