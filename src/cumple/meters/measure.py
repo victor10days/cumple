@@ -189,6 +189,7 @@ def measure(
     an 8k-tap FIR per channel, only when asked. lfe_corner_hz sets where the LFE band check looks.
     vad chooses the speech detector for dialogue-gated rules: "heuristic" (default) or "silero"
     (needs the vad extra)."""
+    describe_backend(vad)  # an unknown name is refused here, before the file is opened
     path = Path(path)
     if path.is_dir():
         return measure_package(path, block_frames=block_frames, leqm=leqm, lfe_corner_hz=lfe_corner_hz, vad=vad)

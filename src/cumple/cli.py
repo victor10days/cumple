@@ -304,7 +304,7 @@ def check(
     """Measure a file or package against a destination. Exit 0 on PASS, 1 on FAIL."""
     profile = _profile_or_exit(spec)
     try:
-        m = measure(path, vad=vad or os.environ.get("CUMPLE_VAD", "heuristic"), **measure_args(profile))
+        m = measure(path, vad=vad or os.environ.get("CUMPLE_VAD") or "heuristic", **measure_args(profile))
     except Exception as e:  # unreadable file, inconsistent package, libsndfile errors, unknown/unavailable vad backend
         console.print(f"[red]cannot measure {path}:[/] {escape(str(e))}")
         raise typer.Exit(2) from None
