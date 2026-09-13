@@ -14,8 +14,16 @@ What cumple does not do yet, ranked by the gap the competitive landscape found, 
 | R6 | 2-pop, leader and slate detection from the audio alone | 1 of 9 (Baton, container side); Amazon's two profiles forbid a leader without a number | queued | | |
 | R7 | Audio-to-video duration and sync | 1 of 9 (Baton); needs the picture | out of scope until cumple reads picture | | |
 | R8 | PyPI publishing through a trusted-publisher workflow | distribution, not a capability | queued; the last step needs Victor's PyPI account | | |
+| R9 | Merge the mono tracks of a multi-stream MXF or MOV by their channel labels into one measurement; today such a file is refused with the stream count named | dpp-as11 and max-wbd list mxf; Apple immersive names LPCM in .mov with channel assignments | queued | | |
 
-Victor's own list, not the loop's: the `EBU_TEST_SET_URL` secret so CI runs the 29 EBU cases; the manual rows in [QA.md](QA.md) (a DAW bounce, real mix versions, a real Windows and Linux machine); a custom domain; GitHub pins; a Frame.io action; and the ffmpeg question below.
+Victor's own list, not the loop's:
+
+- The `EBU_TEST_SET_URL` secret so CI runs the 29 EBU cases.
+- The manual rows in [QA.md](QA.md) (a DAW bounce, real mix versions, a real Windows and Linux machine).
+- A custom domain, GitHub pins, a Frame.io action.
+- The ffmpeg question below.
+- Whether apple-immersive's containers list gains `mov` (its quoted clause permits LPCM in .mov containers; a PCM MOV now fails the clause it quotes).
+- A Finder-launched cumple.app has a minimal PATH and will not see Homebrew's ffmpeg; the app needs a way to set CUMPLE_FFMPEG or a bundled decoder before compressed deliveries work from the desktop.
 
 Decided against, and why: new landing-page columns for ffmpeg-normalize, r128gain or rsgain (each re-measures an engine already in the table: loudnorm, ffmpeg's ebur128, libebur128 1.2.6); watermark detection and automatic repair (outside a read-only QC tool); more presets (39 destinations is a strength, not a gap).
 
