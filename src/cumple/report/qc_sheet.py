@@ -43,6 +43,17 @@ def _mmss(seconds: float) -> str:
     return f"{tenths // 600}:{(tenths % 600) / 10:04.1f}"
 
 
+def _encoding(m) -> str:
+    """ "24-bit WAV", "M4A (AAC) via ffmpeg 9.0.1", or "" when nothing is known about the file."""
+    i = m.info
+    if i is None:
+        return ""
+    if i.bit_depth:
+        return f"{i.bit_depth}-bit {i.container}"
+    codec = (i.codec or i.subtype).upper()
+    return f"{i.container} ({codec}) via {i.decoder}" if i.via_ffmpeg else f"{codec} {i.container}"
+
+
 def _pct(v: float, total: float) -> str:
     return f"{v / total * 100:.2f}%"
 
@@ -139,7 +150,7 @@ def render_html(report: Report) -> str:
         (
             "Format",
             f"{m.samplerate / 1000:g} kHz",
-            (f"{m.info.bit_depth}-bit · " if m.info and m.info.bit_depth else "") + m.layout,
+            (f"{_encoding(m)} · " if _encoding(m) else "") + m.layout,
         ),
     ]
     rows = []
@@ -165,7 +176,7 @@ def render_html(report: Report) -> str:
         for s in p.provenance
     )
     verbatim = "verbatim" if p.clauses_verbatim else "paraphrased pending verbatim quotes"
-    depth = (", " + str(m.info.bit_depth) + "-bit " + _esc(m.info.container)) if m.info and m.info.bit_depth else ""
+    depth = (", " + _esc(_encoding(m))) if _encoding(m) else ""
     defaults = " · includes tool defaults" if p.has_defaults else ""
     strip_html = "".join(
         f'<div><div class="k">{_esc(k)}</div><div class="v">{_esc(v)}</div><div class="u">{_esc(u)}</div></div>'

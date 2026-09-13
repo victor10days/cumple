@@ -14,6 +14,8 @@ from typing import Any
 import numpy as np
 import soundfile as sf
 
+from .ffmpeg import FFMPEG_SUFFIXES, FfmpegError, find_ffmpeg, iter_blocks_ffmpeg, probe_ffmpeg
+
 # Bits per sample by libsndfile subtype name.
 SUBTYPE_BITS: dict[str, int] = {
     "PCM_S8": 8,
@@ -43,12 +45,14 @@ class AudioInfo:
     """What we know about a file before reading any samples."""
 
     path: Path
-    container: str  # WAV, WAVEX, RF64, AIFF, FLAC ...
-    subtype: str  # PCM_24, FLOAT ...
+    container: str  # WAV, WAVEX, RF64, AIFF, FLAC, MP3; M4A, MXF, AC3 ... when ffmpeg decoded it
+    subtype: str  # PCM_24, FLOAT, MPEG_LAYER_III; AAC, AC3 ... when ffmpeg decoded it
     samplerate: int
     channels: int
     frames: int
     metadata: dict[str, Any] = field(default_factory=dict)
+    decoder: str = "libsndfile"  # or "ffmpeg 9.0.1"
+    codec: str | None = None  # ffprobe's codec name when ffmpeg decoded it
 
     @property
     def duration_s(self) -> float:
@@ -63,25 +67,60 @@ class AudioInfo:
         return self.subtype in FLOAT_SUBTYPES
 
     @property
+    def is_pcm(self) -> bool:
+        return self.subtype in SUBTYPE_BITS
+
+    @property
+    def via_ffmpeg(self) -> bool:
+        return self.decoder.startswith("ffmpeg")
+
+    @property
     def bext(self) -> dict[str, Any]:
         return self.metadata.get("bext", {})
 
 
 def probe(path: str | Path) -> AudioInfo:
-    """Open the file header and return its shape plus any embedded BWF metadata."""
+    """Open the file header and return its shape plus any embedded BWF metadata.
+
+    libsndfile first. When it refuses a file whose suffix names a compressed or wrapped delivery
+    and a local ffmpeg exists, ffprobe supplies the shape and the report names the decoder.
+    """
     path = Path(path)
-    with sf.SoundFile(str(path)) as f:
-        container = f.format
-        info = AudioInfo(
-            path=path,
-            container=container,
-            subtype=f.subtype,
-            samplerate=f.samplerate,
-            channels=f.channels,
-            frames=f.frames,
-            metadata=read_metadata(path, container),
-        )
-    return info
+    try:
+        with sf.SoundFile(str(path)) as f:
+            container = f.format
+            return AudioInfo(
+                path=path,
+                container=container,
+                subtype=f.subtype,
+                samplerate=f.samplerate,
+                channels=f.channels,
+                frames=f.frames,
+                metadata=read_metadata(path, container),
+            )
+    except sf.LibsndfileError as e:
+        if path.suffix.lower() not in FFMPEG_SUFFIXES:
+            raise
+        tools = find_ffmpeg()
+        if tools is None:
+            raise RuntimeError(
+                f"{path.name}: libsndfile cannot open this container; install ffmpeg (and ffprobe) "
+                "to check compressed and wrapped deliveries, or point CUMPLE_FFMPEG at it"
+            ) from e
+    try:
+        pi = probe_ffmpeg(path, tools)
+    except FfmpegError as e:
+        raise RuntimeError(str(e)) from e
+    return AudioInfo(
+        path=path,
+        container=pi.container,
+        subtype=pi.subtype,
+        samplerate=pi.samplerate,
+        channels=pi.channels,
+        frames=int(round(pi.duration_s * pi.samplerate)),
+        decoder=f"ffmpeg {tools.version}",
+        codec=pi.codec,
+    )
 
 
 _BEXT_FIELDS = (
@@ -145,8 +184,22 @@ def iter_blocks(
     path: str | Path,
     block_frames: int = DEFAULT_BLOCK_FRAMES,
     dtype: str = "float64",
+    info: AudioInfo | None = None,
 ) -> Iterator[np.ndarray]:
-    """Yield (frames, channels) float blocks. Full scale is 1.0 for every subtype."""
+    """Yield (frames, channels) float blocks. Full scale is 1.0 for every subtype.
+
+    Pass the AudioInfo that probe() returned: when it names ffmpeg as the decoder, the blocks come
+    from ffmpeg; otherwise from libsndfile.
+    """
+    if info is not None and info.via_ffmpeg:
+        tools = find_ffmpeg()
+        if tools is None:
+            raise RuntimeError(f"{Path(path).name} was probed through ffmpeg, which is no longer on PATH")
+        try:
+            yield from iter_blocks_ffmpeg(path, tools, info.channels, info.duration_s, block_frames, dtype)
+        except FfmpegError as e:
+            raise RuntimeError(str(e)) from e
+        return
     yield from sf.blocks(str(path), blocksize=block_frames, dtype=dtype, always_2d=True)
 
 

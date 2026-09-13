@@ -372,6 +372,10 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
         if info.is_float:
             ok = f.allow_float
             measured = f"{depth}-bit float"
+        elif depth is None:
+            ok = False
+            what = info.codec or info.subtype.lower()
+            measured = f"not PCM ({what})"
         else:
             ok = depth in f.bit_depths
             measured = f"{depth}-bit"
@@ -459,19 +463,28 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
             "AIFF": "aiff",
             "AIFC": "aiff",
             "FLAC": "flac",
+            "MP3": "mp3",
+            "MXF": "mxf",
+            "AC3": "ac3",
+            "EAC3": "eac3",
         }.get(info.container, info.container.lower())
+        if info.codec == "aac" and name in ("m4a", "mp4", "mov", "aac"):
+            name = "aac"
         have = {name}
         if name == "wav" and info.bext:
             have.add("bwf")
         if name == "rf64":
             have.add("bwf")
         ok = bool(have & set(f.containers))
+        measured = info.container + (" with bext" if info.bext else "")
+        if info.via_ffmpeg:
+            measured += f", {info.codec}, decoded by {info.decoder}"
         out.append(
             Finding(
                 "format.container",
                 Status.PASS if ok else Status.FAIL,
                 "container",
-                info.container + (" with bext" if info.bext else ""),
+                measured,
                 ", ".join(f.containers),
                 clause=clause("format.container"),
             )
