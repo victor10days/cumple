@@ -9,6 +9,7 @@ cannot tell which backend made the mask except by its name. It is not Dolby's al
 
 from __future__ import annotations
 
+import functools
 import os
 from importlib import resources
 from pathlib import Path
@@ -39,9 +40,14 @@ def model_path() -> Path:
 
 
 def load_session():
-    """An onnxruntime session on the bundled model, single-threaded and quiet."""
+    """An onnxruntime session on the bundled model, single-threaded and quiet.
+
+    One session per resolved model path for the life of the process (see `_session_for`): the
+    import and file checks below run every call, so a missing extra or a missing model is always
+    reported, never masked by a stale cache entry.
+    """
     try:
-        import onnxruntime as ort
+        import onnxruntime  # noqa: F401  (checked here, before the cache, so a missing extra always raises)
     except ImportError as e:
         raise VadUnavailable(
             "the silero backend needs onnxruntime: uv tool install --python 3.12 "
@@ -50,11 +56,19 @@ def load_session():
     path = model_path()
     if not path.is_file():
         raise VadUnavailable(f"Silero VAD model not found at {path}")
+    return _session_for(str(path))
+
+
+@functools.cache
+def _session_for(path: str):
+    """The cached onnxruntime session for one resolved model path. Call through `load_session`."""
+    import onnxruntime as ort
+
     opts = ort.SessionOptions()
     opts.inter_op_num_threads = 1
     opts.intra_op_num_threads = 1
     opts.log_severity_level = 3
-    return ort.InferenceSession(str(path), opts, providers=["CPUExecutionProvider"])
+    return ort.InferenceSession(path, opts, providers=["CPUExecutionProvider"])
 
 
 class SileroDetector:
@@ -114,11 +128,12 @@ class SileroDetector:
         if n20 == 0:
             return SpeechResult(FRAME_S, base.mask, base.active, base.level_db, None, backend="silero")
         if not self._probs:
-            voiced = np.zeros(n20, dtype=bool)
-        else:
-            probs = np.asarray(self._probs)
-            idx = np.minimum(np.arange(n20) * round(FRAME_S * VAD_FS) // WINDOW, len(probs) - 1)  # 320 and 512, exact
-            voiced = probs[idx] > THRESHOLD
+            # Shorter than one 32 ms window: the model never ran, so the share is unknown, not zero.
+            mask = np.zeros(n20, dtype=bool)
+            return SpeechResult(FRAME_S, mask, base.active, base.level_db, None, backend="silero")
+        probs = np.asarray(self._probs)
+        idx = np.minimum(np.arange(n20) * round(FRAME_S * VAD_FS) // WINDOW, len(probs) - 1)  # 320 and 512, exact
+        voiced = probs[idx] > THRESHOLD
         mask = dilate_mask(voiced)
         programme = (base.level_db > SILENCE_DBFS) | mask
         fraction = float(mask[programme].mean()) if programme.any() else 0.0

@@ -64,6 +64,7 @@ def report_to_dict(report: Report) -> dict[str, Any]:
             "phase_correlation": _num(m.phase_correlation),
             "mono_fold_lufs": _num(m.mono_fold_loudness),
             "speech_fraction": _num(m.speech_fraction),
+            "speech_backend": m.speech.backend if m.speech is not None else "heuristic",
             "bext": _jsonable(m.info.bext if m.info else {}),
         },
         "findings": [
