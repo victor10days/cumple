@@ -13,9 +13,10 @@
 ## Global Constraints
 
 - No new runtime dependency. `pyproject.toml` dependencies stay as they are.
-- Every subprocess call: an argv list, `stdin=subprocess.DEVNULL`, `-nostdin` for ffmpeg, `-protocol_whitelist file` (ffprobe) or `file,pipe` (ffmpeg), a timeout, stderr capped at 4096 bytes, no option built from user text other than the resolved absolute path.
-- Paths handed to ffmpeg are absolute, resolved, regular files; a path matching `^[A-Za-z][A-Za-z0-9+.\-]+:` is refused unless it is a Windows drive prefix `^[A-Za-z]:[\\/]`.
-- Tests that need ffmpeg skip with `pytest.mark.skipif(find_ffmpeg() is None, reason=...)`; nothing in the suite requires ffmpeg.
+- Every subprocess call: an argv list, `stdin=subprocess.DEVNULL`, `-nostdin` for ffmpeg, `-protocol_whitelist file` (ffprobe) or `file,pipe` (ffmpeg), a timeout that KILLS the child when it expires (ffprobe through `subprocess.run(timeout=)`, ffmpeg through a `threading.Timer` that calls `proc.kill()`), stderr capped at 4096 bytes, stdout closed in `finally`, no option built from user text other than the resolved absolute path.
+- Paths handed to ffmpeg are absolute, resolved, regular files; a path matching `^[A-Za-z][A-Za-z0-9+.\-]*:` (star quantifier: a one-letter drive counts as a scheme) is refused unless it is a Windows drive prefix `^[A-Za-z]:[\\/]`.
+- Tests that need ffmpeg skip with `pytest.mark.skipif(find_ffmpeg() is None, reason=...)`; nothing in the suite requires ffmpeg. MP3 fixtures are written by libsndfile itself (`sf.write(..., format="MP3", subtype="MPEG_LAYER_III")`, verified on this Mac) and never skip.
+- The measurement entry point is `cumple.meters.measure.measure(path, ...)`; there is no `measure_file`.
 - No em or en dashes in prose. The phrase "not checked" never appears. Counts re-pinned from `uv run pytest --collect-only | grep 'tests collected'` in README.md, CONTRIBUTING.md, docs/QA.md, AI_USAGE.md and site/index.html (tests/test_counts.py enforces it).
 - Commit after every task with the attribution lines the session reminder gives.
 - Run commands from the worktree `/Users/Victor/Code/cumple-wt/loop-02-ffmpeg`; `uv run pytest` alone, never piped into another command.
@@ -30,7 +31,7 @@
 
 **Interfaces:**
 - Consumes: nothing from other tasks.
-- Produces: `FFMPEG_SUFFIXES: set[str]`; `class Ffmpeg(ffmpeg: Path, ffprobe: Path, version: str)`; `find_ffmpeg() -> Ffmpeg | None`; `safe_path(path) -> Path`; `class FfprobeInfo(container: str, codec: str, samplerate: int, channels: int, duration_s: float)` with property `subtype -> str`; `probe_ffmpeg(path, tools: Ffmpeg) -> FfprobeInfo`; `iter_blocks_ffmpeg(path, tools: Ffmpeg, channels: int, duration_s: float, block_frames: int, dtype: str) -> Iterator[np.ndarray]`; `class FfmpegError(RuntimeError)`; `decode_budget_s(duration_s: float) -> float`.
+- Produces: `FFMPEG_SUFFIXES: set[str]`; `class Ffmpeg(ffmpeg: Path, ffprobe: Path, version: str)`; `find_ffmpeg() -> Ffmpeg | None` (cached per environment, PATHEXT-aware through `shutil.which`); `safe_path(path) -> Path`; `class FfprobeInfo(container: str, codec: str, samplerate: int, channels: int, duration_s: float)` with property `subtype -> str`; `probe_ffmpeg(path, tools: Ffmpeg) -> FfprobeInfo`; `iter_blocks_ffmpeg(path, tools: Ffmpeg, channels: int, duration_s: float, block_frames: int, dtype: str) -> Iterator[np.ndarray]`; `class FfmpegError(RuntimeError)`; `decode_budget_s(duration_s: float) -> float`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -39,7 +40,10 @@
 
 from __future__ import annotations
 
+import re
 import subprocess
+import sys
+import time
 from pathlib import Path
 
 import numpy as np
@@ -48,6 +52,7 @@ import soundfile as sf
 
 from cumple.io.ffmpeg import (
     FFMPEG_SUFFIXES,
+    Ffmpeg,
     FfmpegError,
     FfprobeInfo,
     decode_budget_s,
@@ -86,7 +91,7 @@ def test_the_fallback_suffixes_are_the_ones_libsndfile_refuses():
 def test_safe_path_refuses_protocols_and_non_files(tmp_path, make_wav):
     wav = make_wav("tone.wav")
     assert safe_path(wav) == wav.resolve()
-    for bad in ("http://example.com/a.m4a", "concat:a.wav|b.wav", "subfile,,start,0,,:x.wav", "data:audio/aac;base64,AAAA"):
+    for bad in ("http://example.com/a.m4a", "concat:a.wav|b.wav", "data:audio/aac;base64,AAAA", "C:relative.m4a"):
         with pytest.raises(ValueError):
             safe_path(bad)
     with pytest.raises(ValueError):
@@ -95,13 +100,15 @@ def test_safe_path_refuses_protocols_and_non_files(tmp_path, make_wav):
         safe_path(tmp_path / "missing.m4a")
 
 
-def test_safe_path_accepts_a_windows_drive_prefix_shape(tmp_path, make_wav):
-    # The scheme regex must not mistake "C:\..." for a protocol. The file must still exist, so
-    # the check is on the regex alone, through a path that resolves on this machine.
+def test_the_scheme_regex_catches_one_letter_schemes_and_the_drive_regex_excuses_real_drives():
+    # A drive letter is a one-letter "scheme" to the first regex (star quantifier, not plus); the
+    # second regex is the carve-out safe_path applies. The file need not exist for this check.
     from cumple.io.ffmpeg import _DRIVE, _SCHEME
 
     assert _SCHEME.match("C:\\bounce\\mix.m4a") and _DRIVE.match("C:\\bounce\\mix.m4a")
+    assert _SCHEME.match("C:/bounce/mix.m4a") and _DRIVE.match("C:/bounce/mix.m4a")
     assert _SCHEME.match("concat:a|b") and not _DRIVE.match("concat:a|b")
+    assert _SCHEME.match("C:relative.m4a") and not _DRIVE.match("C:relative.m4a")
 
 
 def test_decode_budget_is_ten_times_the_duration_plus_a_minute():
@@ -144,21 +151,51 @@ def test_a_file_that_is_not_audio_raises_with_ffmpegs_words(tmp_path):
     assert "Invalid data" in str(e.value) or "moov" in str(e.value) or "Error" in str(e.value)
 
 
-@needs_ffmpeg
-def test_decoding_stops_when_the_budget_expires(aac_file, monkeypatch):
+@pytest.mark.skipif(sys.platform == "win32", reason="the stalling stand-in is a shell script")
+def test_a_stalled_decoder_is_killed_when_the_budget_expires(tmp_path, make_wav, monkeypatch):
+    """The budget must kill a child that emits nothing, not only refuse to start one."""
     import cumple.io.ffmpeg as mod
 
+    stall = tmp_path / "ffmpeg"
+    stall.write_text("#!/bin/sh\nsleep 30\n")
+    stall.chmod(0o755)
+    tools = Ffmpeg(ffmpeg=stall, ffprobe=stall, version="stall")
     monkeypatch.setattr(mod, "DECODE_BUDGET_FACTOR", 0.0)
-    monkeypatch.setattr(mod, "DECODE_BUDGET_FLOOR_S", 0.0)
-    info = probe_ffmpeg(aac_file, TOOLS)
+    monkeypatch.setattr(mod, "DECODE_BUDGET_FLOOR_S", 0.5)
+    wav = make_wav("tone.wav")
+    started = time.monotonic()
     with pytest.raises(FfmpegError) as e:
-        list(iter_blocks_ffmpeg(aac_file, TOOLS, info.channels, info.duration_s, block_frames=8192, dtype="float64"))
+        list(iter_blocks_ffmpeg(wav, tools, 2, 1.0, block_frames=8192, dtype="float64"))
     assert "budget" in str(e.value)
+    assert time.monotonic() - started < 5.0  # not the 30 s the child wanted
 
 
 @needs_ffmpeg
 def test_the_version_is_read_from_the_binary():
-    assert TOOLS.version[0].isdigit()
+    assert re.match(r"^[nN]?\d", TOOLS.version), TOOLS.version
+
+
+CONTAINERS = [
+    # ffmpeg encoder arguments, suffix, container token, codec, is_pcm
+    (("-c:a", "aac", "-b:a", "192k"), ".m4a", "M4A", "aac", False),
+    (("-c:a", "ac3", "-b:a", "192k"), ".ac3", "AC3", "ac3", False),
+    (("-c:a", "eac3", "-b:a", "192k"), ".ec3", "EAC3", "eac3", False),
+    (("-ac", "1", "-c:a", "pcm_s24le", "-f", "mxf_opatom"), ".mxf", "MXF", "pcm_s24le", True),
+]
+
+
+@needs_ffmpeg
+@pytest.mark.parametrize(("args", "suffix", "container", "codec", "is_pcm"), CONTAINERS)
+def test_each_claimed_container_probes_and_decodes(tmp_path, make_wav, args, suffix, container, codec, is_pcm):
+    wav = make_wav("tone.wav", seconds=1.0, amplitude=10 ** (-23 / 20))
+    out = encode(TOOLS, wav, tmp_path / ("tone" + suffix), *args)
+    info = probe_ffmpeg(out, TOOLS)
+    assert info.container == container and info.codec == codec
+    assert (info.subtype in ("PCM_16", "PCM_24", "PCM_32")) is is_pcm
+    channels = 1 if "-ac" in args else 2
+    assert info.channels == channels and info.samplerate == 48000
+    frames = sum(len(b) for b in iter_blocks_ffmpeg(out, TOOLS, info.channels, info.duration_s, block_frames=8192))
+    assert abs(frames - 48000) <= 4096
 
 
 def test_wav_written_by_soundfile_is_the_reference_for_the_aac_test(make_wav):
@@ -184,13 +221,14 @@ bounded error buffer. Read-only, like the rest of the io package: nothing is wri
 
 from __future__ import annotations
 
+import functools
 import json
 import os
 import re
 import shutil
 import subprocess
 import tempfile
-import time
+import threading
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
@@ -208,7 +246,7 @@ STDERR_CAP = 4096
 
 # Anything that reads as a URL scheme or an ffmpeg protocol prefix (concat:, subfile:, data:) is
 # refused; a Windows drive letter ("C:\") is the one colon a real path may carry at the front.
-_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]+:")
+_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]*:")
 _DRIVE = re.compile(r"^[A-Za-z]:[\\/]")
 
 # ffprobe codec names for PCM, as libsndfile would name the subtype; everything else is lossy.
@@ -241,20 +279,25 @@ class Ffmpeg:
 
 
 def find_ffmpeg() -> Ffmpeg | None:
-    """The ffmpeg and ffprobe pair under CUMPLE_FFMPEG (a directory or the ffmpeg binary), else on PATH."""
-    candidates: list[Path] = []
-    hint = os.environ.get("CUMPLE_FFMPEG")
+    """The ffmpeg and ffprobe pair under CUMPLE_FFMPEG (a directory or the ffmpeg binary), else on PATH.
+
+    Cached per environment: one `ffmpeg -version` per process, not one per file.
+    """
+    return _locate(os.environ.get("CUMPLE_FFMPEG") or "", shutil.which("ffmpeg") or "")
+
+
+@functools.lru_cache(maxsize=8)
+def _locate(hint: str, on_path: str) -> Ffmpeg | None:
+    pairs: list[tuple[str | None, str | None]] = []
     if hint:
         p = Path(hint)
-        candidates.append(p if p.is_file() else p / "ffmpeg")
-    found = shutil.which("ffmpeg")
-    if found:
-        candidates.append(Path(found))
-    for exe in candidates:
-        exe = exe.resolve()
-        probe = exe.with_name("ffprobe" + exe.suffix)
-        if exe.is_file() and probe.is_file():
-            return Ffmpeg(exe, probe, _version(exe))
+        directory = str(p.parent if p.is_file() else p)
+        pairs.append((shutil.which("ffmpeg", path=directory), shutil.which("ffprobe", path=directory)))
+    if on_path:
+        pairs.append((on_path, shutil.which("ffprobe")))
+    for exe, probe in pairs:
+        if exe and probe:
+            return Ffmpeg(Path(exe), Path(probe), _version(Path(exe)))
     return None
 
 
@@ -372,18 +415,23 @@ def iter_blocks_ffmpeg(
         "-",
     ]
     budget = decode_budget_s(duration_s)
-    started = time.monotonic()
     frame_bytes = 4 * channels
     want = block_frames * frame_bytes
+    expired = threading.Event()
     with tempfile.TemporaryFile() as err:
         proc = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=err)
         assert proc.stdout is not None
+
+        def on_budget() -> None:  # runs on the timer thread; the kill unblocks the read below
+            expired.set()
+            proc.kill()
+
+        timer = threading.Timer(budget, on_budget)
+        timer.daemon = True
+        timer.start()
         try:
             carry = b""
             while True:
-                if time.monotonic() - started > budget:
-                    proc.kill()
-                    raise FfmpegError(f"ffmpeg exceeded its {budget:g} s budget on {p.name}")
                 chunk = proc.stdout.read(want - len(carry))
                 if not chunk:
                     break
@@ -397,16 +445,20 @@ def iter_blocks_ffmpeg(
                 whole = len(carry) - len(carry) % frame_bytes
                 if whole:
                     yield np.frombuffer(carry[:whole], dtype="<f4").reshape(-1, channels).astype(dtype, copy=False)
-            code = proc.wait(timeout=max(1.0, budget - (time.monotonic() - started)))
+            code = proc.wait(timeout=5)
+            if expired.is_set():
+                raise FfmpegError(f"ffmpeg exceeded its {budget:g} s budget on {p.name}")
             if code != 0:
                 raise FfmpegError(f"ffmpeg exited {code} on {p.name}: {_tail(err) or 'no message'}")
         finally:
+            timer.cancel()
             if proc.poll() is None:
                 proc.kill()
                 proc.wait(timeout=5)
+            proc.stdout.close()
 ```
 
-Note for the implementer: `np.frombuffer(...).astype(dtype, copy=False)` returns a read-only view when `dtype` is float32; the meters only read blocks, and the float64 default copies. Keep it that way. The `assert proc.stdout is not None` is for the type checker; leave it.
+Note for the implementer: `np.frombuffer(...).astype(dtype, copy=False)` returns a read-only view when `dtype` is float32; the meters only read blocks, and the float64 default copies. Keep it that way. The `assert proc.stdout is not None` is for the type checker; leave it. When the timer kills the child mid-read, `read()` returns what it has or an empty bytes object and the loop falls through to the `expired` check, which wins over the exit code (a killed child exits -9). `data:` and `concat:` are refused by `_SCHEME`; `C:relative.m4a` is refused because `_DRIVE` wants a separator after the colon.
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
@@ -426,18 +478,19 @@ git commit -m "Decode compressed deliveries through a local ffmpeg, behind a whi
 
 **Files:**
 - Modify: `src/cumple/io/reader.py:40-90` (`AudioInfo`, `probe`), `:142-152` (`iter_blocks`)
-- Modify: `src/cumple/meters/measure.py:192-201` (pass `info` into `iter_blocks`)
+- Modify: `src/cumple/meters/measure.py:192-201` (`measure`: pass `info` into `iter_blocks`)
+- Modify: `src/cumple/report/json_out.py:43-48` (container, codec, decoder in the measurement block), `src/cumple/report/qc_sheet.py:139-143,168` (the format cell and the meta line name the container always and the depth when there is one)
 - Modify: `src/cumple/checks/engine.py:370-392` (bit depth wording), `:453-478` (container mapping)
 - Modify: `src/cumple/cli.py:264-266` (`info` prints the decoder)
 - Test: `tests/test_ffmpeg_io.py` (append), `tests/test_reader.py` (append)
 
 **Interfaces:**
 - Consumes: from Task 1, `FFMPEG_SUFFIXES`, `find_ffmpeg`, `probe_ffmpeg`, `iter_blocks_ffmpeg`, `FfmpegError`.
-- Produces: `AudioInfo.decoder: str = "libsndfile"`, `AudioInfo.codec: str | None = None`; `iter_blocks(path, block_frames, dtype, info: AudioInfo | None = None)`; engine container tokens `MP3 -> mp3`, `M4A/MP4/MOV/AAC with codec aac -> aac`, `MXF -> mxf`, `AC3 -> ac3`, `EAC3 -> eac3`.
+- Produces: `AudioInfo.decoder: str = "libsndfile"`, `AudioInfo.codec: str | None = None`, `AudioInfo.via_ffmpeg`, `AudioInfo.is_pcm`; `iter_blocks(path, block_frames, dtype, info: AudioInfo | None = None)`; engine container tokens `MP3 -> mp3`, `M4A/MP4/MOV/AAC with codec aac -> aac`, `MXF -> mxf`, `AC3 -> ac3`, `EAC3 -> eac3`; JSON `measurement.container`, `measurement.codec`, `measurement.decoder`; the sheet's Format cell reads `48 kHz`, `24-bit WAV · stereo` or `AAC via ffmpeg 9.0.1 · stereo`.
 
 - [ ] **Step 1: Write the failing tests**
 
-Append to `tests/test_ffmpeg_io.py`:
+Add these imports to the TOP import block of `tests/test_ffmpeg_io.py` (ruff's E402 rejects imports after code), keeping the block sorted the way ruff's isort wants:
 
 ```python
 from typer.testing import CliRunner
@@ -445,10 +498,24 @@ from typer.testing import CliRunner
 from cumple.checks.engine import evaluate
 from cumple.cli import app
 from cumple.io.reader import iter_blocks, probe
-from cumple.meters.measure import measure_file
+from cumple.meters.measure import measure
+from cumple.report import render_html
+from cumple.report.json_out import report_to_dict
 from cumple.specs import load_all
+```
 
-runner = CliRunner()
+and `runner = CliRunner()` after `needs_ffmpeg = ...`. Then append these tests:
+
+```python
+@pytest.fixture
+def mp3_file(tmp_path, make_wav):
+    """libsndfile 1.2 writes and reads MP3 itself; no ffmpeg involved."""
+    n = 48000 * 2
+    t = np.arange(n) / 48000
+    tone = 10 ** (-23 / 20) * np.sin(2 * np.pi * 1000 * t)
+    path = tmp_path / "tone.mp3"
+    sf.write(str(path), np.repeat(tone[:, None], 2, axis=1), 48000, format="MP3", subtype="MPEG_LAYER_III")
+    return path
 
 
 @needs_ffmpeg
@@ -470,22 +537,55 @@ def test_iter_blocks_uses_the_decoder_the_info_names(aac_file):
 @needs_ffmpeg
 def test_an_aac_delivery_measures_like_its_wav(aac_file, make_wav):
     wav = make_wav("ref.wav", seconds=2.0, amplitude=10 ** (-23 / 20))
-    a = measure_file(aac_file)
-    w = measure_file(wav)
+    a = measure(aac_file)
+    w = measure(wav)
     assert abs(a.loudness.integrated - w.loudness.integrated) < 0.5
     assert a.info is not None and a.info.decoder.startswith("ffmpeg ")
 
 
 @needs_ffmpeg
-def test_netflix_fails_the_container_and_names_the_codec_and_acx_bit_depth_says_not_pcm(aac_file):
+def test_an_aac_delivery_fails_netflix_and_its_bit_depth_says_not_pcm(aac_file):
     profiles = load_all()
-    report = evaluate(profiles["netflix-2.0"], measure_file(aac_file))
+    report = evaluate(profiles["netflix-2.0"], measure(aac_file))
     container = next(f for f in report.findings if f.code == "format.container")
     assert container.status.name == "FAIL"
     assert "M4A" in container.measured and "aac" in container.measured and "ffmpeg" in container.measured
     assert "compression is never allowed" in (container.clause or "")
     depth = next(f for f in report.findings if f.code == "format.bit_depth")
     assert depth.status.name == "FAIL" and "not PCM" in depth.measured and "None" not in depth.measured
+
+
+def test_an_mp3_fails_netflix_with_the_clause_and_passes_acx(mp3_file):
+    """The MP3 -> mp3 token is load-bearing for every audiobook delivery; no ffmpeg needed."""
+    profiles = load_all()
+    netflix = evaluate(profiles["netflix-2.0"], measure(mp3_file))
+    container = next(f for f in netflix.findings if f.code == "format.container")
+    assert container.status.name == "FAIL" and container.measured == "MP3"
+    assert "compression is never allowed" in (container.clause or "")
+    acx = evaluate(profiles["acx"], measure(mp3_file))
+    container = next(f for f in acx.findings if f.code == "format.container")
+    assert container.status.name == "PASS" and container.measured == "MP3"
+
+
+@needs_ffmpeg
+def test_json_and_sheet_name_the_decoder_even_without_a_container_clause(aac_file):
+    """youtube has no containers clause, so the finding never exists; the report must still say."""
+    profiles = load_all()
+    report = evaluate(profiles["youtube"], measure(aac_file))
+    doc = report_to_dict(report)
+    assert doc["measurement"]["container"] == "M4A" and doc["measurement"]["codec"] == "aac"
+    assert doc["measurement"]["decoder"].startswith("ffmpeg ")
+    html = render_html(report)
+    assert "M4A" in html and "via ffmpeg" in html and "None-bit" not in html
+
+
+def test_json_and_sheet_name_the_container_for_a_wav(make_wav):
+    profiles = load_all()
+    report = evaluate(profiles["youtube"], measure(make_wav("tone.wav")))
+    doc = report_to_dict(report)
+    assert doc["measurement"]["container"] == "WAV" and doc["measurement"]["codec"] is None
+    assert doc["measurement"]["decoder"] == "libsndfile"
+    assert "24-bit WAV" in render_html(report)
 
 
 @needs_ffmpeg
@@ -517,27 +617,24 @@ def test_a_broken_wav_still_reports_libsndfiles_error_not_ffmpegs(tmp_path):
 Append to `tests/test_reader.py`:
 
 ```python
-def test_mp3_reads_through_libsndfile_and_says_so(make_wav, tmp_path):
-    """libsndfile 1.2 decodes MP3 itself; the fallback is never consulted for it."""
-    import shutil
-    import subprocess
-
-    ffmpeg = shutil.which("ffmpeg")
-    if ffmpeg is None:
-        pytest.skip("ffmpeg is needed only to write the MP3 fixture")
-    wav = make_wav("tone.wav", seconds=1.0)
+def test_mp3_reads_through_libsndfile_and_says_so(tmp_path):
+    """libsndfile 1.2 decodes MP3 itself; the fallback is never consulted for it, on any platform."""
+    n = 48000
+    t = np.arange(n) / 48000
+    tone = 0.1 * np.sin(2 * np.pi * 1000 * t)
     mp3 = tmp_path / "tone.mp3"
-    subprocess.run([ffmpeg, "-y", "-nostdin", "-v", "error", "-i", str(wav), "-c:a", "libmp3lame", str(mp3)], check=True, timeout=60)
+    sf.write(str(mp3), np.repeat(tone[:, None], 2, axis=1), 48000, format="MP3", subtype="MPEG_LAYER_III")
     info = probe(mp3)
     assert info.container == "MP3" and info.decoder == "libsndfile" and info.codec is None
+    assert info.bit_depth is None and not info.is_pcm
 ```
 
-(`tests/test_reader.py` already imports `probe` and `pytest`; check the top of the file and add `import pytest` if it is missing.)
+(Check the top of `tests/test_reader.py`: it needs `import numpy as np`, `import soundfile as sf` and `from cumple.io.reader import probe`; add whichever is missing to the import block, not after code.)
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
 Run: `uv run pytest tests/test_ffmpeg_io.py tests/test_reader.py -v`
-Expected: the new tests FAIL (`probe` raises `LibsndfileError` on the M4A; `iter_blocks` rejects `info=`; `AudioInfo` has no `decoder`).
+Expected: the new tests FAIL (`probe` raises `LibsndfileError` on the M4A; `iter_blocks` rejects `info=`; `AudioInfo` has no `decoder`; `report_to_dict` has no `container` key; the sheet prints nothing for the MP3's format).
 
 - [ ] **Step 3: Implement the fallback**
 
@@ -664,7 +761,39 @@ def iter_blocks(
     yield from sf.blocks(str(path), blocksize=block_frames, dtype=dtype, always_2d=True)
 ```
 
-In `src/cumple/meters/measure.py`, `measure_file` (around line 199): change `iter_blocks(path, block_frames),` to `iter_blocks(path, block_frames, info=info),`.
+In `src/cumple/meters/measure.py`, inside `measure` (around line 199): change `iter_blocks(path, block_frames),` to `iter_blocks(path, block_frames, info=info),`.
+
+In `src/cumple/report/json_out.py`, the `"measurement"` dict (line 43): add three keys right after `"samplerate": m.samplerate,`:
+
+```python
+            "container": m.info.container if m.info else None,
+            "codec": m.info.codec if m.info else None,
+            "decoder": m.info.decoder if m.info else None,
+```
+
+In `src/cumple/report/qc_sheet.py`, add one helper near `_mmss` (line 40):
+
+```python
+def _encoding(m) -> str:
+    """"24-bit WAV", "AAC via ffmpeg 9.0.1", or "" when nothing is known about the file."""
+    i = m.info
+    if i is None:
+        return ""
+    if i.bit_depth:
+        return f"{i.bit_depth}-bit {i.container}"
+    codec = (i.codec or i.subtype).upper()
+    return f"{codec} via {i.decoder}" if i.via_ffmpeg else f"{codec} {i.container}"
+```
+
+then change the Format strip cell (line 142) from
+`(f"{m.info.bit_depth}-bit · " if m.info and m.info.bit_depth else "") + m.layout,`
+to
+`(f"{_encoding(m)} · " if _encoding(m) else "") + m.layout,`
+and the meta line's `depth` (line 168) from
+`depth = (", " + str(m.info.bit_depth) + "-bit " + _esc(m.info.container)) if m.info and m.info.bit_depth else ""`
+to
+`depth = (", " + _esc(_encoding(m))) if _encoding(m) else ""`.
+Run `uv run pytest tests/test_qc_sheet.py tests/test_pdf.py -q` after: the existing sheet tests must still pass (a WAV renders "24-bit WAV" where it rendered "24-bit WAV" before).
 
 In `src/cumple/checks/engine.py`, the bit-depth finding (around line 370): replace the block that computes `ok` and `measured` with:
 
@@ -741,13 +870,13 @@ and change the encoding row to:
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
-Run: `uv run pytest tests/test_ffmpeg_io.py tests/test_reader.py tests/test_engine.py tests/test_cli_edges.py -v`
+Run: `uv run pytest tests/test_ffmpeg_io.py tests/test_reader.py tests/test_engine.py tests/test_cli_edges.py tests/test_qc_sheet.py tests/test_app.py -v`
 Expected: all PASS. Then the whole suite: `uv run pytest` (expect the previous count plus the new tests, all green) and `uv run ruff check src tests && uv run ruff format src tests`.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/cumple/io/reader.py src/cumple/meters/measure.py src/cumple/checks/engine.py src/cumple/cli.py tests/test_ffmpeg_io.py tests/test_reader.py
+git add src/cumple/io/reader.py src/cumple/meters/measure.py src/cumple/checks/engine.py src/cumple/cli.py src/cumple/report/json_out.py src/cumple/report/qc_sheet.py tests/test_ffmpeg_io.py tests/test_reader.py
 git commit -m "Fall back to ffmpeg when libsndfile refuses a delivery, and name the decoder in the report"
 ```
 
@@ -780,6 +909,15 @@ In `.github/workflows/tests.yml`, inside the `test` job's steps, after the `Inst
           ffmpeg -version | head -1
 ```
 
+and change the comment above the `Test` step (lines 29-30) to:
+
+```yaml
+        # The 29 EBU conformance cases skip here: the EBU test set is free but not redistributed;
+        # the conformance job below runs them when the repository holds a link to a copy. The
+        # ffmpeg-gated decode tests run on Linux, where the step above installs ffmpeg, and skip
+        # on macOS and Windows.
+```
+
 - [ ] **Step 2: Reword the README limit**
 
 Replace the bullet at `README.md:458-459` ("Reads what libsndfile reads: WAV, BWF, RF64, AIFF, FLAC, and others. It does not decode delivery codecs (AAC, AC-3, MP3) or MXF; check the master.") with:
@@ -807,7 +945,7 @@ WAV, BWF, RF64, AIFF and FLAC, mono to 7.1 and packages of discrete mono files. 
 Replace it in both places with exactly these words:
 
 ```
-WAV, BWF, RF64, AIFF, FLAC and MP3, mono to 7.1 and packages of discrete mono files. With a local ffmpeg it also decodes AAC, AC-3 and E-AC-3 and the audio of MXF, MOV and MP4 files, and the report names the decoder. No Dolby Atmos or ADM checks yet.
+WAV, BWF, RF64, AIFF, FLAC and MP3, mono to 7.1 and packages of discrete mono files. With a local ffmpeg it also decodes AAC, AC-3 and E-AC-3 and the audio of MXF, MOV and MP4 files, and the report names the decoder; diff and fix still need PCM files. No Dolby Atmos or ADM checks yet.
 ```
 
 The JSON-LD string must equal the visible text character for character (`tests/test_site.py::test_faq_json_ld_repeats_the_visible_answers` checks it).
@@ -833,9 +971,17 @@ this Mac and on the Linux CI runner, which installs ffmpeg with apt; the
 macOS and Windows jobs skip them.
 ```
 
-- [ ] **Step 5: Re-pin the counts**
+- [ ] **Step 5: Re-pin the counts, and say where the decode tests run**
 
-Run: `uv run pytest --collect-only 2>/dev/null | grep 'tests collected'` and put that number in the five places (`**Tests**: N,` in README, `# N tests;` in CONTRIBUTING, `` `uv run pytest`, N tests`` in docs/QA.md, `N tests, including` in AI_USAGE, `N tests with 91 %` in site/index.html) and `runs N-29 of them on Ubuntu` in README.
+Run: `uv run pytest --collect-only 2>/dev/null | grep 'tests collected'` and put that number in the five places (`**Tests**: N,` in README, `# N tests;` in CONTRIBUTING, `` `uv run pytest`, N tests`` in docs/QA.md, `N tests, including` in AI_USAGE, `N tests with 91 %` in site/index.html).
+
+Then count the ffmpeg-gated tests by running the two files with ffmpeg hidden (PATH without Homebrew, uv by its full path):
+
+`PATH=/usr/bin:/bin ~/.local/bin/uv run pytest tests/test_ffmpeg_io.py tests/test_reader.py -rs -q 2>&1 | grep -c "ffmpeg and ffprobe are not on PATH"`
+
+That number is G. README.md:413-414 currently reads "CI runs 171 of them on Ubuntu, macOS and Windows on every push. The 29 EBU cases ...". Rewrite it (keeping the regex shape `runs (\d+) of them on Ubuntu` that tests/test_counts.py matches) to:
+
+`runs N-29 of them on Ubuntu, and G fewer on macOS and Windows, which have no ffmpeg for the decode tests, on every push. The 29 EBU cases ...` with N-29 and G as digits.
 
 - [ ] **Step 6: Run the suite and the site tests**
 
