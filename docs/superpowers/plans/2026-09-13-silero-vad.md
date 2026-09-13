@@ -38,7 +38,7 @@
 
 **Interfaces:**
 - Consumes: `SpeechDetector`, `SpeechResult`, `FRAME_S`, `SILENCE_DBFS`, `CONTEXT_S`, `CONTEXT_MIN_DENSITY` from `dialogue.py`.
-- Produces: `dialogue.dilate_mask(voiced: np.ndarray) -> np.ndarray`; `dialogue.describe_backend(backend: str) -> str` ("heuristic speech gate" or "Silero VAD v6.2, a neural speech detector (MIT)"); `SpeechResult.backend: str = "heuristic"`; `SpeechDetector.pick_channel(x)`; `vad.BACKENDS = ("heuristic", "silero")`; `vad.VadUnavailable(RuntimeError)`; `vad.model_path() -> Path`; `vad.load_session()`; `vad.SileroDetector(samplerate, channels, roles=None, session=None)` with `feed(block)` and `result() -> SpeechResult` whose `backend == "silero"`.
+- Produces: `dialogue.dilate_mask(voiced: np.ndarray) -> np.ndarray`; `dialogue.describe_backend(backend: str) -> str` ("heuristic speech gate" or "Silero VAD v6.2 gate"; the licence and the words "neural speech detector" live in the README and the module docstring, not in a note); `SpeechResult.backend: str = "heuristic"`; `SpeechDetector.pick_channel(x)`; `vad.BACKENDS = ("heuristic", "silero")`; `vad.VadUnavailable(RuntimeError)`; `vad.model_path() -> Path`; `vad.load_session()`; `vad.SileroDetector(samplerate, channels, roles=None, session=None)` with `feed(block)` and `result() -> SpeechResult` whose `backend == "silero"`.
 
 - [ ] **Step 1: Bring in the model, the licence, the fixture, the extra**
 
@@ -166,16 +166,19 @@ def test_silero_reads_no_speech_on_white_noise_at_48k():
 
 
 @needs_onnx
-def test_the_mask_does_not_depend_on_the_block_size():
-    """Chunked resampling and carried model state must give the same decisions whatever the block size."""
+def test_chunked_resampling_gives_the_unchunked_decisions(monkeypatch):
+    """Three 10 s chunks with the carried tail must decide like one resample of the whole signal."""
     from scipy.signal import resample_poly
 
+    import cumple.meters.vad as mod
+
     x16, _ = sf.read(str(FIXTURE), dtype="float64", always_2d=True)
-    x441 = resample_poly(np.tile(x16[:, 0], 9), 441, 160)[:, None]  # 27 s at 44.1 kHz: three chunks, the tail path runs
-    small = _feed(SileroDetector(44100, 1), x441, 1024).mask
-    large = _feed(SileroDetector(44100, 1), x441, 1 << 20).mask  # one block larger than the whole signal
-    assert len(small) == len(large) == int(27 / FRAME_S)
-    assert int((small != large).sum()) <= 2
+    x441 = resample_poly(np.tile(x16[:, 0], 9), 441, 160)[:, None]  # 27 s at 44.1 kHz, pauses at the joins
+    chunked = _feed(SileroDetector(44100, 1), x441, 1024).mask  # CHUNK_S 10: three resample calls, the tail path runs
+    monkeypatch.setattr(mod, "CHUNK_S", 1000.0)  # one resample of everything at result(): the reference
+    whole = _feed(SileroDetector(44100, 1), x441, 1024).mask
+    assert len(chunked) == len(whole) == int(27 / FRAME_S)
+    assert int((chunked != whole).sum()) <= 2  # a doubled or dropped tail shifts the windows and dozens of frames differ
 
 
 @needs_onnx
@@ -224,7 +227,7 @@ Add, after the constants and before `SpeechResult`:
 ```python
 BACKEND_NAMES = {
     "heuristic": "heuristic speech gate",
-    "silero": "Silero VAD v6.2, a neural speech detector (MIT)",
+    "silero": "Silero VAD v6.2 gate",
 }
 
 
@@ -610,7 +613,7 @@ Every report names which detector made the mask. Neither is Dolby's algorithm;
 [docs/DIALOGUE.md](docs/DIALOGUE.md) measures both on the same films.
 ```
 
-README, Honest limits, the dialogue bullet: after `Silero VAD, the standard open voice detector, is more precise and no better on the quiet dialogue.` replace that sentence with the measured one, taking the numbers from the regenerated DIALOGUE.md (the Silero speech shares on the M&E versions, its dialogue-gated error on Tears of Steel and on Sintel), for example: `Silero VAD, available as \`--vad silero\`, reads 0 % speech on the music-and-effects versions and comes within X LU on Tears of Steel, but misses Sintel's quiet dialogue under music by about Y LU.` with X and Y from the report, not from memory; and where the sentence compares them, say it plainly: on Sintel Silero is worse than the heuristic (the report's two deltas, one decimal each). Then extend `tests/test_site_numbers.py::test_dialogue_gate_errors_in_the_note` (the one test the loop's boundary lets grow, it already parses DIALOGUE.md) to also derive Silero's two deltas from the pair table (the `Silero-gated` cell minus the `dialogue-gated: reference` cell per film, header row starting `| programme | integrated (BS.1770-4) |`) and assert README's Silero sentence carries both at one decimal as `X.X LU`.
+README, Honest limits, the dialogue bullet: after `Silero VAD, the standard open voice detector, is more precise and no better on the quiet dialogue.` replace that sentence with the measured one, taking the numbers from the regenerated DIALOGUE.md (the Silero speech shares on the M&E versions, its dialogue-gated error on Tears of Steel and on Sintel), for example: `Silero VAD, available as \`--vad silero\`, reads 0 % speech on the music-and-effects versions and comes within X LU on Tears of Steel, but misses Sintel's quiet dialogue under music by about Y LU.` with X and Y from the report, not from memory; and where the sentence compares them, say it plainly: on Sintel Silero is worse than the heuristic (the report's two deltas, one decimal each). Then extend `tests/test_site_numbers.py::test_dialogue_gate_errors_in_the_note` (the one test the loop's boundary lets grow, it already parses DIALOGUE.md) to also derive Silero's two deltas from the pair table (header row starting `| programme | integrated (BS.1770-4) |`): parse the leading number of the `Silero-gated` cell and of the `dialogue-gated: reference` cell (both cells may carry a block count in parentheses; take the first float), delta = Silero minus reference, and assert README's Silero sentence carries `abs(delta)` for each film at one decimal as `X.X LU` (README says how far under the reference Silero reads, so the sign is dropped).
 
 README install section (the `uv tool install` line, around line 25): add one sentence naming the extra: `add \`[vad]\` for the Silero speech detector.`
 
