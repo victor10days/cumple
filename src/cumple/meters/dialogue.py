@@ -33,6 +33,33 @@ CONTEXT_MIN_DENSITY = 0.3
 MIN_FRAMES = 64  # 1.28 s: below this the 2 to 8 Hz modulation filter has nothing to judge
 
 
+BACKEND_NAMES = {
+    "heuristic": "heuristic speech gate",
+    "silero": "Silero VAD v6.2 gate",
+}
+
+
+def describe_backend(backend: str) -> str:
+    """The words every report uses for the detector that made the speech mask."""
+    try:
+        return BACKEND_NAMES[backend]
+    except KeyError:
+        raise ValueError(f"unknown speech detector {backend!r}; choose one of {', '.join(BACKEND_NAMES)}") from None
+
+
+def dilate_mask(voiced: np.ndarray) -> np.ndarray:
+    """Dialogue regions, not just voiced frames: a frame counts as speech when at least
+    CONTEXT_MIN_DENSITY of the frames within CONTEXT_S around it are voiced. A pause inside
+    dialogue is still dialogue."""
+    w = max(int(CONTEXT_S / FRAME_S), 1)
+    c = np.concatenate([[0.0], np.cumsum(voiced.astype(float))])
+    idx = np.arange(len(voiced))
+    lo = np.maximum(idx - w // 2, 0)
+    hi = np.minimum(idx + w // 2, len(voiced))
+    density = (c[hi] - c[lo]) / np.maximum(hi - lo, 1)
+    return voiced | (density >= CONTEXT_MIN_DENSITY)
+
+
 @dataclass
 class SpeechResult:
     frame_s: float
@@ -40,6 +67,7 @@ class SpeechResult:
     active: np.ndarray  # bool per frame: above the floor
     level_db: np.ndarray  # per frame
     fraction: float | None  # share of active frames that are speech-like; None when the file is too short to tell
+    backend: str = "heuristic"  # "heuristic" or "silero": which detector made the mask
 
     def mask_at(self, step_s: float, n: int) -> np.ndarray:
         """The mask resampled onto another grid (e.g. the meter's 10 ms sub-hops)."""
@@ -60,7 +88,7 @@ class SpeechDetector:
         self._band = (freqs >= BAND_LO) & (freqs <= BAND_HI)
         self._window = np.hanning(self.frame)
 
-    def _channel(self, x: np.ndarray) -> np.ndarray:
+    def pick_channel(self, x: np.ndarray) -> np.ndarray:
         if x.ndim == 1:
             return x
         if self._pick is not None:
@@ -68,7 +96,7 @@ class SpeechDetector:
         return x.mean(axis=1)
 
     def feed(self, block: np.ndarray) -> None:
-        x = self._channel(np.asarray(block, dtype=np.float64))
+        x = self.pick_channel(np.asarray(block, dtype=np.float64))
         x = np.concatenate([self._pending, x]) if self._pending.size else x
         n = len(x) // self.frame
         if n:
@@ -97,15 +125,7 @@ class SpeechDetector:
         ratio_ok = np.asarray(self._band_ratio) >= SPEECH_BAND_RATIO
         modulated = self._modulation(level) >= MODULATION_MIN_DB
         voiced = active & ratio_ok & modulated
-        # Dialogue regions, not just voiced frames: a frame counts as speech when at least
-        # CONTEXT_MIN_DENSITY of the frames within ±CONTEXT_S/2 around it are voiced.
-        w = max(int(CONTEXT_S / FRAME_S), 1)
-        c = np.concatenate([[0.0], np.cumsum(voiced.astype(float))])
-        idx = np.arange(len(voiced))
-        lo = np.maximum(idx - w // 2, 0)
-        hi = np.minimum(idx + w // 2, len(voiced))
-        density = (c[hi] - c[lo]) / np.maximum(hi - lo, 1)
-        mask = voiced | (density >= CONTEXT_MIN_DENSITY)
+        mask = dilate_mask(voiced)
         programme = level > SILENCE_DBFS
         programme |= mask  # pauses inside dialogue belong to the programme
         fraction = float(mask[programme].mean()) if programme.any() else 0.0

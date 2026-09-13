@@ -35,6 +35,7 @@ dependencies = [
 [project.optional-dependencies]
 app = ["pywebview>=6.2.1"]
 app-qt = ["pywebview[qt]>=6.2.1"]
+vad = ["onnxruntime>=1.17"]
 
 [project.urls]
 Homepage = "https://cumple-uxa7.onrender.com/"
@@ -52,6 +53,7 @@ dev = [
   "ruff>=0.6",
   "fonttools[woff]>=4.50",
   "loudcheck>=0.3.2",
+  "onnxruntime>=1.17",
 ]
 packaging = ["pyinstaller>=6.22"]
 
