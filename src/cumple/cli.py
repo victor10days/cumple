@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import typer
 from rich import box
 from rich.console import Console
+from rich.markup import escape
 from rich.panel import Panel
 from rich.table import Table
 
@@ -293,13 +295,18 @@ def check(
     out: Path | None = typer.Option(
         None, "--out", help="Directory for the sheet and JSON instead of next to the file."
     ),
+    vad: str | None = typer.Option(
+        None,
+        "--vad",
+        help='Speech detector for dialogue-gated rules: "heuristic" (default) or "silero" (needs the vad extra). CUMPLE_VAD sets the default.',
+    ),
 ) -> None:
     """Measure a file or package against a destination. Exit 0 on PASS, 1 on FAIL."""
     profile = _profile_or_exit(spec)
     try:
-        m = measure(path, **measure_args(profile))
-    except Exception as e:  # unreadable file, inconsistent package, libsndfile errors
-        console.print(f"[red]cannot measure {path}:[/] {e}")
+        m = measure(path, vad=vad or os.environ.get("CUMPLE_VAD", "heuristic"), **measure_args(profile))
+    except Exception as e:  # unreadable file, inconsistent package, libsndfile errors, unknown/unavailable vad backend
+        console.print(f"[red]cannot measure {path}:[/] {escape(str(e))}")
         raise typer.Exit(2) from None
     report = evaluate(profile, m)
     if as_json:
@@ -311,7 +318,7 @@ def check(
         try:
             target.parent.mkdir(parents=True, exist_ok=True)
         except OSError as e:
-            console.print(f"[red]cannot write to {target.parent}:[/] {e}")
+            console.print(f"[red]cannot write to {target.parent}:[/] {escape(str(e))}")
             raise typer.Exit(2) from None
         html_path, pdf_path = write_sheet(report, target, pdf=pdf)
         target.with_suffix(".json").write_text(json.dumps(report_to_dict(report), indent=2))

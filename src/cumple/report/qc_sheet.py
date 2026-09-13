@@ -21,6 +21,7 @@ import numpy as np
 
 from .. import __version__
 from ..checks.engine import Report, Status
+from ..meters.dialogue import describe_backend
 from ..specs.schema import GRADE_LABEL
 from .style import document_css
 
@@ -184,6 +185,7 @@ def render_html(report: Report) -> str:
     verbatim = "verbatim" if p.clauses_verbatim else "paraphrased pending verbatim quotes"
     depth = (", " + _esc(_encoding(m))) if _encoding(m) else ""
     defaults = " · includes tool defaults" if p.has_defaults else ""
+    gate = describe_backend(m.speech.backend if m.speech is not None else "heuristic")
     strip_html = "".join(
         f'<div><div class="k">{_esc(k)}</div><div class="v">{_esc(v)}</div><div class="u">{_esc(u)}</div></div>'
         for k, v, u in strip
@@ -214,7 +216,7 @@ def render_html(report: Report) -> str:
 <h2>Sources</h2>
 <ul class="sources">{sources}</ul>
 <footer class="colophon">Grades: {grades}.<br>
-Measured with cumple {__version__}: ITU-R BS.1770-5 K-weighting and gating, EBU Tech 3341/3342 short-term and loudness range, 4x oversampled true peak per BS.1770 Annex 2. Dialogue-gated rules use a heuristic speech detector, an approximation of Dolby Dialogue Intelligence, and say so above.</footer>
+Measured with cumple {__version__}: ITU-R BS.1770-5 K-weighting and gating, EBU Tech 3341/3342 short-term and loudness range, 4x oversampled true peak per BS.1770 Annex 2. Dialogue-gated rules use the {gate}, an approximation of Dolby Dialogue Intelligence, and say so above.</footer>
 </div></body></html>
 """
 

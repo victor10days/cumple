@@ -11,7 +11,7 @@ import soundfile as sf
 
 from ..io.reader import DEFAULT_BLOCK_FRAMES, AudioInfo, Package, iter_blocks, probe
 from .bs1770 import SUB_HOP_S, LoudnessMeter, LoudnessResult, channel_weights, default_roles
-from .dialogue import SpeechDetector, SpeechResult
+from .dialogue import SpeechDetector, SpeechResult, describe_backend
 from .layout import DOWNMIX_CORR_MIN, LayoutMeter, LayoutResult
 from .leqm import LeqmMeter, LeqmResult
 from .truepeak import PeakMeter, PeakResult
@@ -182,13 +182,16 @@ def measure(
     block_frames: int = DEFAULT_BLOCK_FRAMES,
     leqm: bool | dict = False,
     lfe_corner_hz: float | None = None,
+    vad: str = "heuristic",
 ) -> Measurement:
     """Measure a file. For a directory, measure it as a package of discrete channel files.
     leqm=True (or a dict of LeqmMeter calibration arguments) also runs the cinema Leq(m) meter,
-    an 8k-tap FIR per channel, only when asked. lfe_corner_hz sets where the LFE band check looks."""
+    an 8k-tap FIR per channel, only when asked. lfe_corner_hz sets where the LFE band check looks.
+    vad chooses the speech detector for dialogue-gated rules: "heuristic" (default) or "silero"
+    (needs the vad extra)."""
     path = Path(path)
     if path.is_dir():
-        return measure_package(path, block_frames=block_frames, leqm=leqm, lfe_corner_hz=lfe_corner_hz)
+        return measure_package(path, block_frames=block_frames, leqm=leqm, lfe_corner_hz=lfe_corner_hz, vad=vad)
     info = probe(path)
     roles = roles or default_roles(info.channels)
     return _run(
@@ -200,6 +203,7 @@ def measure(
         info=info,
         leqm=leqm,
         lfe_corner_hz=lfe_corner_hz,
+        vad=vad,
     )
 
 
@@ -208,6 +212,7 @@ def measure_package(
     block_frames: int = DEFAULT_BLOCK_FRAMES,
     leqm: bool | dict = False,
     lfe_corner_hz: float | None = None,
+    vad: str = "heuristic",
 ) -> Measurement:
     from ..io.reader import load_package
 
@@ -231,6 +236,7 @@ def measure_package(
         package=pkg,
         leqm=leqm,
         lfe_corner_hz=lfe_corner_hz,
+        vad=vad,
     )
 
 
@@ -244,12 +250,19 @@ def _run(
     package: Package | None = None,
     leqm: bool | dict = False,
     lfe_corner_hz: float | None = None,
+    vad: str = "heuristic",
 ) -> Measurement:
     roles = list(roles)
     loud = LoudnessMeter(fs, channels, roles=roles, weights=bed_weights(roles))
     peak = PeakMeter(fs, channels)
     stats = _Stats(fs, channels)
-    speech = SpeechDetector(fs, channels, roles=roles)
+    describe_backend(vad)  # raises ValueError naming the choices for anything unknown
+    if vad == "silero":
+        from .vad import SileroDetector  # onnxruntime is imported only when asked for
+
+        speech = SileroDetector(fs, channels, roles=roles)
+    else:
+        speech = SpeechDetector(fs, channels, roles=roles)
     fold = LoudnessMeter(fs, 1) if channels == 2 else None
     layout = LayoutMeter(fs, channels, corner_hz=lfe_corner_hz or 250.0, roles=roles) if channels >= 3 else None
     leqm_meter = LeqmMeter(fs, channels, roles=roles, **(leqm if isinstance(leqm, dict) else {})) if leqm else None

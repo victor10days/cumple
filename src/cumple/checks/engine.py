@@ -8,6 +8,7 @@ from enum import Enum
 
 import numpy as np
 
+from ..meters.dialogue import describe_backend
 from ..meters.measure import Measurement
 from ..specs.schema import LoudnessRule, Profile
 
@@ -103,6 +104,7 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
     p = profile
     out: list[Finding] = []
     clause = p.clauses.get
+    gate = describe_backend(m.speech.backend if m.speech is not None else "heuristic")
 
     # ---- loudness -------------------------------------------------------------
     if p.loudness:
@@ -127,7 +129,7 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
                         "speech share",
                         f"{100 * speech:.0f} % of active programme",
                         "switches at 15 %",
-                        note="heuristic speech detector, an approximation of Dolby Dialogue Intelligence",
+                        note=f"{gate}, an approximation of Dolby Dialogue Intelligence",
                         value=speech,
                     )
                 )
@@ -146,7 +148,7 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
             if r.method == "dialogue_gated":
                 if np.isfinite(m.loudness.dialogue_gated) and m.loudness.dialogue_blocks > 0:
                     value = m.loudness.dialogue_gated
-                    note = f"approximation of Dialogue Intelligence: heuristic speech gate, {m.loudness.dialogue_blocks} speech blocks, BS.1770-1 (no relative gate)"
+                    note = f"approximation of Dialogue Intelligence: {gate}, {m.loudness.dialogue_blocks} speech blocks, BS.1770-1 (no relative gate)"
                 else:
                     value = m.loudness.integrated_ungated if not r.gated_relative else m.loudness.integrated
                     note = "no speech detected; measured as full programme instead"
@@ -226,7 +228,7 @@ def evaluate(profile: Profile, m: Measurement) -> Report:
                     status = Status.WARN
                     note = (note + "; " if note else "") + (
                         f"reads {gap:.1f} LU under the full-programme value ({m.loudness.integrated:.1f} LUFS); "
-                        "the heuristic speech gate reads low on dense mixes (docs/DIALOGUE.md), so this pass "
+                        f"the {gate} reads low on dense mixes (docs/DIALOGUE.md), so this pass "
                         f"may be a false pass (tool default: warn from {DIALOGUE_GAP_WARN_LU:g} LU)"
                     )
                     fix = "verify the dialogue-gated value with a Dolby Dialogue Intelligence meter before sending"
