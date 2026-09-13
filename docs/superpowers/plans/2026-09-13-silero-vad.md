@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** `cumple check --vad silero` (or `CUMPLE_VAD=silero`) runs Silero VAD v5 through onnxruntime for the speech mask behind dialogue-gated loudness, the heuristic stays the default, every report surface names which backend made the mask, and `docs/DIALOGUE.md` measures both on the same two open films.
+**Goal:** `cumple check --vad silero` (or `CUMPLE_VAD=silero`) runs Silero VAD v6.2 through onnxruntime for the speech mask behind dialogue-gated loudness, the heuristic stays the default, every report surface names which backend made the mask, and `docs/DIALOGUE.md` measures both on the same two open films.
 
 **Architecture:** One new module `src/cumple/meters/vad.py` with `SileroDetector`, which has the same `feed` and `result` interface as `SpeechDetector`, composes one `SpeechDetector` for the per-frame levels, resamples the picked channel to 16 kHz in overlapping chunks, runs the model in 512-sample windows with carried state, maps the 32 ms decisions onto the heuristic's 20 ms grid and dilates them with the same rule (moved to `dialogue.dilate_mask`). `SpeechResult` gains `backend`. `measure()` takes `vad=`; the engine and the sheet describe the backend through one `describe_backend()`; JSON carries `speech_backend`. The model (2.3 MB, MIT) ships as package data under `src/cumple/models/`; onnxruntime is the `vad` extra and a dev dependency so CI runs the tests on all three runners. `scripts/dialogue_benchmark.py` uses the detector instead of its own inference.
 
-**Tech Stack:** Python 3.12, numpy, scipy (`resample_poly`), onnxruntime 1.30 (optional), pytest, ruff. Model: Silero VAD v5 ONNX, sha256 prefix `1a153a22f4509e29`, at `~/.cache/cumple/silero_vad.onnx` on this Mac (fetched by `scripts/fetch_real_dialogue.sh`).
+**Tech Stack:** Python 3.12, numpy, scipy (`resample_poly`), onnxruntime 1.30 (optional), pytest, ruff. Model: Silero VAD v6.2 ONNX (the file at upstream tags v6.2 and v6.2.1; v5.1.2 is a different file), sha256 prefix `1a153a22f4509e29`, at `~/.cache/cumple/silero_vad.onnx` on this Mac (fetched by `scripts/fetch_real_dialogue.sh`).
 
 **Spec:** `docs/graph-runs/2026-09-13-silero-vad/01-frame.md`.
 
@@ -38,7 +38,7 @@
 
 **Interfaces:**
 - Consumes: `SpeechDetector`, `SpeechResult`, `FRAME_S`, `SILENCE_DBFS`, `CONTEXT_S`, `CONTEXT_MIN_DENSITY` from `dialogue.py`.
-- Produces: `dialogue.dilate_mask(voiced: np.ndarray) -> np.ndarray`; `dialogue.describe_backend(backend: str) -> str` ("heuristic speech gate" or "Silero VAD v5, a neural speech detector (MIT)"); `SpeechResult.backend: str = "heuristic"`; `SpeechDetector.pick_channel(x)`; `vad.BACKENDS = ("heuristic", "silero")`; `vad.VadUnavailable(RuntimeError)`; `vad.model_path() -> Path`; `vad.load_session()`; `vad.SileroDetector(samplerate, channels, roles=None, session=None)` with `feed(block)` and `result() -> SpeechResult` whose `backend == "silero"`.
+- Produces: `dialogue.dilate_mask(voiced: np.ndarray) -> np.ndarray`; `dialogue.describe_backend(backend: str) -> str` ("heuristic speech gate" or "Silero VAD v6.2, a neural speech detector (MIT)"); `SpeechResult.backend: str = "heuristic"`; `SpeechDetector.pick_channel(x)`; `vad.BACKENDS = ("heuristic", "silero")`; `vad.VadUnavailable(RuntimeError)`; `vad.model_path() -> Path`; `vad.load_session()`; `vad.SileroDetector(samplerate, channels, roles=None, session=None)` with `feed(block)` and `result() -> SpeechResult` whose `backend == "silero"`.
 
 - [ ] **Step 1: Bring in the model, the licence, the fixture, the extra**
 
@@ -46,7 +46,7 @@
 mkdir -p src/cumple/models tests/fixtures
 cp ~/.cache/cumple/silero_vad.onnx src/cumple/models/silero_vad.onnx
 shasum -a 256 src/cumple/models/silero_vad.onnx   # must start 1a153a22f4509e29; record the full hash for the test
-printf '"""Bundled model files. silero_vad.onnx is Silero VAD v5, Silero Team, MIT (see SILERO_LICENSE)."""\n' > src/cumple/models/__init__.py
+printf '"""Bundled model files. silero_vad.onnx is Silero VAD v6.2, Silero Team, MIT (see SILERO_LICENSE)."""\n' > src/cumple/models/__init__.py
 curl -fsSL https://raw.githubusercontent.com/snakers4/silero-vad/master/LICENSE -o src/cumple/models/SILERO_LICENSE
 ffmpeg -y -nostdin -v error -ss 12 -t 3 -i ~/.cache/cumple/real-dialogue/librivox/william_again_ch01.mp3 -ac 1 -ar 16000 -c:a pcm_s16le tests/fixtures/speech-librivox-3s.wav
 ```
@@ -58,7 +58,7 @@ If the curl fails, write `SILERO_LICENSE` by hand as the MIT licence text with t
 ```markdown
 # Test fixtures
 
-`speech-librivox-3s.wav`: three seconds (12 s to 15 s) of LibriVox, "William Again" by Richmal Crompton, chapter 1, read for LibriVox and released into the public domain; 16 kHz mono 16-bit, made with ffmpeg by the command in `docs/superpowers/plans/2026-09-13-silero-vad.md`. It is the one audio file in the repository and exists so the speech detectors have a real voice to be tested on in CI.
+`speech-librivox-3s.wav`: three seconds (12 s to 15 s) of LibriVox, "William Again" by Richmal Crompton, chapter 1, read for LibriVox, whose recordings are in the public domain in the United States (the text is by Richmal Crompton, who died in 1969, so the text's status differs elsewhere); 16 kHz mono 16-bit, made with ffmpeg by the command in `docs/superpowers/plans/2026-09-13-silero-vad.md`. It is the one audio file in the repository and exists so the speech detectors have a real voice to be tested on in CI.
 ```
 
 In `pyproject.toml`, under `[project.optional-dependencies]` add `vad = ["onnxruntime>=1.17"]` after `app-qt`, and in `[dependency-groups] dev` add `"onnxruntime>=1.17",` after `"loudcheck>=0.3.2",`. Run `uv sync --group dev` and `uv run python -c "import onnxruntime; print(onnxruntime.__version__)"`.
@@ -95,13 +95,13 @@ def test_dilate_mask_fills_a_pause_inside_dialogue_and_leaves_an_isolated_frame_
     mask = dilate_mask(voiced)
     assert mask[70:75].all()
     assert mask[50:95].all()
-    assert not mask[100:140].any()
+    assert not mask[110:140].any()  # the rule dilates ten frames past a phrase, not forty
     assert mask[150] and not mask[130:149].any()
 
 
 def test_describe_backend_names_both_and_refuses_others():
     assert describe_backend("heuristic") == "heuristic speech gate"
-    assert describe_backend("silero").startswith("Silero VAD v5")
+    assert describe_backend("silero").startswith("Silero VAD v6.2")
     with pytest.raises(ValueError):
         describe_backend("dolby")
     assert BACKENDS == ("heuristic", "silero")
@@ -171,10 +171,10 @@ def test_the_mask_does_not_depend_on_the_block_size():
     from scipy.signal import resample_poly
 
     x16, _ = sf.read(str(FIXTURE), dtype="float64", always_2d=True)
-    x441 = resample_poly(x16[:, 0], 441, 160)[:, None]  # 44.1 kHz, the awkward ratio
+    x441 = resample_poly(np.tile(x16[:, 0], 9), 441, 160)[:, None]  # 27 s at 44.1 kHz: three chunks, the tail path runs
     small = _feed(SileroDetector(44100, 1), x441, 1024).mask
-    large = _feed(SileroDetector(44100, 1), x441, 1 << 18).mask
-    assert len(small) == len(large)
+    large = _feed(SileroDetector(44100, 1), x441, 1 << 20).mask  # one block larger than the whole signal
+    assert len(small) == len(large) == int(27 / FRAME_S)
     assert int((small != large).sum()) <= 2
 
 
@@ -224,7 +224,7 @@ Add, after the constants and before `SpeechResult`:
 ```python
 BACKEND_NAMES = {
     "heuristic": "heuristic speech gate",
-    "silero": "Silero VAD v5, a neural speech detector (MIT)",
+    "silero": "Silero VAD v6.2, a neural speech detector (MIT)",
 }
 
 
@@ -258,7 +258,7 @@ In `SpeechDetector.result()`, replace the block from the comment `# Dialogue reg
 ```python
 """Silero VAD as a second speech detector for dialogue-gated loudness, behind the `vad` extra.
 
-Silero VAD v5 (Silero Team, MIT) is a small neural voice-activity model. It runs offline through
+Silero VAD v6.2 (Silero Team, MIT) is a small neural voice-activity model. It runs offline through
 onnxruntime on 16 kHz mono in 512-sample windows. This detector resamples the picked channel in
 overlapping chunks, carries the model's state across windows, and returns the same SpeechResult
 the heuristic does, on the same 20 ms grid, dilated by the same rule, so the meter and the engine
@@ -274,14 +274,14 @@ from pathlib import Path
 import numpy as np
 from scipy.signal import resample_poly
 
-from .dialogue import FRAME_S, SILENCE_DBFS, SpeechDetector, SpeechResult, dilate_mask
+from .dialogue import BACKEND_NAMES, FRAME_S, SILENCE_DBFS, SpeechDetector, SpeechResult, dilate_mask
 
-BACKENDS = ("heuristic", "silero")
+BACKENDS = tuple(BACKEND_NAMES)  # the one list, kept in dialogue.py
 VAD_FS = 16000
 WINDOW = 512  # the model's frame at 16 kHz: 32 ms
 CONTEXT = 64  # samples of the previous window the model wants in front of each input
 THRESHOLD = 0.5  # the model's documented default
-CHUNK_S = 10.0  # resample this much at a time; memory stays a few hundred kB per detector
+CHUNK_S = 10.0  # resample this much at a time: about 4 MB of float64 at 48 kHz, whatever the programme length
 OVERLAP_S = 0.05  # native samples carried into the next chunk so the resampler's edge is clean
 
 
@@ -302,7 +302,8 @@ def load_session():
         import onnxruntime as ort
     except ImportError as e:
         raise VadUnavailable(
-            'the silero backend needs onnxruntime: pip install "cumple[vad]" (or uv tool install "cumple[vad]")'
+            "the silero backend needs onnxruntime: uv tool install --python 3.12 "
+            '"cumple[vad] @ git+https://github.com/victor10days/cumple" (a checkout: uv sync --extra vad)'
         ) from e
     path = model_path()
     if not path.is_file():
@@ -374,7 +375,7 @@ class SileroDetector:
             voiced = np.zeros(n20, dtype=bool)
         else:
             probs = np.asarray(self._probs)
-            idx = np.minimum((np.arange(n20) * FRAME_S / (WINDOW / VAD_FS)).astype(int), len(probs) - 1)
+            idx = np.minimum(np.arange(n20) * round(FRAME_S * VAD_FS) // WINDOW, len(probs) - 1)  # 320 and 512, exact
             voiced = probs[idx] > THRESHOLD
         mask = dilate_mask(voiced)
         programme = (base.level_db > SILENCE_DBFS) | mask
@@ -382,7 +383,7 @@ class SileroDetector:
         return SpeechResult(FRAME_S, mask, base.active, base.level_db, fraction, backend="silero")
 ```
 
-Note for the implementer: `resources.files("cumple.models")` needs `src/cumple/models/__init__.py` to exist (Step 1). The 44.1 kHz test drives the `_tail` path; the 16 kHz fixture drives the `fs == VAD_FS` path.
+Note for the implementer: `resources.files("cumple.models")` needs `src/cumple/models/__init__.py` to exist (Step 1). Also add `"onnxruntime"` to the `excludes` list in `packaging/cumple.spec` (a local build from the dev venv would otherwise bundle a 20 MB runtime the frame keeps out of the frozen apps this iteration; the release job installs no dev group, so CI is unaffected). The 44.1 kHz test drives the `_tail` path; the 16 kHz fixture drives the `fs == VAD_FS` path.
 
 - [ ] **Step 6: Run the tests, lint, build, the whole suite**
 
@@ -391,7 +392,7 @@ Run: `uv run pytest tests/test_vad.py tests/test_dialogue_leqm_acx.py tests/test
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/cumple/meters/dialogue.py src/cumple/meters/vad.py src/cumple/models tests/fixtures tests/test_vad.py pyproject.toml uv.lock README.md CONTRIBUTING.md docs/QA.md AI_USAGE.md site/index.html
+git add src/cumple/meters/dialogue.py src/cumple/meters/vad.py src/cumple/models tests/fixtures tests/test_vad.py pyproject.toml uv.lock packaging/cumple.spec README.md CONTRIBUTING.md docs/QA.md AI_USAGE.md site/index.html
 git commit -m "Add Silero VAD as a second speech detector behind the vad extra"
 ```
 
@@ -431,7 +432,7 @@ def speech_wav(tmp_path):
 def test_measure_defaults_to_the_heuristic_and_refuses_an_unknown_backend(speech_wav):
     m = measure(speech_wav)
     assert m.speech is not None and m.speech.backend == "heuristic"
-    with pytest.raises(ValueError, match="silero"):
+    with pytest.raises(ValueError, match="heuristic, silero"):
         measure(speech_wav, vad="dolby")
 
 
@@ -444,9 +445,9 @@ def test_measure_with_silero_reports_the_backend_everywhere(speech_wav):
     doc = report_to_dict(report)
     assert doc["measurement"]["speech_backend"] == "silero"
     notes = " ".join(f.note or "" for f in report.findings)
-    assert "Silero VAD v5" in notes and "heuristic" not in notes
+    assert "Silero VAD v6.2" in notes and "heuristic" not in notes
     html = render_html(report)
-    assert "Silero VAD v5" in html and "heuristic speech" not in html
+    assert "Silero VAD v6.2" in html and "heuristic speech" not in html
 
 
 def test_the_heuristic_report_still_says_heuristic(speech_wav):
@@ -475,7 +476,7 @@ def test_check_without_onnxruntime_exits_two_and_names_the_extra(speech_wav, mon
     import cumple.meters.vad as vad_mod
 
     def refuse():
-        raise VadUnavailable('the silero backend needs onnxruntime: pip install "cumple[vad]"')
+        raise VadUnavailable('the silero backend needs onnxruntime: uv tool install "cumple[vad] @ git+https://github.com/victor10days/cumple"')
 
     monkeypatch.setattr(vad_mod, "load_session", refuse)
     result = runner.invoke(app, ["check", str(speech_wav), "--spec", "netflix-2.0", "--vad", "silero"])
@@ -496,19 +497,18 @@ Expected: FAIL (`measure()` has no `vad`; `check` has no `--vad`; JSON has no `s
 - [ ] **Step 3: Implement**
 
 `src/cumple/meters/measure.py`:
-- `measure(...)` signature gains `vad: str = "heuristic",` after `lfe_corner_hz`; the docstring gains one line: `vad chooses the speech detector for dialogue-gated rules: "heuristic" (default) or "silero" (needs the vad extra).` It passes `vad=vad` to `measure_package(...)` and `_run(...)`.
+- import `describe_backend` from `.dialogue`; `measure(...)` signature gains `vad: str = "heuristic",` after `lfe_corner_hz`; the docstring gains one line: `vad chooses the speech detector for dialogue-gated rules: "heuristic" (default) or "silero" (needs the vad extra).` It passes `vad=vad` to `measure_package(...)` and `_run(...)`.
 - `measure_package(...)` gains the same parameter and passes it to `_run`.
 - `_run(...)` gains `vad: str = "heuristic"` and replaces `speech = SpeechDetector(fs, channels, roles=roles)` with:
 
 ```python
+    describe_backend(vad)  # raises ValueError naming the choices for anything unknown
     if vad == "silero":
         from .vad import SileroDetector  # onnxruntime is imported only when asked for
 
         speech = SileroDetector(fs, channels, roles=roles)
-    elif vad == "heuristic":
-        speech = SpeechDetector(fs, channels, roles=roles)
     else:
-        raise ValueError(f"unknown speech detector {vad!r}; choose heuristic or silero")
+        speech = SpeechDetector(fs, channels, roles=roles)
 ```
 
 `src/cumple/cli.py`, the `check` command: add after `out`:
@@ -517,11 +517,11 @@ Expected: FAIL (`measure()` has no `vad`; `check` has no `--vad`; JSON has no `s
     vad: str | None = typer.Option(
         None,
         "--vad",
-        help='Speech detector for dialogue-gated rules: "heuristic" (default) or "silero" (needs cumple[vad]). CUMPLE_VAD sets the default.',
+        help='Speech detector for dialogue-gated rules: "heuristic" (default) or "silero" (needs the vad extra). CUMPLE_VAD sets the default.',
     ),
 ```
 
-and change `m = measure(path, **measure_args(profile))` to `m = measure(path, vad=vad or os.environ.get("CUMPLE_VAD", "heuristic"), **measure_args(profile))` (add `import os` to the imports). The surrounding `try` already prints the exception and exits 2; check that a `ValueError` from an unknown name and a `VadUnavailable` both reach that branch (read the `except` clause; if it catches a narrower type, widen it to `Exception` the way the `fix` command does).
+and change `m = measure(path, **measure_args(profile))` to `m = measure(path, vad=vad or os.environ.get("CUMPLE_VAD", "heuristic"), **measure_args(profile))` (add `import os` to the imports). The surrounding `try` prints the exception and exits 2; check that a `ValueError` from an unknown name and a `VadUnavailable` both reach that branch (read the `except` clause; if it catches a narrower type, widen it to `Exception` the way the `fix` command does). Rich consumes `[vad]` as a style tag, so that `console.print` must pass the message through `rich.markup.escape` (`from rich.markup import escape`; `console.print(f"[red]cannot measure {path}:[/] {escape(str(e))}")`), the way the `app` command escapes its own `cumple\\[app]` hint (cli.py around line 479); do the same for any other `console.print` in `check` that interpolates an exception.
 
 `src/cumple/checks/engine.py`: import `describe_backend` from `..meters.dialogue`; add near the top of `evaluate` (after `m` is bound) `gate = describe_backend(m.speech.backend if m.speech is not None else "heuristic")`; then:
 - the speech-share INFO note (around line 130): `note=f"{gate}, an approximation of Dolby Dialogue Intelligence",`
@@ -566,11 +566,16 @@ from cumple.meters.vad import THRESHOLD as SILERO_THRESHOLD
 from cumple.meters.vad import SileroDetector, VadUnavailable, load_session
 
 
+_SESSION = None  # one onnxruntime session for the whole run
+
+
 def silero_available() -> bool:
-    try:
-        load_session()
-    except VadUnavailable:
-        return False
+    global _SESSION
+    if _SESSION is None:
+        try:
+            _SESSION = load_session()
+        except VadUnavailable:
+            return False
     return True
 
 
@@ -579,7 +584,7 @@ def vad_mask(path: Path) -> np.ndarray | None:
     if not silero_available():
         return None
     info = probe(path)
-    det = SileroDetector(info.samplerate, info.channels, roles=default_roles(info.channels))
+    det = SileroDetector(info.samplerate, info.channels, roles=default_roles(info.channels), session=_SESSION)
     for block in iter_blocks(path, info=info):
         det.feed(block)
     return det.result().mask
@@ -597,13 +602,15 @@ README, the `check` section (around line 110): after the paragraph that introduc
 
 ```markdown
 `--vad silero` (or `CUMPLE_VAD=silero`) swaps the heuristic speech detector for
-Silero VAD v5 (Silero Team, MIT), a small neural voice-activity model that ships
-with cumple and runs offline through onnxruntime: `pip install "cumple[vad]"`.
+Silero VAD v6.2 (Silero Team, MIT), a small neural voice-activity model that ships
+with cumple and runs offline through onnxruntime: install with
+`uv tool install --python 3.12 "cumple[vad] @ git+https://github.com/victor10days/cumple"`.
+Only `check` takes the flag; `watch` and the desktop app keep the heuristic.
 Every report names which detector made the mask. Neither is Dolby's algorithm;
 [docs/DIALOGUE.md](docs/DIALOGUE.md) measures both on the same films.
 ```
 
-README, Honest limits, the dialogue bullet: after `Silero VAD, the standard open voice detector, is more precise and no better on the quiet dialogue.` replace that sentence with the measured one, taking the numbers from the regenerated DIALOGUE.md (the Silero speech shares on the M&E versions, its dialogue-gated error on Tears of Steel and on Sintel), for example: `Silero VAD, available as \`--vad silero\`, reads 0 % speech on the music-and-effects versions and comes within X LU on Tears of Steel, but misses Sintel's quiet dialogue under music by about Y LU.` with X and Y from the report, not from memory.
+README, Honest limits, the dialogue bullet: after `Silero VAD, the standard open voice detector, is more precise and no better on the quiet dialogue.` replace that sentence with the measured one, taking the numbers from the regenerated DIALOGUE.md (the Silero speech shares on the M&E versions, its dialogue-gated error on Tears of Steel and on Sintel), for example: `Silero VAD, available as \`--vad silero\`, reads 0 % speech on the music-and-effects versions and comes within X LU on Tears of Steel, but misses Sintel's quiet dialogue under music by about Y LU.` with X and Y from the report, not from memory; and where the sentence compares them, say it plainly: on Sintel Silero is worse than the heuristic (the report's two deltas, one decimal each). Then extend `tests/test_site_numbers.py::test_dialogue_gate_errors_in_the_note` (the one test the loop's boundary lets grow, it already parses DIALOGUE.md) to also derive Silero's two deltas from the pair table (the `Silero-gated` cell minus the `dialogue-gated: reference` cell per film, header row starting `| programme | integrated (BS.1770-4) |`) and assert README's Silero sentence carries both at one decimal as `X.X LU`.
 
 README install section (the `uv tool install` line, around line 25): add one sentence naming the extra: `add \`[vad]\` for the Silero speech detector.`
 
@@ -624,8 +631,10 @@ the meter cannot tell them apart except by name, and every report says the
 name. The benchmark script runs the same detector instead of its own copy of
 the inference, so there is one implementation to be wrong. The default did
 not change: the heuristic installs in seconds and is measured; Silero is
-more precise on clean speech and no better on quiet dialogue under music,
-and the README carries both numbers from the same run.
+more precise on clean speech and worse on quiet dialogue under music,
+and the README carries both numbers from the same run. On Sintel, whose
+dialogue sits under an orchestral score, Silero reads further under the
+reference than the heuristic does; the README says by how much.
 ```
 
 `docs/ROADMAP.md`: R1 status `building` (the main session sets `merged` with the PR number at the receipt).
