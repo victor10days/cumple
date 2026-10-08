@@ -15,6 +15,12 @@ What cumple does not do yet, ranked by the gap the competitive landscape found, 
 | R7 | Audio-to-video duration and sync | 1 of 9 (Baton); needs the picture | out of scope until cumple reads picture | | |
 | R8 | PyPI publishing through a trusted-publisher workflow | distribution, not a capability | queued; the last step needs Victor's PyPI account | | |
 | R9 | Merge the mono tracks of a multi-stream MXF or MOV by their channel labels into one measurement; today such a file is refused with the stream count named | dpp-as11 and max-wbd list mxf; Apple immersive names LPCM in .mov with channel assignments | queued | | |
+| R10 | Repair foundation: a Rust core `crates/cumple-dsp` seeded from cathar (MIT OR Apache-2.0) behind `cumple[repair]`, a streaming STFT, the module contract, De-click and De-clip, `cumple repair` with copy-only writes and a receipt, and the RX harness (`docs/REPAIR.md`, baselines RX 8 Standard, ffmpeg adeclick and adeclip, cathar) | iZotope RX is the benchmark since 2026-10-08; see the run folder below | proposed | | `docs/graph-runs/2026-10-08-rx-parity-landscape/05-receipt.md` |
+| R11 | De-click v2: AR-residual detection, Interpolate up to RX's 4,000-sample rule, gap-wise Janssen interpolation | RX De-click and Interpolate | queued | | |
+| R12 | Spectral editor v1 in the desktop app: WebGL2 spectrogram, time and time-frequency selection, Gain, De-click and Attenuate on a selection, a non-destructive edit list for undo and A/B | RX Spectral Repair and the interactive tools | queued | | |
+| R13 | Spectral De-noise and Voice De-noise from cathar, brush and lasso selection; the harness gains SI-SDR and DNSMOS | RX Spectral De-noise, Voice De-noise | queued | | |
+| R14 | Plugin shell: C++ CLAP over the core's C ABI, clap-wrapper for VST3 and AU, inserts with latency reporting, the editor through choc's WebView, signing and notarisation; ARA after | RX Connect and the RX ARA editor | queued | | |
+| R15 | Move `app-qt` from PyQt6 (GPL-3.0-only) to PySide6 (LGPL-3.0); the Linux release bundles it | licence, not a capability | queued | | |
 
 Victor's own list, not the loop's:
 
@@ -26,7 +32,9 @@ Victor's own list, not the loop's:
 - A Finder-launched cumple.app has a minimal PATH and will not see Homebrew's ffmpeg; the app needs a way to set CUMPLE_FFMPEG or a bundled decoder before compressed deliveries work from the desktop.
 - Between one 32 ms window and 1.28 s, `--vad silero` reports a speech share where the heuristic reports unknown; the engine may then pick a different loudness rule for the same short file (R1, a known difference).
 
-Decided against, and why: new landing-page columns for ffmpeg-normalize, r128gain or rsgain (each re-measures an engine already in the table: loudnorm, ffmpeg's ebur128, libebur128 1.2.6); watermark detection and automatic repair (outside a read-only QC tool); more presets (39 destinations is a strength, not a gap).
+Decided against, and why: new landing-page columns for ffmpeg-normalize, r128gain or rsgain (each re-measures an engine already in the table: loudnorm, ffmpeg's ebur128, libebur128 1.2.6); watermark detection (outside a QC tool); more presets (39 destinations is a strength, not a gap).
+
+Reversed on 2026-10-08: automatic repair had been decided against on 2026-09-12 as "outside a read-only QC tool". Victor decided that cumple becomes a full open-source DSP tool with every iZotope RX feature, benchmarked black-box against RX (never decompiled), with a spectral editor delivered as a plugin. The stack, the licence rules, the harness and the build order are in `docs/graph-runs/2026-10-08-rx-parity-landscape/04-recommendation.md`; `check`, `diff`, `watch` and the QC sheet keep working unchanged, and `repair` only ever writes a copy.
 
 ## How this roadmap advances
 
@@ -54,4 +62,5 @@ Closed 12 September: Victor chose to accept the machine's ffmpeg 9.0.1 (exact 8.
 
 - `docs/graph-runs/2026-09-12-competitive-landscape/`: the landscape, this ranking, and the loop's first receipt.
 - `docs/graph-runs/2026-09-12-ffmpeg-codec-conformance/`: R2, PR #27.
-- `docs/graph-runs/2026-09-13-silero-vad/`: R1, PR #28. The loop's budget (research plus two builds) is spent; the next item needs Victor's word.
+- `docs/graph-runs/2026-09-13-silero-vad/`: R1, PR #28. The loop's budget (research plus two builds) was spent there.
+- `docs/graph-runs/2026-10-08-rx-parity-landscape/`: the RX parity research (five branches, skeptic, recommendation) that set R10 to R15 and the architecture.
