@@ -10,7 +10,9 @@ Path C (a Rust core seeded from cathar, PyO3 bindings behind `cumple[repair]`, a
 
 ## What shipped
 
-Pull request #29, https://github.com/victor10days/cumple/pull/29, branch `claude/laughing-darwin-15lo3a`, documentation only, no code and no dependency change: this run folder (`00-plan.md`, the plan Victor approved in plan mode, carried over from the closed duplicate #30; `01-frame.md`, five branch reports `02a` to `02e`, `02f-notes.md`, `03-skeptic.md`, `04-recommendation.md`, this receipt), the build-1 design at `docs/superpowers/specs/2026-10-08-repair-foundation-design.md`, the build-1 implementation plan at `docs/superpowers/plans/2026-10-08-repair-foundation.md`, and `docs/ROADMAP.md` with the dated reversal, items R10 to R15 and this run in its list. Steps outside this session: the vault hub (`~/brain/Projects/cumple/cumple.md`, Home.md) is on Victor's machine; running RX 8 Batch Processing from the recipe is Victor's; the RX 12 trial is Victor's.
+Pull request #29, https://github.com/victor10days/cumple/pull/29, branch `claude/laughing-darwin-15lo3a`, documentation only, no code and no dependency change: this run folder (`00-plan.md`, the plan Victor approved in plan mode; `01-frame.md`, five branch reports `02a` to `02e`, `02f-notes.md`, `03-skeptic.md`, `04-recommendation.md`, this receipt), the build-1 design at `docs/superpowers/specs/2026-10-08-repair-foundation-design.md`, the build-1 implementation plan at `docs/superpowers/plans/2026-10-08-repair-foundation.md`, and `docs/ROADMAP.md` with the dated reversal, items R10 to R15 and this run in its list. Steps outside this session: the vault hub (`~/brain/Projects/cumple/cumple.md`, Home.md) is on Victor's machine; running RX 8 Batch Processing from the recipe is Victor's; the RX 12 trial is Victor's.
+
+Pull request #30 (https://github.com/victor10days/cumple/pull/30, branch `docs/graph-run-rx-parity-landscape`, from the session that ran the graph) merged the same run to main first, on 2026-10-08 at 18:13 UTC, under three other file names (`02b-research-noise-and-reverb.md`, `02e-research-plugin-and-editor-stack.md`, `02f-notes-repos-sent-mid-run.md`) and with its own receipt and roadmap rows. This branch merged main in and kept its own copies: the same text, word for word, plus the headers that say where each correction lives, the PR link, and the spec and plan in the roadmap row. #30's three duplicate files were removed; `00-plan.md` came from #30.
 
 ## Rejected options
 
@@ -37,6 +39,7 @@ Pull request #29, https://github.com/victor10days/cumple/pull/29, branch `claude
 - Word counts: the five branch reports exceed the frame's 1500 words (2076, 2039, 1687, 1668, 1930 with tables); accepted, as the 12 September receipt accepted 900 over 600 when the table is the deliverable.
 - Dates: branches report push dates, 02d commit dates; no decision depended on the difference; 04 names both for cathar.
 - superpowers:writing-plans was not available in the cloud session that closed this run, so the build-1 plan was written by hand in the shape of `docs/superpowers/plans/2026-09-13-silero-vad.md`. The plan skeptic (a fresh context, as the Silero run did) still reads it before any task runs; that gate is not skipped, only deferred to the session that executes build 1.
+- No Rust toolchain was on Victor's Mac on 2026-10-08 (`cargo`, `rustc` and `maturin` not found); he is installing rustup himself, since that is a download-and-execute step. Build 1's Rust steps cannot run there until it is in.
 - RX columns in `docs/REPAIR.md` say "not run" until Victor's Batch Processing outputs land; the benchmark script refuses to write only when the ffmpeg or cathar baseline is missing.
 
 ## The box that earned its place

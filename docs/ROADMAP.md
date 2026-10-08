@@ -63,4 +63,4 @@ Closed 12 September: Victor chose to accept the machine's ffmpeg 9.0.1 (exact 8.
 - `docs/graph-runs/2026-09-12-competitive-landscape/`: the landscape, this ranking, and the loop's first receipt.
 - `docs/graph-runs/2026-09-12-ffmpeg-codec-conformance/`: R2, PR #27.
 - `docs/graph-runs/2026-09-13-silero-vad/`: R1, PR #28. The loop's budget (research plus two builds) is spent; the next item needs Victor's word.
-- `docs/graph-runs/2026-10-08-rx-parity-landscape/`: the RX parity landscape (five branches, skeptic, recommendation), Victor's reversal, path C, and items R10 to R15; PR #29.
+- `docs/graph-runs/2026-10-08-rx-parity-landscape/`: the RX parity landscape (five branches, skeptic, recommendation), Victor's reversal, path C, and items R10 to R15; PRs #30 (merged first) and #29.
