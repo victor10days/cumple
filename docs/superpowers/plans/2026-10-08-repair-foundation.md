@@ -1,6 +1,16 @@
 # Repair foundation (build 1) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Two plan skeptics have read this plan (`docs/graph-runs/2026-10-08-rx-parity-landscape/03b-plan-skeptic.md`, `03c-plan-skeptic-second-read.md`); this is the version amended from their findings on 2026-10-08.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Two plan skeptics have read this plan (`docs/graph-runs/2026-10-08-rx-parity-landscape/03b-plan-skeptic.md`, `03c-plan-skeptic-second-read.md`); this is the version amended from their findings on 2026-10-08. A third read (`03d-plan-skeptic-after-amendment.md`, Ship with changes) found five blockers in that amendment, and a second fix round answers them. Those changes are:
+- the bindings' dependency name;
+- the refill bound;
+- the click preset, recalibrated at threshold 5;
+- De-click locality, now scored against the gaps the module reports;
+- a per-file De-clip tolerance;
+- the file-edge AR rule;
+- CI that fails instead of skipping when cathar is missing;
+- the rebuild rule, which is never relaxed.
+
+A fresh skeptic reads only those changes before Victor approves the plan.
 
 **Goal:** `cumple repair <file> --chain "declick(),declip()" --out <copy>` writes a repaired PCM copy through a Rust core ported from cathar, with a sidecar receipt, and `docs/REPAIR.md` scores De-click and De-clip against ffmpeg and cathar on synthetic damage with a held clean reference, with RX 8 columns that read "not run" until Victor's Batch Processing outputs land.
 
@@ -13,13 +23,17 @@
 ## Global Constraints
 
 - The base install does not change: `pyproject.toml` `dependencies` stay as they are; the new extra is `repair = ["cumple-dsp"]` with `[tool.uv.workspace]` and `[tool.uv.sources]` wiring; the dev group does not carry the extension, so `uv sync` works without Rust. CI syncs `--extra repair` after `dtolnay/rust-toolchain@stable` and `Swatinem/rust-cache@v2`.
-- uv does not rebuild a workspace member when its Rust sources change. After every edit to a `.rs` file or a `Cargo.toml`, run `uv sync --extra repair --reinstall-package cumple-dsp` before any `uv run pytest`; the member's `tool.uv.cache-keys` (Task 2) is meant to make that automatic, and Task 2 verifies it with a deliberate edit before the constraint is relaxed. A mutation check that does not first rebuild proves nothing.
-- Every test that needs the core uses `needs_core = pytest.mark.skipif(importlib.util.find_spec("cumple_dsp") is None, reason="cumple-dsp is not built; uv sync --extra repair")`; nothing in the suite requires Rust. Tests that need ffmpeg skip as `test_ffmpeg_io.py` does; tests that need the cathar binary skip unless `find_cathar()` finds it (`CUMPLE_CATHAR` or PATH); CI's Linux runner builds cathar (Task 2) so the fidelity tests run there.
+- uv does not rebuild a workspace member when its Rust sources change. After every edit to a `.rs` file or a `Cargo.toml`, run `uv sync --extra repair --reinstall-package cumple-dsp` before any `uv run pytest`. This rule is never relaxed. The member's `tool.uv.cache-keys` (Task 2) makes `uv sync --extra repair` rebuild, but the re-check found that a bare `uv run`, which every "run everything" step uses, keeps the old build (03d Concern 7). A mutation check that does not first rebuild proves nothing.
+- Every test that needs the core uses `needs_core = pytest.mark.skipif(importlib.util.find_spec("cumple_dsp") is None, reason="cumple-dsp is not built; uv sync --extra repair")`; nothing in the suite requires Rust. Tests that need ffmpeg skip as `test_ffmpeg_io.py` does.
+- Tests that need the cathar binary skip unless `find_cathar()` finds it. It looks in this order: `CUMPLE_CATHAR` (with `os.path.expanduser`), then `shutil.which("cathar")`, then `~/.cargo/bin/cathar` when it exists.
+- When `CUMPLE_REQUIRE_CATHAR=1` is set, `tests/conftest.py` fails the session at collection if `find_cathar()` returns None. CI's Linux runner sets it (Task 2), so the fidelity tests either run there or the job fails, never a green skip (03d Concern 6).
 - Ported Rust carries, at the top of each file, `// Ported from cathar (github.com/vbasky/cathar) <path> at commit f2c2842f, MIT OR Apache-2.0, used under MIT; see crates/cumple-dsp/THIRD_PARTY.md.` No GPL or AGPL source is read while porting (Audacity, GWC, IPOL, the survey's MATLAB).
 - f64 throughout the core; numpy arrays are `float64`, shape `(frames, channels)`, C order; a block never exceeds `DEFAULT_BLOCK_FRAMES + 2 * context_frames`.
 - Writes follow `fix.apply` and `fix_file`: same subtype and format, a temporary name beside the destination (`.<name>.cumple-tmp`), `os.replace`, refuse `dst.resolve() == src.resolve()`, refuse a directory, refuse a file ffmpeg decoded. The receipt is written after the copy is in place.
 - The phrase "not checked" never appears; tables say "not run" with a reason. No em or en dash in prose, comments, docstrings, YAML or Rust doc comments.
-- `uv run ruff check src tests scripts && uv run ruff format --check src tests scripts`, `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test -p cumple-dsp`, `cargo deny check licenses` clean before each commit. `uv run pytest` alone, never piped, in full before each commit; re-pin the five documented counts (README `**Tests**: N,` and `runs N-29 of them on Ubuntu`, CONTRIBUTING `# N tests;`, docs/QA.md `` `uv run pytest`, N tests``, AI_USAGE `N tests, including`, site/index.html `N tests with 91 %`) from `uv run pytest --collect-only 2>/dev/null | grep 'tests collected'`. README's "19 fewer on macOS" counts the items gated on ffmpeg (there is no ffmpeg on the macOS and Windows runners) and "20 fewer on Windows" adds the one `win32` skip; a test gated on ffmpeg and the core counts once; the cathar-gated tests run on Linux and skip on macOS and Windows, so they count like the ffmpeg-gated ones. Each task below says what it adds.
+- `uv run ruff check src tests scripts && uv run ruff format --check src tests scripts`, `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test -p cumple-dsp`, `cargo deny check licenses` clean before each commit. `uv run pytest` alone, never piped, in full before each commit; re-pin the five documented counts (README `**Tests**: N,` and `runs N-29 of them on Ubuntu`, CONTRIBUTING `# N tests;`, docs/QA.md `` `uv run pytest`, N tests``, AI_USAGE `N tests, including`, site/index.html `N tests with 91 %`) from `uv run pytest --collect-only 2>/dev/null | grep 'tests collected'`. README's "19 fewer on macOS" counts the items gated on ffmpeg (there is no ffmpeg on the macOS and Windows runners) and "20 fewer on Windows" adds the one `win32` skip; a test gated on ffmpeg and the core counts once; the cathar-gated tests run on Linux and skip on macOS and Windows, so they count like the ffmpeg-gated ones.
+- Counted from the snippets: Task 1 adds one ffmpeg-gated and one cathar-gated test, and Tasks 3 and 4 add one cathar-gated test each. So "19 fewer on macOS" and "20 fewer on Windows" end at 23 and 24 after Task 4.
+- Each task below says what it adds. Count from the collected suite, not from this sentence.
 - Commit after every task: one plain imperative sentence, a blank line, then the attribution lines the session reminder gives. No model identifier anywhere else in the repository.
 - Work on the branch the executing session names; never `cd` to Victor's main checkout; never push to main. A Rust toolchain on the executing machine is a precondition (Victor installed rustup on his Mac on 2026-10-08; a cloud session installs it in the setup step).
 
@@ -35,7 +49,7 @@ The first measured number arrives before any new DSP is written (receipt ruling)
 
 **Interfaces:**
 - Consumes: `cumple.io.reader.read`, `cumple.io.ffmpeg.find_ffmpeg`, `tests/fixtures/speech-librivox-3s.wav` (48,000 samples at 16 kHz, peak 0.232, RMS 0.041).
-- Produces: `metrics.sdr_db(ref, est) -> float`; `metrics.delta_sdr(ref, damaged, est, mask=None) -> float`; `metrics.residual_clicks(ref, est, positions, widths, threshold, window=64) -> tuple[int, int]` (missed, false); `metrics.peak_error_db(ref, est, mask) -> float`; `damage.clip_to_sdr(x, target_sdr_db) -> tuple[np.ndarray, float, np.ndarray]` (clipped, threshold as the float32 repr of the stored value, mask); `damage.add_clicks(x, samplerate, seed, per_minute, widths, gains) -> tuple[np.ndarray, list[Click], np.ndarray]` with two presets `IMPULSE = dict(widths=(1, 8), gains=(8, 16))` and `BURST = dict(widths=(9, 64), gains=(8, 16))`; `damage.dilate(mask, n)`; `damage.Manifest` (pydantic, `extra="forbid"`: references with SHA-256, damaged files with SHA-256, per-file threshold or click list, seed, and for the RX input folder the scale per file); `benchmark_repair.run_ffmpeg(tools, src, dst, filter)`, `benchmark_repair.run_cathar(binary, src, dst, module, threshold)`, `benchmark_repair.find_cathar() -> Path | None`.
+- Produces: `metrics.sdr_db(ref, est) -> float`; `metrics.delta_sdr(ref, damaged, est, mask=None) -> float`; `metrics.residual_clicks(ref, est, positions, widths, threshold, window=64) -> tuple[int, int]` (missed, false); `metrics.peak_error_db(ref, est, mask) -> float`; `damage.clip_to_sdr(x, target_sdr_db) -> tuple[np.ndarray, float, np.ndarray]` (clipped, threshold as the float32 repr of the stored value, mask); `damage.add_clicks(x, samplerate, seed, per_minute, widths, gains) -> tuple[np.ndarray, list[Click], np.ndarray]` with two presets: `IMPULSE = dict(widths=(1, 3), gains=(32,))`, recalibrated at threshold 5 (03d Concern 2), and `BURST = dict(widths=(4, 64), gains=(8, 16))`. `Click.position` is the click's peak sample; for an even width it is the first of the two central samples; `damage.dilate(mask, n)`; `damage.Manifest` (pydantic, `extra="forbid"`: references with SHA-256, damaged files with SHA-256, per-file threshold or click list, seed, and for the RX input folder the scale per file); `benchmark_repair.run_ffmpeg(tools, src, dst, filter)`, `benchmark_repair.run_cathar(binary, src, dst, module, threshold)`, `benchmark_repair.find_cathar() -> Path | None`.
 
 - [ ] **Step 1: Pin the survey's levels and names from the right sources**
 
@@ -81,15 +95,22 @@ def test_add_clicks_is_seeded_and_only_touches_the_mask():
     y2, clicks2, mask2 = damage.add_clicks(x, FS, seed=7, per_minute=40, **damage.IMPULSE)
     assert clicks1 == clicks2 and np.array_equal(y1, y2)
     assert np.all(y1[~mask1] == x[~mask1]) and len(clicks1) == 80
-    assert all(1 <= c.width <= 8 for c in clicks1)
+    assert all(1 <= c.width <= 3 for c in clicks1)
 
 
 def test_impulse_clicks_are_visible_to_the_local_rms_detector():
-    """cathar's detector cannot exceed sqrt(window) = 8 at window 64; the IMPULSE preset must sit under it."""
+    """cathar's detector cannot exceed sqrt(window) = 8 at window 64; the IMPULSE preset must clear threshold 5 at every click's peak."""
     x = tone(10.0)
     y, clicks, _ = damage.add_clicks(x, FS, seed=1, per_minute=60, **damage.IMPULSE)
     ratios = metrics.local_rms_ratio(y, window=64)
     assert all(ratios[c.position] > 5.0 for c in clicks)  # the detector of record runs at threshold 5
+
+
+def test_a_lone_sample_in_silence_sits_exactly_on_the_bound():
+    """The local RMS includes the sample tested, so a single non-zero sample in zeros has ratio sqrt(window): any threshold below 8 fires on it."""
+    y = np.zeros(4096)
+    y[2048] = 2.0**-15  # one LSB at 16 bits
+    assert abs(metrics.local_rms_ratio(y, window=64)[2048] - 8.0) < 1e-12
 
 
 def test_delta_sdr_on_damaged_samples_only_ignores_the_rest():
@@ -109,11 +130,13 @@ def test_residual_clicks_counts_missed_and_false():
     assert missed == 0 and false == 0
 ```
 
-`metrics.local_rms_ratio` is cathar's `local_rms` in numpy (the window of sample `i` is samples `i - 32` to `i + 31`, including `i`) divided into `|x|`; it is the detector the harness uses for residual counting and the one the IMPULSE preset is tuned against. If `test_impulse_clicks_are_visible_to_the_local_rms_detector` fails for a width in the preset, narrow the preset, never the assertion: the preset exists so the detector of record can see every click in the De-click table.
+`metrics.local_rms_ratio` is cathar's `local_rms` in numpy, divided into `|x|`. The window of sample `i` is samples `i - 31` to `i + 32`, including `i` (restore.rs 171 to 194; the first version of this sentence had it one sample off). It is the detector the harness uses for residual counting, and the one the IMPULSE preset is tuned against. The re-check measured widths 1 to 3 at gain 32 as 100 % visible at threshold 5 on the fixture and on a tone.
+
+If `test_impulse_clicks_are_visible_to_the_local_rms_detector` fails for a width in the preset, narrow the preset, never the assertion, and say so in the commit message. The preset exists so the detector of record can see every click in the De-click table; the BURST table carries the rest.
 
 - [ ] **Step 3: Implement `metrics.py` and `damage.py`**
 
-`sdr_db = 10 log10(sum(ref^2) / sum((ref - est)^2))`, `inf` when the residual energy is 0. `clip_to_sdr` bisects the threshold on `[0, max|x|]` until the SDR is within 0.05 dB of the target (at most 60 steps), rounds the threshold to float32, then returns the hard-clipped signal, the threshold and `|x| >= thr`. `add_clicks` draws positions from `numpy.random.default_rng(seed)` at `per_minute * seconds` positions at least 2,048 samples apart, widths uniform in `widths`, each click a half-cosine burst of `gain * local_rms` (local RMS over 64 samples) added with a random sign; returns the list of `Click(position, width, gain)` and the boolean mask. `residual_clicks` runs `local_rms_ratio` on the estimate at `threshold` and counts injected clicks still detected (missed) and detections outside the dilated click mask (false). `peak_error_db` is `20 log10(max|est[mask]| / max|ref[mask]|)`.
+`sdr_db = 10 log10(sum(ref^2) / sum((ref - est)^2))`, `inf` when the residual energy is 0. `clip_to_sdr` bisects the threshold on `[0, max|x|]` until the SDR is within 0.05 dB of the target (at most 60 steps), rounds the threshold to float32, then returns the hard-clipped signal, the threshold and `|x| >= thr`. `add_clicks` draws positions from `numpy.random.default_rng(seed)` at `per_minute * seconds` positions at least 2,048 samples apart, widths uniform in `widths`, each click a half-cosine burst whose peak is `gain * local_rms` (local RMS of the clean signal over cathar's window), added with a random sign. It returns the list of `Click(position, width, gain)`, with `position` the peak sample, and the boolean mask. `residual_clicks` runs `local_rms_ratio` on the estimate at `threshold` and counts injected clicks still detected (missed) and detections outside the dilated click mask (false). `peak_error_db` is `20 log10(max|est[mask]| / max|ref[mask]|)`.
 
 - [ ] **Step 4: Write the failing baseline tests**
 
@@ -163,20 +186,28 @@ def test_cathar_declip_improves_sdr_at_the_manifest_threshold(clipped, tmp_path)
 
 - [ ] **Step 5: Implement `benchmark_repair.py` and `make_repair_set.py`**
 
-`make_repair_set.py`: reads the references from `~/.cache/cumple/real-dialogue/` (the SQAM FLACs and the LibriVox chapter, as `fetch_real_dialogue.sh` leaves them; `CUMPLE_REPAIR_SET` overrides), decoded through `cumple.io.reader.read`, writes `damaged/<name>.clip<sdr>.wav` at each survey level, `damaged/<name>.impulse<seed>.wav` and `damaged/<name>.burst<seed>.wav`, `rx8-input/<name>.clip<sdr>.wav` scaled so the clip level sits at 0.95 with the scale in the manifest, and `manifest.json`. Refuses to run when no reference is present and prints the fetch script's name.
+`make_repair_set.py` reads its references, decoded through `cumple.io.reader.read`:
+- the fixture itself, named `fixture`, so the pinned fixture rows exist;
+- the ten SQAM FLACs, as `fetch_real_dialogue.sh` leaves them in `~/.cache/cumple/real-dialogue/`;
+- three 30-second excerpts of the LibriVox chapter, at offsets 60 s, 600 s and 1,200 s. The whole chapter is 133,603 A-SPADE frames, about 2.04 GiB per complex128 frame array, per level and tool.
 
-`benchmark_repair.py`: `run_ffmpeg` builds the argv list the way `io/ffmpeg.py` does (`-nostdin`, `-v error`, `-protocol_whitelist file`, a timeout that kills, stderr capped), filter `adeclick` or `adeclip` at defaults, output `pcm_f32le`. `run_cathar` runs `cathar declick INPUT --out OUT --threshold 5` or `cathar declip INPUT --out OUT --threshold <manifest value>` with the same discipline and records `cathar --version`. For each damaged file and each tool: decode, compute ΔSDR(all), ΔSDR(damaged), residual clicks (impulse and burst tables, at threshold 5), peak error (clip files), wall time. The RX columns read `rx8/<name>` when the folder exists and its manifest hashes match, divide by the recorded scale, else print "not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md)". Writes Markdown to stdout: a header with versions, the references present and the read dates, one table per damage type (clip, impulse, burst) with a row per file and level and a column per tool, and a summary block with the per-tool means that `tests/test_repair_numbers.py` pins in Task 6. Exits with a message and no output if ffmpeg or cathar is missing (`sys.exit`, as `benchmark_meters.py` does at its lines 99 and 147).
+`CUMPLE_REPAIR_SET` overrides the location. The script writes `damaged/<name>.clip<sdr>.wav` at each survey level, `damaged/<name>.impulse<seed>.wav` and `damaged/<name>.burst<seed>.wav`, `rx8-input/<name>.clip<sdr>.wav` scaled so the clip level sits at 0.95 with the scale in the manifest, and `manifest.json`. Refuses to run when no reference is present and prints the fetch script's name.
+
+`benchmark_repair.py`: `run_ffmpeg` builds the argv list the way `io/ffmpeg.py` does (`-nostdin`, `-v error`, `-protocol_whitelist file`, a timeout that kills, stderr capped), filter `adeclick` or `adeclip` at defaults, output `pcm_f32le`. `run_cathar` runs `cathar declick INPUT --out OUT --threshold 5` or `cathar declip INPUT --out OUT --threshold <manifest value>` with the same discipline and records `cathar --version`. For each damaged file and each tool: decode, compute ΔSDR(all), ΔSDR(damaged), residual clicks (impulse and burst tables, at threshold 5), peak error (clip files), wall time. The RX columns read `rx8/<name>` when the folder exists and its manifest hashes match, divide by the recorded scale, else print "not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md)". Writes Markdown to stdout: a header with versions, the references present and the read dates, one table per damage type (clip, impulse, burst) with a row per file and level and a column per tool, and a summary block with the per-tool means that `tests/test_repair_numbers.py` pins in Task 6. It also prints, per tool, the count of damaged files the tool left byte-for-byte unchanged, flagged in the header when it is not zero: a baseline that changes nothing makes its column vacuous (spec rule 0). Exits with a message and no output if ffmpeg or cathar is missing (`sys.exit`, as `benchmark_meters.py` does at its lines 99 and 147).
 
 - [ ] **Step 6: Build the cathar baseline, run the harness once, write the recipe**
 
 ```bash
-cargo install --git https://github.com/vbasky/cathar --rev f2c2842f89084589d069e5a8a0b61311aa70d928 cathar-cli --locked   # about two minutes; 03c built it this way
+cargo install --git https://github.com/vbasky/cathar --rev f2c2842f89084589d069e5a8a0b61311aa70d928 cathar-cli --locked   # 03c built it this way; time it and record the figure
 cathar --version   # cathar 0.8.0
 uv run python scripts/make_repair_set.py
 uv run python scripts/benchmark_repair.py > docs/REPAIR.md
 ```
 
-`docs/REPAIR.md` at this point has the ffmpeg and cathar columns filled, the cumple columns "not run: build 1 Task 5" and the RX columns "not run". Expect the ffmpeg `adeclick` row to read near zero on the impulse table (03c measured 0.02 dB the wrong way) and record it as measured. Write `docs/repair/rx8-recipe.md`: the two RX 8 modules, the factory preset names as read from the preset XML on Victor's machine (the recipe says which files it read and quotes the parameter names from the 02a report), Batch Processing steps, the input folder (`rx8-input/`, and why it is scaled), the output folder (`rx8/`), the naming RX uses, and the manifest table Victor fills with SHA-256 values.
+`docs/REPAIR.md` at this point has the ffmpeg and cathar columns filled, the cumple columns "not run: build 1 Task 5" and the RX columns "not run". Expect the ffmpeg `adeclick` row to read near zero on the impulse table (03c measured 0.02 dB the wrong way) and record it as measured. Write `docs/repair/rx8-recipe.md`:
+- the two RX 8 modules, with every parameter value spelled out rather than a preset name. `Presets/De-click` and `Presets/De-clip` hold no "Default" file, and the factory De-clip thresholds run from -0.25 dB to -6.6 dB;
+- De-clip's threshold at -0.5 dBFS, just under the scaled plateau at -0.45 dBFS, without Suggest. De-click at the values the module shows when it opens, read off and recorded. The recipe quotes the parameter names from the factory XML and the 02a report;
+- Batch Processing steps, the input folder (`rx8-input/`, and why it is scaled), the output folder (`rx8/`), the naming RX uses, and the manifest table Victor fills with SHA-256 values.
 
 - [ ] **Step 7: Run the suite, re-pin counts, commit**
 
@@ -247,7 +278,13 @@ cache-keys = [
 ]
 ```
 
-`Cargo.toml`: `crate-type = ["cdylib"]`, `test = false` on the lib target, `pyo3` with `abi3-py312` and without `extension-module` (deprecated; maturin 1.9.4 links without it), the `numpy` crate, `cumple-dsp = { path = "../cumple-dsp" }`. `src/lib.rs`: `#[pymodule] fn cumple_dsp` with `__version__` (read from the crate version), `core_version()` and `Stft` (`analyze` wraps the transform in `py.detach`, output allocated once as a `PyArray2<Complex64>`).
+`Cargo.toml`:
+- `crate-type = ["cdylib"]`, with `test = false` on the lib target;
+- `pyo3` with `abi3-py312` and without `extension-module` (deprecated; maturin 1.9.4 links without it);
+- the `numpy` crate;
+- the core under another name: `dsp = { package = "cumple-dsp", path = "../cumple-dsp" }`. The `#[pymodule] fn cumple_dsp` macro emits a module named `cumple_dsp`, which shadows a dependency of the same name: `use cumple_dsp::...` fails with E0659 and `cumple_dsp::X` with E0425, as the re-check's scratch build showed. The bindings refer to the core only as `dsp::`.
+
+`src/lib.rs`: `#[pymodule] fn cumple_dsp` with `__version__` (read from the crate version), `core_version()` and `Stft`. `analyze` wraps the transform in `py.detach` and allocates the output once as a `PyArray2<Complex64>`.
 
 Root `pyproject.toml`:
 
@@ -262,11 +299,22 @@ members = ["crates/cumple-dsp-py"]
 cumple-dsp = { workspace = true }
 ```
 
-`uv sync --extra repair` then builds the wheel; `uv run python -c "import cumple_dsp; print(cumple_dsp.__version__, cumple_dsp.core_version())"` prints `0.1.0 0.1.0`. Then verify the rebuild rule with a deliberate edit: change a constant in `stft.rs`, run `uv sync --extra repair` and check the import reflects it; if it does not, the global constraint's `--reinstall-package cumple-dsp` line stays in every later step and CONTRIBUTING, and this step records which. Commit `uv.lock`.
+`uv sync --extra repair` then builds the wheel; `uv run python -c "import cumple_dsp; print(cumple_dsp.__version__, cumple_dsp.core_version())"` prints `0.1.0 0.1.0`. Then record how the rebuild rule behaves:
+1. Change a constant in `stft.rs`.
+2. Run a bare `uv run python -c ...` and note whether the import reflects it.
+3. Run `uv sync --extra repair` and note it again.
+
+The re-check found the second rebuilds and the first does not. Whatever this step finds, the global constraint's explicit `--reinstall-package cumple-dsp` line stays in every later step and in CONTRIBUTING. Commit `uv.lock`.
 
 - [ ] **Step 5: CI**
 
-`tests.yml`, in the matrix job after `uv sync --group dev`: `dtolnay/rust-toolchain@stable`, `Swatinem/rust-cache@v2`, `uv sync --group dev --extra repair`, then `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test -p cumple-dsp`; on the Ubuntu leg only, `EmbarkStudios/cargo-deny-action` for `cargo deny check licenses` (licences do not vary by runner) and the cathar baseline: `actions/cache` on `~/.cargo/bin/cathar` keyed by the pinned revision (`Swatinem/rust-cache` does not cache `~/.cargo/bin`), then `cargo install --git https://github.com/vbasky/cathar --rev f2c2842f89084589d069e5a8a0b61311aa70d928 cathar-cli --locked` on a miss, and `CUMPLE_CATHAR=~/.cargo/bin/cathar` in the environment of `uv run pytest`. `release.yml` is untouched: its paths trigger it on this pull request (four runners, including macos-15-intel), it syncs `--extra app` only and never sees the extension; Task 7 reads its result too.
+`tests.yml`, in the matrix job after `uv sync --group dev`: `dtolnay/rust-toolchain@stable`, `Swatinem/rust-cache@v2`, `uv sync --group dev --extra repair`, then `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test -p cumple-dsp`; on the Ubuntu leg only, `EmbarkStudios/cargo-deny-action` for `cargo deny check licenses` (licences do not vary by runner) and the cathar baseline:
+- `actions/cache` on `~/.cargo/bin/cathar`, keyed by the pinned revision. That key does not depend on the workspace lockfile, which drives `Swatinem/rust-cache`'s key. rust-cache itself does cache `~/.cargo/bin` (`cache-bin`, default true); the first version of this step said it did not;
+- then `cargo install --git https://github.com/vbasky/cathar --rev f2c2842f89084589d069e5a8a0b61311aa70d928 cathar-cli --locked` on a miss;
+- then a `run: "$HOME/.cargo/bin/cathar" --version` step;
+- `uv run pytest` runs with `CUMPLE_CATHAR="$HOME/.cargo/bin/cathar"` and `CUMPLE_REQUIRE_CATHAR=1` set inside `run:`, where the shell expands `$HOME` (a tilde in an `env:` block stays literal).
+
+Record the uncached build time from the first run. `release.yml` is untouched: its paths trigger it on this pull request (four runners, including macos-15-intel), it syncs `--extra app` only and never sees the extension; Task 7 reads its result too.
 
 - [ ] **Step 6: Run everything, commit**
 
@@ -283,7 +331,7 @@ cumple-dsp = { workspace = true }
 
 **Interfaces:**
 - Consumes: `Module`, `Edge`, `Report`, `Chunker`, `process_whole` from Task 2; `damage`, `metrics` from Task 1; `find_cathar`, `run_cathar` from Task 1.
-- Produces: Rust `Declick::new(threshold: f64, window: usize, method: DeclickMethod, iterations: u32) -> Result<Declick, ParamError>` (rejects `threshold >= sqrt(window)`), implementing `Module` with `context_frames() == 16_384`; `inpaint_gap(signal: &mut [f64], start: usize, len: usize, iterations: u32) -> Fill` (`Fill::{Ar, Linear}`), in place; `DeclickMethod::{Ar, Cubic}`; Python `cumple_dsp.Declick(samplerate, threshold=5.0, window=64, method="ar", iterations=3)` with `context_frames`, `latency_frames`, `process(block, edge=...)`, `process_whole(x)`, `flush()`, `report()` (`{"clicks": n, "positions": [...], "widths": [...], "linear_fallbacks": n, "context_fallbacks": n}`).
+- Produces: Rust `Declick::new(threshold: f64, window: usize, method: DeclickMethod, iterations: u32) -> Result<Declick, ParamError>` (rejects `threshold >= sqrt(window)`), implementing `Module` with `context_frames() == 16_384`; `inpaint_gap(signal: &mut [f64], start: usize, len: usize, iterations: u32, ends: FileEnds) -> Fill` (`Fill::{Ar, Linear}`), in place. `FileEnds { left: bool, right: bool }` says whether each end of the slice is the file's own end; `DeclickMethod::{Ar, Cubic}`; Python `cumple_dsp.Declick(samplerate, threshold=5.0, window=64, method="ar", iterations=3)` with `context_frames`, `latency_frames`, `process(block, edge=...)`, `process_whole(x)`, `flush()`, `report()` (`{"clicks": n, "positions": [...], "widths": [...], "linear_fallbacks": n, "context_fallbacks": n}`).
 
 - [ ] **Step 1: Write the failing Python tests**
 
@@ -300,17 +348,20 @@ def clicked(seed=3):
 
 
 @needs_core
-def test_declick_removes_injected_clicks_and_leaves_the_rest_alone():
+def test_declick_removes_injected_clicks_and_touches_only_its_own_gaps():
     import cumple_dsp
     x, y, clicks, mask, fs = clicked()
+    assert all(metrics.local_rms_ratio(y)[c.position] > 5.0 for c in clicks), "setup: a click the detector cannot see"
     m = cumple_dsp.Declick(fs)
     est = m.process_whole(y)
+    assert not np.array_equal(est, y)  # spec rule 0
     missed, false = metrics.residual_clicks(x, est, [c.position for c in clicks], [c.width for c in clicks], threshold=5.0)
     assert missed <= len(clicks) // 10
-    dilated = damage.dilate(mask, 8)
-    np.testing.assert_allclose(est[~dilated], y[~dilated], atol=1e-9)
+    report = m.report()
+    gaps = damage.dilate(gap_mask(len(y), report["positions"], report["widths"]), 8)  # spec rule 3: the module's own gaps
+    np.testing.assert_allclose(est[~gaps], y[~gaps], atol=1e-9)
     assert metrics.delta_sdr(x, y, est) > 3.0
-    assert m.report()["clicks"] >= len(clicks) * 0.9
+    assert report["clicks"] >= len(clicks) * 0.9
 
 
 @needs_core
@@ -326,10 +377,18 @@ def test_declick_matches_upstream_cathar_whole_file(tmp_path):
     import cumple_dsp
     x, y, clicks, mask, fs = clicked()
     p = tmp_path / "clicks.wav"; sf.write(p, y, fs, subtype="FLOAT")
+    y, _ = sf.read(p, dtype="float64")  # the stored float32 values cathar reads; clicks are not float32-exact before this
     up, _ = sf.read(run_cathar(CATHAR, p, tmp_path / "up.wav", "declick", threshold=5.0), dtype="float64")
-    est = cumple_dsp.Declick(fs, threshold=5.0).process_whole(y)
+    m = cumple_dsp.Declick(fs, threshold=5.0)
+    est = m.process_whole(y)
+    assert not np.array_equal(up, y)  # upstream acted too, or the comparison is vacuous
+    ours = gap_mask(len(y), m.report()["positions"], m.report()["widths"])
+    theirs = (up != y)
+    assert not np.any(ours & ~damage.dilate(theirs, 8))  # every port gap is a cathar gap
+    drift = damage.dilate(theirs & ~damage.dilate(ours, 8), 8)  # gaps only cathar's f32 running RMS made
+    assert np.all(np.abs(y[drift]) < 1e-3), "a cathar-only gap outside near-silence is a real disagreement, not drift"
     assert abs(metrics.delta_sdr(x, y, est) - metrics.delta_sdr(x, y, up)) < 0.1
-    assert np.max(np.abs(est - up)) < 1e-3  # cathar's f32 running RMS rewrites a few near-silent samples below 1e-3; a wrong gap moves samples by whole units
+    assert np.max(np.abs(est[~drift] - up[~drift])) < 1e-3  # 03d: drift-gap fills differ by up to 1.2e-3; a wrong gap moves samples by whole units
 
 
 @needs_core
@@ -343,11 +402,18 @@ def test_chunking_cost_is_measured_and_small():
     np.testing.assert_allclose(b, whole, atol=1e-9)
 ```
 
-Note `process_whole` for the fidelity comparison: the fixture is 48,000 samples and the runner's real block is 262,144, so chunking never enters the fidelity rule. The chunked test exercises the `Chunker` at small blocks where it must still match whole-file for short gaps; the long-gap case is a Rust test (Step 3).
+Note `process_whole` for the fidelity comparison: the fixture is 48,000 samples and the runner's real block is 262,144, so chunking never enters the fidelity rule. The chunked test exercises the `Chunker` at small blocks where it must still match whole-file for short gaps; the long-gap case is a Rust test (Step 3). `gap_mask` (in `tests/repair_helpers.py`) turns the report's positions and widths into a boolean mask.
 
 - [ ] **Step 2: Port `inpaint.rs`**
 
-Translate cathar's `inpaint_gap`, `estimate_ar_known`, `levinson`, `coef_autocorr`, `solve_gap` and `solve_spd_banded` to f64 slices operating in place, with `AR_ORDER = 32`, `MAX_SOLVE = 2048`, `p = len.clamp(32, 128)`, `ctx = max(4 * len, 8 * p, 1024)` and the linear pre-fill exactly as upstream; the file header names the source. Return `Fill::Linear` when `len > MAX_SOLVE` or when the context would reach past the slice (the module turns that into a context fallback in the report). Rust tests: a gap of 200 samples cut from a 440 Hz sine at 48 kHz is refilled within 1e-3 after 3 iterations; a gap longer than `MAX_SOLVE` is filled linearly and reported as such; out-of-range spans leave the buffer unchanged.
+Translate cathar's `inpaint_gap`, `estimate_ar_known`, `levinson`, `coef_autocorr`, `solve_gap` and `solve_spd_banded` to f64 slices operating in place, with `AR_ORDER = 32`, `MAX_SOLVE = 2048`, `p = len.clamp(32, 128)`, `ctx = max(4 * len, 8 * p, 1024)` and the linear pre-fill exactly as upstream; the file header names the source. Return `Fill::Linear` when `len > MAX_SOLVE`, or when the context would reach past an end of the slice that is not the file's own end (`ends.left` or `ends.right` false). The module turns that into a context fallback in the report. At a file end, clip the context there and solve AR, as cathar does (inpaint.rs 41 to 42): `process_whole` passes both ends as the file's, so a whole-file run never falls back for an edge.
+
+Rust tests:
+- a gap of 200 samples cut from a 440 Hz sine at 48 kHz, amplitude 0.5, is refilled within 1e-2 after 3 iterations. The re-check's line-by-line port left 6.4e-3 there and 1.3e-3 at amplitude 0.1, so 1e-3 would fail a faithful port and invite a "fix" to it;
+- a gap of 100 samples starting 50 samples from the start of a whole-file slice is filled by AR (`Fill::Ar`), not linearly;
+- the same gap 50 samples from a chunk edge that is not the file's falls back to `Fill::Linear`;
+- a gap longer than `MAX_SOLVE` is filled linearly and reported as such;
+- out-of-range spans leave the buffer unchanged.
 
 - [ ] **Step 3: Port `declick.rs`**
 
@@ -355,7 +421,7 @@ Translate `declick_with_method`, `local_rms` and `cubic_interpolate` to f64, ope
 
 - [ ] **Step 4: The Python class, mutation check, commit**
 
-Add `Declick` to the bindings (one `declick::Declick` per channel, `process` and `process_whole` under `py.detach`, output allocated once per call). Prove the fidelity test can fail: temporarily shift the gap start by one sample in the AR path (the method the defaults use; the cubic fill only runs at file edges), run `uv sync --extra repair --reinstall-package cumple-dsp`, run `tests/test_repair_declick.py`, see the upstream comparison fail, revert, rebuild, record the failing figure in the commit message. Run the full checks, commit. Adds two cathar-gated and three core-gated tests; count them.
+Add `Declick` to the bindings (one `declick::Declick` per channel, `process` and `process_whole` under `py.detach`, output allocated once per call). Prove the fidelity test can fail: temporarily shift the gap start by one sample in the AR path (the method the defaults use; the cubic fill only runs at file edges), run `uv sync --extra repair --reinstall-package cumple-dsp`, run `tests/test_repair_declick.py`, see the upstream comparison fail, revert, rebuild, record the failing figure in the commit message. Run the full checks, commit. Adds one cathar-gated test (also core-gated, counted once) and three more core-gated tests; count them.
 
 ---
 
@@ -372,7 +438,18 @@ Add `Declick` to the bindings (one `declick::Declick` per channel, `process` and
 
 - [ ] **Step 1: Write the failing Python tests**
 
-(a) The fixture clipped to 5 dB input SDR, run at the manifest threshold through `process_whole`: ΔSDR(all) at least 2 dB (03c measured +7.56 for a faithful port), every unclipped sample exactly equal to the input (`np.array_equal`, no dilation), the restored peak within 3 dB of the reference's over the mask at 5 dB (measured +1.98; the 1 dB and 3 dB levels are reported in REPAIR.md, not asserted, since the survey's own tables show A-SPADE overshooting there). (b) Upstream: `run_cathar(..., "declip", threshold=thr)` on the same file against `process_whole` at the same threshold: ΔSDR(all) and ΔSDR(clipped) within 0.1 dB (03c: 0.01 dB between the CLI and a faithful f64 port), and `np.array_equal` on unclipped samples; no bound on rebuilt samples (two faithful implementations differ by up to 0.18 there). (c) Chunking cost: `chunked` at 8,192 and at 65,536 against `process_whole`, ΔSDR differences printed and asserted under 0.5 dB (03c measured 0.29 at 8,192), unclipped samples still exactly equal; the harness pins the figure at `DEFAULT_BLOCK_FRAMES` (expected about 0.03 dB) in Task 6. (d) A file with no sample at or above the threshold passes through untouched; a chunk shorter than one frame passes through untouched.
+(a) The fixture clipped to 5 dB input SDR, run at the manifest threshold through `process_whole`: ΔSDR(all) at least 2 dB (03c measured +7.56 for a faithful port), every unclipped sample exactly equal to the input (`np.array_equal`, no dilation), the restored peak within 3 dB of the reference's over the mask at 5 dB (measured +1.98; the 1 dB and 3 dB levels are reported in REPAIR.md, not asserted, since the survey's own tables show A-SPADE overshooting there). (b) Upstream, at all seven survey levels (1, 3, 5, 7, 10, 15 and 20 dB), parametrised. `run_cathar(..., "declip", threshold=thr)` runs on the same file, against `process_whole` at the same threshold.
+- cathar must change the file (rule 0).
+- The per-file tolerance from the spec's rule 1 applies: the port runs on the file as given, rounded to float32, and scaled by 1 + 2^-50 and 1 - 2^-50, and cathar's ΔSDR(all) must fall within the range of those four results widened by max(0.1 dB, their spread) on each side.
+- `np.array_equal` holds on unclipped samples. There is no bound on rebuilt samples.
+- The test prints the spread and the margin per level.
+- Why not a flat 0.1 dB: f32 against f64 alone moves ΔSDR by 0.14, 0.21, 0.06, 0.01, 0.04, 0.10 and 0.44 dB at the seven levels on this fixture (03d Concern 3).
+- If cathar falls outside, stop and report the figures to Victor before any tolerance moves.
+
+(c) Chunking cost:
+- `chunked` at 8,192 on the fixture against `process_whole`: the ΔSDR difference is printed and asserted under 0.5 dB (03c measured 0.29), and unclipped samples are still exactly equal.
+- The fixture tiled to 36 s (more than two blocks), at `DEFAULT_BLOCK_FRAMES` and at 65,536: differences printed and asserted under 0.5 dB. At 48,000 samples a 65,536 block is one chunk and would test nothing.
+- The harness pins the `DEFAULT_BLOCK_FRAMES` figure in Task 6. No figure is expected in advance; 03b's emulation found 0.00 dB on a 30 s excerpt. (d) A file with no sample at or above the threshold passes through untouched; a chunk shorter than one frame passes through untouched.
 
 - [ ] **Step 2: Port `declip.rs`**
 
@@ -392,12 +469,12 @@ As Task 3 Step 4. The mutation: drop the clipping-consistency projection for one
 - Test: `tests/test_repair_chain.py`, `tests/test_repair_runner.py`, `tests/test_cli_repair.py`
 
 **Interfaces:**
-- Consumes: `cumple_dsp.Declick`, `cumple_dsp.Declip`; `iter_blocks`, `probe`, `DEFAULT_BLOCK_FRAMES` from `io/reader.py`; `measure` from `meters/measure.py`; the write discipline of `fix.py`; `user_dir()` from `specs/registry.py`.
+- Consumes: `cumple_dsp.Declick`, `cumple_dsp.Declip`; `iter_blocks`, `probe`, `DEFAULT_BLOCK_FRAMES` from `io/reader.py`; `measure` from `meters/measure.py`; the write discipline of `fix.py`; the `XDG_CONFIG_HOME` rule of `specs/registry.py`'s `user_dir()` (lines 28 to 30). It is reproduced in `chain.user_repair_dir()` (`$XDG_CONFIG_HOME/cumple/repair`, default `~/.config/cumple/repair`), not called, since `user_dir()` returns the profiles folder.
 - Produces: `params.DeclickParams(threshold: float = 5.0, window: int = 64 (ge 8, le 1024), method: Literal["ar", "cubic"] = "ar", iterations: int = 3 (ge 1, le 10))` with a validator that rejects `threshold < 1` and `threshold >= sqrt(window)`, naming the bound; `params.DeclipParams(threshold: float = 0.95 (ge 1e-4, le 1.0), method: Literal["spade", "cubic"] = "spade")`, both `extra="forbid"`; `params.MODULES = {"declick": DeclickParams, "declip": DeclipParams}`; `chain.Chain(id, summary, steps: list[ChainStep])`, `chain.parse(text) -> Chain` (one-line form), `chain.load(path) -> Chain` (YAML), `chain.dump(chain) -> str`, `chain.presets() -> dict[str, Chain]`, `chain.resolve(text_or_id) -> Chain`; `runner.repair_file(src, chain, dst, residual=None) -> RepairResult(dst, receipt_path, reports, changed: bool)`; `receipt.write(path, ...)` and `receipt.Receipt` (pydantic); `cli.repair`.
 
 - [ ] **Step 1: Write the failing tests**
 
-Chain: `parse("declick(threshold=6),declip()")` gives two steps with the right params; `parse("declick(foo=1)")` raises `ValueError` naming `foo`; `parse("declick(threshold=9)")` raises naming the sqrt bound; `dump(parse(t))` round-trips through `load`; a preset YAML with an unknown key fails to load with the key named; the three built-in presets load; a user preset under a temporary `XDG_CONFIG_HOME` overrides a built-in with the same id (`specs/registry.py` lines 28 to 30 honour that variable).
+Chain: `parse("declick(threshold=6),declip()")` gives two steps with the right params; `parse("declick(foo=1)")` raises `ValueError` naming `foo`; `parse("declick(threshold=9)")` raises naming the sqrt bound; `dump(parse(t))` round-trips through `load`; a preset YAML with an unknown key fails to load with the key named; the three built-in presets load; a user preset under a temporary `XDG_CONFIG_HOME` at `<tmp>/cumple/repair/declick.yaml` overrides the built-in `declick`; a YAML file placed in the profiles folder (`<tmp>/cumple/profiles/`) is not read as a repair preset.
 
 Runner (`needs_core`): the clicked fixture through `declick` gives a copy whose SHA-256 differs, a receipt beside it with the chain, the two version strings, the input SHA-256, both `measure()` summaries and one report; `dst == src` raises; `dst` a directory raises; a 2-channel WAV built in the test has each channel repaired independently (clicks injected only in channel 1 leave channel 0 bit-identical); `--residual` output equals input minus output within 1e-9; an input with no clicks gives `changed == False` and no file written; the temporary file never survives a failure (patch the writer to raise mid-way and assert the directory is clean); a two-module chain (`declick(),declip(threshold=thr)`) on a file with both damages, run chunked at 8,192, against the whole-file reference (upstream run twice, or `process_whole` twice): ΔSDR within a measured tolerance recorded in the test, which is the cost of raw right context the spec states; the first block of the file is processed with `Edge.first` and the last with its true length (assert through a module report that no gap was filled with zero context).
 
@@ -423,7 +500,12 @@ The block loop: a ring per module holding the last `context_frames` of its own o
 
 - [ ] **Step 4: Implement `cli.repair`, docs, commit**
 
-Follow `fix`'s structure for options, console output and the re-check, with `escape()` on every interpolated path and exception. README gains `repair` in the command list, a "Repair" section with the install route (it compiles Rust; cargo is needed), the two modules, the detector bound, the chain forms and the receipt, and an "Honest limits" line: two modules, PCM only, no metadata copy, numbers in `docs/REPAIR.md`. AI_USAGE records the run and this build. Run everything, re-pin counts, commit.
+Follow `fix`'s structure for options, console output and the re-check, with `escape()` on every interpolated path and exception. README gains:
+- `repair` in the command list;
+- a "Repair" section covering the install route (it compiles Rust; cargo is needed), the two modules, the detector bound, the chain forms and the receipt;
+- an "Honest limits" line: two modules, PCM only, no metadata copy, a click detector that sees only narrow clicks and fires on lone low-level samples in digital silence (so `declick` on a clean file with sparse dither can write a copy), and numbers in `docs/REPAIR.md`.
+
+The `--help` text for `declick` says the same in one sentence. AI_USAGE records the run and this build. Run everything, re-pin counts, commit.
 
 ---
 
