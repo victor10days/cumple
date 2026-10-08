@@ -35,7 +35,7 @@ The same round makes every damaged file 32-bit float, fixes the counts, and fixe
 - Tests that need the cathar binary skip unless `find_cathar()` finds it. It looks in this order: `CUMPLE_CATHAR` (with `os.path.expanduser`), then `shutil.which("cathar")`, then `~/.cargo/bin/cathar` when it exists.
 - When `CUMPLE_REQUIRE_CATHAR=1` is set, `tests/conftest.py` fails the session at collection if `find_cathar()` returns None. CI's Linux runner sets it (Task 2), so the fidelity tests either run there or the job fails, never a green skip (03d Concern 6).
 - Ported Rust carries, at the top of each file, `// Ported from cathar (github.com/vbasky/cathar) <path> at commit f2c2842f, MIT OR Apache-2.0, used under MIT; see crates/cumple-dsp/THIRD_PARTY.md.` No GPL or AGPL source is read while porting (Audacity, GWC, IPOL, the survey's MATLAB).
-- f64 throughout the core; numpy arrays are `float64`, shape `(frames, channels)`, C order; a block never exceeds `DEFAULT_BLOCK_FRAMES + 2 * context_frames`.
+- f64 in the shipped build. The f32 instantiation exists only for the fidelity comparison with cathar (spec rule 1); every tolerance other than rule 1's is stated against the f64 build. Numpy arrays are `float64`, shape `(frames, channels)`, C order; a block never exceeds `DEFAULT_BLOCK_FRAMES + 2 * context_frames`.
 - Writes follow `fix.apply` and `fix_file`: same subtype and format, a temporary name beside the destination (`.<name>.cumple-tmp`), `os.replace`, refuse `dst.resolve() == src.resolve()`, refuse a directory, refuse a file ffmpeg decoded. The receipt is written after the copy is in place.
 - The phrase "not checked" never appears; tables say "not run" with a reason. No em or en dash in prose, comments, docstrings, YAML or Rust doc comments.
 - `uv run ruff check src tests scripts && uv run ruff format --check src tests scripts`, `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test -p cumple-dsp`, `cargo deny check licenses` clean before each commit. `uv run pytest` alone, never piped, in full before each commit; re-pin the five documented counts (README `**Tests**: N,` and `runs N-29 of them on Ubuntu`, CONTRIBUTING `# N tests;`, docs/QA.md `` `uv run pytest`, N tests``, AI_USAGE `N tests, including`, site/index.html `N tests with 91 %`) from `uv run pytest --collect-only 2>/dev/null | grep 'tests collected'`. README's "19 fewer on macOS" counts the items gated on ffmpeg (there is no ffmpeg on the macOS and Windows runners) and "20 fewer on Windows" adds the one `win32` skip; a test gated on ffmpeg and the core counts once; the cathar-gated tests run on Linux and skip on macOS and Windows, so they count like the ffmpeg-gated ones.
@@ -235,7 +235,7 @@ This task adds one ffmpeg-gated test (README's macOS and Windows "fewer" figures
 
 - [ ] **Step 1: Workspace, toolchain, deny**
 
-Root `Cargo.toml`: `[workspace] resolver = "3" members = ["crates/cumple-dsp", "crates/cumple-dsp-py"]`, `[workspace.package] edition = "2024" rust-version = "1.87" license = "MIT" repository = "https://github.com/victor10days/cumple"`, `[workspace.dependencies] rustfft = "=6.4.1" realfft = "=3.5.0" num-traits = "0.2.19"` (cathar's `Cargo.lock` at f2c2842; the `=` pins keep the f32 build's FFT arithmetic equal to cathar's, spec section 1), release profile `lto = "thin"`. `rust-toolchain.toml`: stable with `clippy` and `rustfmt`. `deny.toml`: `[licenses] version = 2` and the SPDX allowlist from the spec (`MIT`, `Apache-2.0`, `Apache-2.0 WITH LLVM-exception`, `BSD-2-Clause`, `BSD-3-Clause`, `ISC`, `Unicode-3.0`, `Zlib`); `cargo deny check licenses` must pass, and the first run prints which crate needed each id (expect target-lexicon for the exception and unicode-ident for Unicode-3.0).
+Root `Cargo.toml`: `[workspace] resolver = "3" members = ["crates/cumple-dsp", "crates/cumple-dsp-py"]`, `[workspace.package] edition = "2024" rust-version = "1.87" license = "MIT" repository = "https://github.com/victor10days/cumple"`, `[workspace.dependencies] rustfft = "=6.4.1" realfft = "=3.5.0" num-complex = "=0.4.6" num-traits = "0.2.19"` (cathar's `Cargo.lock` at f2c2842; the `=` pins keep the f32 build's FFT arithmetic equal to cathar's, spec section 1), release profile `lto = "thin"`. `rust-toolchain.toml`: stable with `clippy` and `rustfmt`. `deny.toml`: `[licenses] version = 2` and the SPDX allowlist from the spec (`MIT`, `Apache-2.0`, `Apache-2.0 WITH LLVM-exception`, `BSD-2-Clause`, `BSD-3-Clause`, `ISC`, `Unicode-3.0`, `Zlib`); `cargo deny check licenses` must pass, and the first run prints which crate needed each id (expect target-lexicon for the exception and unicode-ident for Unicode-3.0).
 
 - [ ] **Step 2: Write the failing STFT tests in Rust and in Python**
 
@@ -405,8 +405,13 @@ def test_declick_matches_upstream_cathar_whole_file(tmp_path):
     m = cumple_dsp.Declick(fs, threshold=5.0, precision="f32")  # the fidelity build: cathar's arithmetic, cathar's order
     est = m.process_whole(y)
     assert not np.array_equal(up, y)  # upstream acted too, or the comparison is vacuous
-    ours = gap_mask(len(y), m.report()["positions"], m.report()["widths"])
-    np.testing.assert_array_equal(ours, gap_mask_from_output(y, up))  # the same gaps, start and width
+    theirs = cathar_gaps(y, threshold=5.0, window=64)  # cathar's detector re-expressed exactly in float32
+    ours = list(zip(m.report()["positions"], m.report()["widths"]))
+    assert ours == theirs  # the same gaps, start for start (shoulders included)
+    changed = np.flatnonzero(up != y)
+    inside = gap_mask(len(y), [g[0] for g in theirs], [g[1] for g in theirs])
+    assert inside[changed].all()  # every sample cathar changed lies inside a listed gap
+    assert all((up[s : s + w] != y[s : s + w]).any() for s, w in theirs)  # and every listed gap holds a change
     assert np.max(np.abs(est - up)) < 1e-6  # spec rule 1: a failure is an arithmetic difference to find, not a bound to widen
     assert abs(metrics.delta_sdr(x, y, est) - metrics.delta_sdr(x, y, up)) < 0.01
 
@@ -415,11 +420,12 @@ def test_declick_matches_upstream_cathar_whole_file(tmp_path):
 def test_the_precision_effect_is_measured():
     """Spec rule 1b: the shipped f64 build against the f32 build, printed, not gated; only rule 0 and rule 3 hold for both."""
     import cumple_dsp
-    x, y, clicks, mask, fs = clicked()
-    a = cumple_dsp.Declick(fs, precision="f32").process_whole(y)
-    b = cumple_dsp.Declick(fs, precision="f64").process_whole(y)
+    x, y, clicks, mask, fs = clicked(seed=PRECISION_SEED)  # a layout where the two builds' detections differ; see below
+    ma, mb = cumple_dsp.Declick(fs, precision="f32"), cumple_dsp.Declick(fs, precision="f64")
+    a, b = ma.process_whole(y), mb.process_whole(y)
     print(f"precision effect: dSDR {metrics.delta_sdr(x, y, b) - metrics.delta_sdr(x, y, a):+.4f} dB, max sample {np.max(np.abs(a - b)):.2e}")
     assert not np.array_equal(b, y) and not np.array_equal(a, y)
+    assert ma.report()["positions"] != mb.report()["positions"]  # f32 drift is visible here, so a build that computes local_rms in f64 cannot pass the fidelity test
 
 
 @needs_core
@@ -433,7 +439,16 @@ def test_chunking_cost_is_measured_and_small():
     np.testing.assert_allclose(b, whole, atol=1e-9)
 ```
 
-Note `process_whole` for the fidelity comparison: the fixture is 48,000 samples and the runner's real block is 262,144, so chunking never enters the fidelity rule. The chunked test exercises the `Chunker` at small blocks where it must still match whole-file for short gaps; the long-gap case is a Rust test (Step 3). `gap_mask` (in `tests/repair_helpers.py`) turns the report's positions and widths into a boolean mask. `gap_mask_from_output(y, up)` recovers cathar's gaps from its output: the runs of samples where `up != y`, each widened to the gap cathar's pad rule implies. Write it against cathar's `declick_with_method` (restore.rs 116 to 169), and give it its own unit test on a hand-built signal, so the helper is not the thing that hides a difference.
+Note `process_whole` for the fidelity comparison: the fixture is 48,000 samples and the runner's real block is 262,144, so chunking never enters the fidelity rule. The chunked test exercises the `Chunker` at small blocks where it must still match whole-file for short gaps; the long-gap case is a Rust test (Step 3). `gap_mask` (in `tests/repair_helpers.py`) turns the report's positions and widths into a boolean mask. The report convention: each gap is its start and its length, shoulders included, exactly the span cathar's `declick_with_method` hands to the filler (restore.rs 116 to 169).
+
+`cathar_gaps(y, threshold, window)` (in `tests/repair_helpers.py`) is cathar's detector re-expressed exactly in float32:
+- `local_rms` as a float32 running sum, adding and subtracting the terms in restore.rs's order (171 to 194). 03e validated a float32 cumsum of those interleaved terms bit for bit against a scalar float32 loop;
+- then cathar's gap growth and shoulder pad;
+- it returns the list of `(start, length)`.
+
+Cathar's gaps cannot be read off its output. The run of changed samples covers the whole gap in 1,009 of 1,014 fixture gaps, but in digital silence it shrinks to the click alone: a lone LSB gives a 1-sample run against a 17-sample gap (03f Concern 1). `cathar_gaps` gets its own unit tests on hand-built signals, including a lone LSB in zeros and two clicks whose gaps merge, so the helper is not the thing that hides a difference.
+
+`PRECISION_SEED` is a seed on which the f32 and f64 builds detect different gaps. Task 3 Step 4 finds it by trying seeds from 1 upward and records it in the test with the gap that differs. On about half of all layouts the two builds agree (03f measured 108 and 100 of 200), and there the f64 mutation would pass unseen.
 
 - [ ] **Step 2: Port `inpaint.rs`**
 
@@ -453,6 +468,8 @@ Translate `declick_with_method`, `local_rms` and `cubic_interpolate`, generic ov
 - `inpaint_gap` receives the segment cast to f64 and writes back with the same cast, as upstream;
 - no FMA, no reordering, no `iter().sum()` where upstream loops.
 
+A Rust test pins this directly: `local_rms::<f32>` on a loud burst followed by 2,000 samples of near-silence (|y| about 1e-5) equals, bit for bit, values computed with a numpy float32 cumsum and written into the test as `u32` bit patterns. A build that computes the sum in f64 fails it on every layout.
+
 Then wrap the result then wrap in a `Module` whose `process` runs the whole-chunk algorithm on `context + block + context` (the shoulder pad `half.clamp(2, 8)` and the gap growth stay as upstream; the end-of-file cubic branch runs only when `Edge.last` and the gap reaches the true end), records each gap's start and length into the report, and counts linear and context fallbacks. The constructor rejects `threshold >= sqrt(window)` with a message that names the bound. Rust tests: the same local-RMS values as a direct numpy computation on a short vector (write the expected numbers into the test); a single-sample click at 20 times the clean local RMS in a sine is detected at threshold 5 (its ratio in the window that contains it is about 7.4, which is why 10 never fires) and refilled within 1e-3; a clean sine passes through unchanged; a 1,500-sample gap placed 2,000 samples from a chunk edge is filled identically (within 1e-9) by the chunked and the whole-file calls, which is what `context_frames = 16_384` buys.
 
 - [ ] **Step 4: The Python class, mutation check, commit**
@@ -463,7 +480,9 @@ Prove the fidelity test can fail, with two mutations, one at a time:
 1. Shift the gap start by one sample in the AR path (the method the defaults use; the cubic fill only runs at file edges).
 2. Compute `local_rms` in f64 inside the f32 build. This is the drift the rule exists to catch.
 
-For each one: run `uv sync --extra repair --reinstall-package cumple-dsp`, run `tests/test_repair_declick.py`, see the upstream comparison fail, then revert, rebuild, and record the failing figure in the commit message.
+For each one: run `uv sync --extra repair --reinstall-package cumple-dsp`, run `tests/test_repair_declick.py` and the Rust tests, see a test fail, then revert, rebuild, and record the failing figure in the commit message. Which tests fail:
+- mutation 1 fails the upstream comparison;
+- mutation 2 fails the `local_rms::<f32>` bit test, and the fidelity test on `PRECISION_SEED`. Find that seed first (Step 1's note); without it, mutation 2 passes about half the layouts unseen (03f Concern 2).
 
 Run the full checks and commit. This task adds one cathar-gated test (also core-gated, counted once) and four more core-gated tests; count them.
 
@@ -498,7 +517,9 @@ A separate, ungated test prints the precision effect at each level (the f64 buil
 
 - [ ] **Step 2: Port `declip.rs`**
 
-Translate from the code, not from memory, generic over `F: Float`. At `F = f32` it does cathar's arithmetic in cathar's order: `FftPlanner::<F>` from the pinned `rustfft`, the same sums in the same sequence, and no FMA or reordering. Keep every one of these as upstream has them (03b and 03c found each one misdescribed in the first version of this plan): `hann_window` symmetric (divide by `L - 1`); `frame_starts` with the flush frame when the length is off the hop grid; a full complex 1,024-point FFT through `rustfft` with the `1/sqrt(L)` scale; `hard_threshold_k` over all 1,024 complex bins keeping ties at the cutoff; `k` starting at 1 and growing by `RELAX_BY = 2` on every iteration; `MAX_ITER = 100`; the residual summed over all bins of every frame against `eps` from the signal energy; `project_gamma` returning every unclipped sample unchanged; the cubic fill with its 4-sample shoulders; the early return when nothing reaches the threshold. The file header says the module keeps its own frame rather than the shared `Stft` and why (the measured 0.11 sample and up to 1.3 dB ΔSDR difference of the one-sided periodic variant). Rust tests: a clipped 440 Hz sine at 0.5 full scale recovers its peak within 1 dB; the no-clip early return; a chunk shorter than one frame; `hard_threshold_k` keeps exactly `k` bins and ties on a hand-built spectrum.
+Translate from the code, not from memory, generic over `F: Float`. At `F = f32` it does cathar's arithmetic in cathar's order: `FftPlanner::<F>` from the pinned `rustfft`, the same sums in the same sequence, and no FMA or reordering.
+
+The window is computed in `F`, as `util.rs` does it: `n = size as F - 1`, `x = i as F / n`, `0.5 - 0.5 * (2 * F::PI * x).cos()`, using `F::cos` (`cosf` at f32) and F's own pi constant. The f32 build never uses the shared `Stft` window, and never computes the window in f64 and casts, which is the obvious generic code and differs in the last bits (03f Concern 4). A Rust test compares the f32 window's bit patterns with values written into the test from `numpy.float32` arithmetic in the same order. Keep every one of these as upstream has them (03b and 03c found each one misdescribed in the first version of this plan): `hann_window` symmetric (divide by `L - 1`); `frame_starts` with the flush frame when the length is off the hop grid; a full complex 1,024-point FFT through `rustfft` with the `1/sqrt(L)` scale; `hard_threshold_k` over all 1,024 complex bins keeping ties at the cutoff; `k` starting at 1 and growing by `RELAX_BY = 2` on every iteration; `MAX_ITER = 100`; the residual summed over all bins of every frame against `eps` from the signal energy; `project_gamma` returning every unclipped sample unchanged; the cubic fill with its 4-sample shoulders; the early return when nothing reaches the threshold. The file header says the module keeps its own frame rather than the shared `Stft` and why (the measured 0.11 sample and up to 1.3 dB ΔSDR difference of the one-sided periodic variant). Rust tests: a clipped 440 Hz sine at 0.5 full scale recovers its peak within 1 dB; the no-clip early return; a chunk shorter than one frame; `hard_threshold_k` keeps exactly `k` bins and ties on a hand-built spectrum.
 
 - [ ] **Step 3: The Python class, mutation check, commit**
 
