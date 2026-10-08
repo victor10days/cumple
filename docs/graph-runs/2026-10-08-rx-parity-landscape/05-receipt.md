@@ -39,8 +39,12 @@ Pull request #30 (https://github.com/victor10days/cumple/pull/30, branch `docs/g
 - Word counts: the five branch reports exceed the frame's 1500 words (2076, 2039, 1687, 1668, 1930 with tables); accepted, as the 12 September receipt accepted 900 over 600 when the table is the deliverable.
 - Dates: branches report push dates, 02d commit dates; no decision depended on the difference; 04 names both for cathar.
 - superpowers:writing-plans was not available in the cloud session that closed this run, so the build-1 plan was written by hand in the shape of `docs/superpowers/plans/2026-09-13-silero-vad.md`. The plan skeptic (a fresh context, as the Silero run did) still reads it before any task runs; that gate is not skipped, only deferred to the session that executes build 1.
-- No Rust toolchain was on Victor's Mac on 2026-10-08 (`cargo`, `rustc` and `maturin` not found); he is installing rustup himself, since that is a download-and-execute step. Build 1's Rust steps cannot run there until it is in.
+- No Rust toolchain was on Victor's Mac on 2026-10-08 (`cargo`, `rustc` and `maturin` not found); he installed rustup himself the same day (rustc and cargo 1.99.0, stable, aarch64-apple-darwin).
 - RX columns in `docs/REPAIR.md` say "not run" until Victor's Batch Processing outputs land; the benchmark script refuses to write only when the ffmpeg or cathar baseline is missing.
+
+## Plan skeptic
+
+`03b-plan-skeptic.md` (fresh opus context, 2026-10-08) read the build-1 plan against the spec, the code and cathar at f2c2842, and ran numpy re-expressions of cathar's two algorithms. Verdict: Rethink this, in the scoring rule and the harness parameters; the architecture, crate layout and task order stand. Critical 4, High 2, Medium 1; concerns 1 to 5 block. Headline: at cathar's defaults neither module touches the harness damage (De-click's local RMS includes the tested sample, so a sample can reach at most sqrt(64) = 8 times it against a threshold of 10; De-clip returns its input when nothing reaches 0.95, while the damage clips at 0.007 to 0.126), so the fidelity rule would pass for two no-ops; and chunked A-SPADE misses its own tolerances even for a perfect port. The main session re-read `local_rms`, the De-clip early return and the relaxation step at that commit and confirmed all three. Side effect: the skeptic's scratch `uv lock` made maturin download a Rust toolchain into `~/Library/Caches/puccinialin` (473 MB); left for Victor to keep or delete. The spec amendment (thresholds from the damage, fidelity measured whole-file, chunking cost measured separately) is Victor's decision.
 
 ## The box that earned its place
 
