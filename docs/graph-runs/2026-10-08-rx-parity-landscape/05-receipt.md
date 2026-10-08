@@ -10,7 +10,7 @@ Path C (a Rust core seeded from cathar, PyO3 bindings behind `cumple[repair]`, a
 
 ## What shipped
 
-Branch `claude/laughing-darwin-15lo3a`, documentation only, no code and no dependency change: this run folder (`01-frame.md`, five branch reports `02a` to `02e`, `02f-notes.md`, `03-skeptic.md`, `04-recommendation.md`, this receipt), the build-1 design at `docs/superpowers/specs/2026-10-08-repair-foundation-design.md`, the build-1 implementation plan at `docs/superpowers/plans/2026-10-08-repair-foundation.md`, and `docs/ROADMAP.md` with the dated reversal, items R10 to R15 and this run in its list. The pull request link goes here when it opens. Steps outside this session: the vault hub (`~/brain/Projects/cumple/cumple.md`, Home.md) is on Victor's machine; running RX 8 Batch Processing from the recipe is Victor's; the RX 12 trial is Victor's.
+Pull request #29, https://github.com/victor10days/cumple/pull/29, branch `claude/laughing-darwin-15lo3a`, documentation only, no code and no dependency change: this run folder (`01-frame.md`, five branch reports `02a` to `02e`, `02f-notes.md`, `03-skeptic.md`, `04-recommendation.md`, this receipt), the build-1 design at `docs/superpowers/specs/2026-10-08-repair-foundation-design.md`, the build-1 implementation plan at `docs/superpowers/plans/2026-10-08-repair-foundation.md`, and `docs/ROADMAP.md` with the dated reversal, items R10 to R15 and this run in its list. Steps outside this session: the vault hub (`~/brain/Projects/cumple/cumple.md`, Home.md) is on Victor's machine; running RX 8 Batch Processing from the recipe is Victor's; the RX 12 trial is Victor's.
 
 ## Rejected options
 
