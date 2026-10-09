@@ -243,7 +243,7 @@ def test_a_two_module_chain_in_blocks_costs_what_raw_right_context_costs(tmp_pat
 def test_declick_after_declip_in_blocks_lists_the_gaps_one_pass_over_declips_whole_output_lists(tmp_path):
     """De-click second in a chain reads De-clip's rebuilt peaks in each centre where its last call read the clipped
     lookahead. Its running sum must take out the squares it put in, or it drifts below zero, the local RMS floors at
-    1e-10 and every quiet sample reads as a click: 17 gaps here against 3, and 265 on a minute of LibriVox."""
+    1e-10 and every quiet sample reads as a click: 17 gaps here against 3, and 265 on 30 s of LibriVox."""
     import cumple_dsp
 
     src, x, y, thr, fs = clicked_and_clipped(tmp_path, seed=1)

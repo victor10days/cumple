@@ -15,7 +15,7 @@ No spec tolerance moved. The pin test's own tolerance for the summary means is 0
 
 ## Task 2: the core and CI
 
-- Cold release build of the wheel: 9.1 s here; first `uv sync --extra repair` about 21 s. The uncached CI time is not known until the first CI run (Task 7).
+- Cold release build of the wheel: 9.1 s here; first `uv sync --extra repair` about 21 s. On the first CI run (tests run 37909916065, 2026-10-09) the uncached cathar build took 80 s on ubuntu-latest, and the Linux test step with the cathar baseline required took 67 s; all three test runners, EBU conformance and the four release builds (Linux, macOS arm64, macOS x86_64, Windows) passed.
 - Side effect on Victor's Mac: `uv` installed a managed CPython 3.12.15 into `~/.local/share/uv/python/` while checking an `env -i` path. `uv python uninstall 3.12.15` removes it.
 - `RX 8` recipe: the De-click values (Sensitivity, Click widening and the algorithm) are Victor's to read off RX 8 when it opens; `docs/repair/rx8-recipe.md` marks them "TO FILL IN (Victor)".
 

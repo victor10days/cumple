@@ -320,7 +320,7 @@ blocks, against one pass over the whole file, measured -0.12 to +0.06 dB over
 and is held in a test. The final review of the branch found the second order
 broken: De-click had added the clipped lookahead to its running sum of squares
 and then subtracted De-clip's larger rebuilt peaks, so the sum went below zero
-and a minute of clipped speech came back with 265 false clicks. De-click now
+and 30 s of clipped speech came back with 265 false clicks. De-click now
 redoes its running sum from the first sample that changed, and finds none.
 `docs/REPAIR.md` scores the modules
 against ffmpeg and cathar on synthetic damage, with RX columns that wait for
