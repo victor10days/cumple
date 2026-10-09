@@ -66,12 +66,14 @@ def _runs(flags: np.ndarray) -> list[tuple[int, int]]:
 def residual_clicks(
     ref: np.ndarray, est: np.ndarray, positions, widths, threshold: float, window: int = 64
 ) -> tuple[int, int]:
-    """(missed, false): injected clicks the detector still sees in the estimate, and detections elsewhere.
+    """(missed, residual): injected clicks the detector still sees in the estimate, and detections elsewhere.
 
-    The detector is local_rms_ratio at `threshold`. A click is missed when any sample of its span is
-    detected. A false detection is a run of detected samples that touches no click span (each widened
-    by half the window) and that the detector also finds in the clean reference: a natural transient of
-    the reference is not the tool's doing.
+    The detector is local_rms_ratio at `threshold`, run on the estimate. A click is missed when any sample
+    of its span is detected. A residual detection is a run of detected samples in the estimate that touches
+    no click span (each widened by half the window) and that the detector does not also find in the clean
+    reference: a natural transient of the reference is left out. Because it scores the output, a detection
+    the tool filled is gone from it and is not counted here; the harness counts a tool's own gaps that
+    touch no injected click for that (the false detections of docs/REPAIR.md).
     """
     n = len(est)
     hit = local_rms_ratio(est, window) > threshold

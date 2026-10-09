@@ -196,6 +196,20 @@ def test_chunking_cost_is_held_and_only_references_longer_than_a_block_are_chunk
             assert _floats(d["Chunking max sample"]), (kind, d["Reference"])
 
 
+def test_false_detections_are_the_tools_own_gaps_and_rule_3_is_reported():
+    """Spec rule 3: detections that are not injected clicks are counted, not masked; the header says whose gaps they are."""
+    assert "**False detections**" in REPORT and "the f32 build stands in" in REPORT
+    m = re.search(r"\*\*Rule 3, [^\n]*: \*\*met on all (\d+) of (\d+) files\*\*", REPORT)
+    assert m and m.group(1) == m.group(2)
+    total = len(_score_rows("clip")) + len(_score_rows("impulse")) + len(_score_rows("burst"))
+    assert int(m.group(1)) == total
+    for row in _summary("Summary"):
+        if row["Tool"] in ("cumple", "cathar") and row["Damage"] != "De-clip":
+            kind = _kind_of(row["Damage"])
+            counted = sum(_clicks(_tool_column(r, row["Tool"]))[2] for r in _score_rows(kind))
+            assert row["False detections"] == str(counted)
+
+
 def test_the_rx_columns_say_not_run_or_carry_numbers():
     for kind in KINDS:
         for row in _score_rows(kind):

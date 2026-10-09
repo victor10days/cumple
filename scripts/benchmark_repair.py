@@ -215,6 +215,9 @@ class Detail:
     chunk_dsdr: float | None  # dSDR(whole file) - dSDR(chunked); None when the reference fits one block
     chunk_max: float | None
     misses: list[str]  # the rule 1 bounds this file missed
+    false_f32: int | None  # De-click: gaps of the f32 build that touch no injected click (stands for cathar, rule 1)
+    false_f64: int | None  # De-click: the same for the f64 build
+    rule3: list[str]  # what the shipped output changed outside the module's own work
 
 
 def run_cumple(entry: damage.Damaged, root: Path, ref: np.ndarray, y: np.ndarray, fs: int, theirs: np.ndarray | None):
@@ -279,6 +282,25 @@ def run_cumple(entry: damage.Damaged, root: Path, ref: np.ndarray, y: np.ndarray
             if fid_gaps != "equal":
                 misses.append("the gap lists differ")
     prec_gaps = None if clip else len(set(gaps["f32"]) ^ set(gaps["f64"]))
+    rule3: list[str] = []
+    false_f32 = false_f64 = None
+    if clip:
+        unclipped = np.abs(y) < entry.threshold
+        if not np.array_equal(chunked[unclipped], y[unclipped]):
+            rule3.append("an unclipped sample moved")
+    else:
+        spans = [metrics.click_span(c.position, c.width) for c in entry.clicks or []]
+
+        def untouched(gap_list):
+            return sum(1 for s, w in gap_list if not any(s <= last and first < s + w for first, last in spans))
+
+        false_f32, false_f64 = untouched(gaps["f32"]), untouched(gaps["f64"])
+        inside = np.zeros(len(y), dtype=bool)
+        for s, w in gaps["f64"]:
+            inside[s : s + w] = True
+        inside = damage.dilate(inside, 8)
+        if np.max(np.abs(chunked - y)[~inside], initial=0.0) > 1e-9:
+            rule3.append("a sample moved outside the gaps")
     chunk_dsdr = chunk_max = None
     if len(ref) > DEFAULT_BLOCK_FRAMES:
         whole = out["f64"].astype(np.float32).astype(np.float64)  # the whole-file run, stored as the runner stores it
@@ -294,6 +316,9 @@ def run_cumple(entry: damage.Damaged, root: Path, ref: np.ndarray, y: np.ndarray
         chunk_dsdr,
         chunk_max,
         misses,
+        false_f32,
+        false_f64,
+        rule3,
     )
     return cell, detail
 
@@ -338,6 +363,12 @@ def summary_row(title: str, tool: str, kind: str, got: list[Cell], entries: list
     peak = fmt_mean([c.peak_db for c in got], "+.1f") if clip else "n/a"
     secs = fmt_mean([c.seconds for c in got], ".2f")
     return f"| {title} | {tool} | {coverage} | {fmt_mean([c.d_all for c in got])} | {dmg} | {peak} | {missed} | {false} | {secs} |"
+
+
+def replace_false(cell: Cell, false: int) -> None:
+    """Set a click cell's last field to the count of the tool's own gaps that touch no injected click."""
+    cell.false = false
+    cell.text = cell.text.rsplit(" / ", 1)[0] + f" / {false}"
 
 
 def fmt_range(values: list[float], spec: str = "+.4f") -> str:
@@ -415,6 +446,11 @@ def main() -> None:
         cells["cumple"][entry.name], details[entry.name] = run_cumple(
             entry, root, ref, y, rates[entry.reference], theirs
         )
+        d = details[entry.name]
+        if d.false_f64 is not None:  # the gaps each build handed to its filler stand in for the false detections
+            replace_false(cells["cumple"][entry.name], d.false_f64)
+            if cells["cathar"][entry.name].d_all is not None:
+                replace_false(cells["cathar"][entry.name], d.false_f32)
         print(
             f"[{i}/{len(manifest.damaged)}] cumple {entry.name}: {cells['cumple'][entry.name].text}"
             + (f"; FIDELITY MISS: {'; '.join(details[entry.name].misses)}" if details[entry.name].misses else ""),
@@ -474,6 +510,14 @@ def main() -> None:
         "(`declip(threshold=<the manifest value>)` for clip files, `declick(threshold=5)` for click files), which streams "
         f"the file in blocks of {DEFAULT_BLOCK_FRAMES:,} frames and stores 32-bit float. Its wall time is the whole call, "
         "including the two loudness measurements the receipt records. A receipt's `iterations` and `frames` are summed over calls and channels.",
+        "- **False detections** (De-click tables and summaries) are, for cumple, the gaps the f64 build handed to its filler that touch "
+        "no injected click, counted whether or not the gap was filled, so a lone one-LSB sample in digital silence counts. The cathar CLI has no "
+        "gap output, so for cathar the f32 build stands in: rule 1 makes its gap list equal cathar's, compared through "
+        "`tests/repair_helpers.cathar_gaps`, a float32 model of cathar's detector. ffmpeg has no gap output either, so its figure is the "
+        "residual detections: runs the detector of record still finds in ffmpeg's output that touch no injected click and that the clean "
+        "reference does not trigger (a detection that ffmpeg filled cannot be seen). The three are not the same count; the cumple and cathar "
+        "figures are the ones to compare. Clicks missed is the residual count for every tool: an injected click the detector still sees "
+        "in the output.",
         "- The tables and the first summary list each tool's mean over the files it ran on, with its coverage; "
         "the paired summary compares the tools over only the files all three ran, per damage type.",
         "",
@@ -512,6 +556,32 @@ def main() -> None:
     lines += [
         "  - `tests/test_repair_declip.py` also holds De-clip's chunking cost on a 36 s file at this block size under 0.5 dB "
         "(Task 4 measured +0.027 dB there).",
+    ]
+    rule3 = [(n, m) for n in details for m in details[n].rule3]
+    lines.append(
+        "- **Rule 3, nothing outside the module's own work changes** (the shipped output against the input; De-click within 1e-9 "
+        "outside the f64 build's gaps dilated by 8 samples, De-clip every unclipped sample exactly equal): "
+        + (
+            f"**met on all {len(details)} of {len(details)} files**."
+            if not rule3
+            else f"**NOT MET** on {len(set(n for n, _ in rule3))} files, first {rule3[0][0]}: {rule3[0][1]}."
+        )
+    )
+    imp = [e.name for e in manifest.damaged if e.kind == "impulse" and cells["cathar"][e.name].d_all is not None]
+    if imp:
+        lead = {n: cells["cumple"][n].d_all - cells["cathar"][n].d_all for n in imp}
+        top = max(lead, key=lead.get)
+        rest = [lead[n] for n in imp if n != top]
+        lines += [
+            f"- **What drives cumple's impulse De-click lead over cathar:** the mean lead is {np.mean(list(lead.values())):+.2f} dB over {len(imp)} files, "
+            f"and {top} alone leads by {lead[top]:+.2f} dB; without that file the mean lead is {np.mean(rest):+.2f} dB. "
+            "In a35-glockenspiel impulse11, cathar's float32 running sum drifts and it fills a 140-sample gap at 627239 in clean audio "
+            "with an artefact reaching 3.04e-2 (about -30 dBFS). The lead is one file, not a general advantage.",
+            "- **The precision effect runs both ways.** In quiet passages cathar's float32 running sum drifts down, so it fills spurious gaps; "
+            "elsewhere it drifts up, so it misses real clicks (see the clicks-missed counts of the impulse table, a16-clarinet among them). "
+            "Which way it goes depends on the file.",
+        ]
+    lines += [
         "",
     ]
 
@@ -525,7 +595,12 @@ def main() -> None:
         lines += [
             f"## {title}",
             "",
-            f"Each cell reads {cols}. ΔSDR is against the clean reference; the detector of record runs at threshold {DETECTOR_THRESHOLD:g}.",
+            f"Each cell reads {cols}. ΔSDR is against the clean reference; the detector of record runs at threshold {DETECTOR_THRESHOLD:g}. "
+            + (
+                "False detections are the tool's own gaps that touch no injected click (the f32 build stands for cathar, ffmpeg's are residual detections); see the header."
+                if kind != "clip"
+                else ""
+            ),
             "",
             f"| Reference | {level_head} | ffmpeg {ff} | cathar {ca} | cumple (f64, shipped) | RX 8 |",
             "|---|---|---|---|---|---|",
@@ -612,7 +687,10 @@ def main() -> None:
             )
     lines.append("")
     print("\n".join(lines))
-    if misses:
+    if rule3:
+        for n, m in rule3:
+            print(f"RULE 3 NOT MET: {n}: {m}", file=sys.stderr)
+    if misses or rule3:
         for n, m in misses:
             print(f"RULE 1 NOT MET: {n}: {m}", file=sys.stderr)
         sys.exit(1)

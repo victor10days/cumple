@@ -15,6 +15,7 @@ Seeds: impulse 11, burst 12 (recorded per file in the manifest). Detector of rec
   The budget is a property of the machine that generated this report, not of ffmpeg.
 - SQAM tracks are 20 s excerpts starting at 2 s (whole when shorter), so ffmpeg can finish them; LibriVox excerpts are 30 s.
 - The cumple column is the shipped f64 build: each damaged file through `repair_file` with a per-file chain (`declip(threshold=<the manifest value>)` for clip files, `declick(threshold=5)` for click files), which streams the file in blocks of 262,144 frames and stores 32-bit float. Its wall time is the whole call, including the two loudness measurements the receipt records. A receipt's `iterations` and `frames` are summed over calls and channels.
+- **False detections** (De-click tables and summaries) are, for cumple, the gaps the f64 build handed to its filler that touch no injected click, counted whether or not the gap was filled, so a lone one-LSB sample in digital silence counts. The cathar CLI has no gap output, so for cathar the f32 build stands in: rule 1 makes its gap list equal cathar's, compared through `tests/repair_helpers.cathar_gaps`, a float32 model of cathar's detector. ffmpeg has no gap output either, so its figure is the residual detections: runs the detector of record still finds in ffmpeg's output that touch no injected click and that the clean reference does not trigger (a detection that ffmpeg filled cannot be seen). The three are not the same count; the cumple and cathar figures are the ones to compare. Clicks missed is the residual count for every tool: an injected click the detector still sees in the output.
 - The tables and the first summary list each tool's mean over the files it ran on, with its coverage; the paired summary compares the tools over only the files all three ran, per damage type.
 
 ## Tolerances of the scoring rule
@@ -27,10 +28,13 @@ Seeds: impulse 11, burst 12 (recorded per file in the manifest). Detector of rec
 - **Rule 2, chunking cost, De-click** (the f64 build chunked at 262,144 frames against its own whole-file run, stored as 32-bit float, reported and pinned below 0.5 dB, not gated): 26 of 28 files are longer than one block; dSDR cost from +0.0000 to +0.0000 dB, largest sample difference up to 0.00e+00.
 - **Rule 2, chunking cost, De-clip** (the f64 build chunked at 262,144 frames against its own whole-file run, stored as 32-bit float, reported and pinned below 0.5 dB, not gated): 91 of 98 files are longer than one block; dSDR cost from -0.1806 to +0.1796 dB, largest sample difference up to 1.36e-01.
   - `tests/test_repair_declip.py` also holds De-clip's chunking cost on a 36 s file at this block size under 0.5 dB (Task 4 measured +0.027 dB there).
+- **Rule 3, nothing outside the module's own work changes** (the shipped output against the input; De-click within 1e-9 outside the f64 build's gaps dilated by 8 samples, De-clip every unclipped sample exactly equal): **met on all 126 of 126 files**.
+- **What drives cumple's impulse De-click lead over cathar:** the mean lead is +0.96 dB over 14 files, and a35-glockenspiel.impulse11 alone leads by +12.95 dB; without that file the mean lead is +0.04 dB. In a35-glockenspiel impulse11, cathar's float32 running sum drifts and it fills a 140-sample gap at 627239 in clean audio with an artefact reaching 3.04e-2 (about -30 dBFS). The lead is one file, not a general advantage.
+- **The precision effect runs both ways.** In quiet passages cathar's float32 running sum drifts down, so it fills spurious gaps; elsewhere it drifts up, so it misses real clicks (see the clicks-missed counts of the impulse table, a16-clarinet among them). Which way it goes depends on the file.
 
 ## De-clip
 
-Each cell reads ΔSDR all / ΔSDR damaged / peak error (dB). ΔSDR is against the clean reference; the detector of record runs at threshold 5.
+Each cell reads ΔSDR all / ΔSDR damaged / peak error (dB). ΔSDR is against the clean reference; the detector of record runs at threshold 5. 
 
 | Reference | Input SDR (dB) | ffmpeg adeclip | cathar declip | cumple (f64, shipped) | RX 8 |
 |---|---|---|---|---|---|
@@ -238,24 +242,24 @@ Fidelity is the f32 build against cathar (rule 1: max sample under 1e-06, ΔSDR 
 
 ## Impulse De-click
 
-Each cell reads ΔSDR all / clicks missed / false detections. ΔSDR is against the clean reference; the detector of record runs at threshold 5.
+Each cell reads ΔSDR all / clicks missed / false detections. ΔSDR is against the clean reference; the detector of record runs at threshold 5. False detections are the tool's own gaps that touch no injected click (the f32 build stands for cathar, ffmpeg's are residual detections); see the header.
 
 | Reference | Seed | ffmpeg adeclick | cathar declick | cumple (f64, shipped) | RX 8 |
 |---|---|---|---|---|---|
 | fixture | 11 | +2.37 / 2 of 6 / 0 | +30.62 / 0 of 6 / 0 | +30.62 / 0 of 6 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
-| a08-violin | 11 | +18.30 / 1 of 40 / 1 | +32.24 / 0 of 40 / 6 | +32.25 / 0 of 40 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
+| a08-violin | 11 | +18.30 / 1 of 40 / 1 | +32.24 / 0 of 40 / 52 | +32.25 / 0 of 40 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
 | a16-clarinet | 11 | +24.57 / 1 of 40 / 2 | +36.87 / 8 of 40 / 0 | +36.87 / 0 of 40 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
-| a18-bassoon | 11 | +20.22 / 1 of 40 / 3 | +48.95 / 8 of 40 / 4 | +49.03 / 0 of 40 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
-| a25-harp | 11 | +8.34 / 0 of 40 / 0 | +46.32 / 0 of 40 / 1 | +46.35 / 0 of 40 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
-| a35-glockenspiel | 11 | +12.71 / 1 of 40 / 1 | +39.47 / 0 of 40 / 1 | +52.42 / 0 of 40 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
-| a41-celesta | 11 | +8.77 / 1 of 40 / 2 | +49.70 / 11 of 40 / 4 | +49.97 / 0 of 40 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
+| a18-bassoon | 11 | +20.22 / 1 of 40 / 3 | +48.95 / 8 of 40 / 48 | +49.03 / 0 of 40 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
+| a25-harp | 11 | +8.34 / 0 of 40 / 0 | +46.32 / 0 of 40 / 174 | +46.35 / 0 of 40 / 1 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
+| a35-glockenspiel | 11 | +12.71 / 1 of 40 / 1 | +39.47 / 0 of 40 / 380 | +52.42 / 0 of 40 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
+| a41-celesta | 11 | +8.77 / 1 of 40 / 2 | +49.70 / 11 of 40 / 58 | +49.97 / 0 of 40 / 2 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
 | a42-accordion | 11 | +26.47 / 4 of 44 / 0 | +32.15 / 9 of 44 / 0 | +32.15 / 0 of 44 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
 | a58-guitar | 11 | +9.55 / 5 of 32 / 0 | +31.54 / 8 of 32 / 0 | +31.54 / 0 of 32 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
-| a60-piano | 11 | +23.35 / 0 of 40 / 0 | +36.71 / 0 of 40 / 0 | +36.72 / 0 of 40 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
+| a60-piano | 11 | +23.35 / 0 of 40 / 0 | +36.71 / 0 of 40 / 170 | +36.72 / 0 of 40 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
 | a66-wind-ensemble | 11 | +12.56 / 2 of 36 / 0 | +26.59 / 7 of 36 / 0 | +26.59 / 0 of 36 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
-| librivox-60s | 11 | +18.18 / 0 of 60 / 0 | +31.81 / 0 of 60 / 0 | +31.81 / 0 of 60 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
-| librivox-600s | 11 | +19.45 / 1 of 60 / 0 | +30.22 / 0 of 60 / 0 | +30.26 / 0 of 60 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
-| librivox-1200s | 11 | +20.78 / 0 of 60 / 0 | +30.74 / 1 of 60 / 4 | +30.75 / 0 of 60 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
+| librivox-60s | 11 | +18.18 / 0 of 60 / 0 | +31.81 / 0 of 60 / 23 | +31.81 / 0 of 60 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
+| librivox-600s | 11 | +19.45 / 1 of 60 / 0 | +30.22 / 0 of 60 / 64 | +30.26 / 0 of 60 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
+| librivox-1200s | 11 | +20.78 / 0 of 60 / 0 | +30.74 / 1 of 60 / 30 | +30.75 / 0 of 60 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
 
 Fidelity is the f32 build against cathar (rule 1: max sample under 1e-06, ΔSDR difference under 0.01 dB). Precision is f64 minus f32 (rule 1b). Chunking is the whole-file ΔSDR minus the chunked ΔSDR of the f64 build (rule 2).
 
@@ -278,24 +282,24 @@ Fidelity is the f32 build against cathar (rule 1: max sample under 1e-06, ΔSDR 
 
 ## Burst De-click
 
-Each cell reads ΔSDR all / clicks missed / false detections. ΔSDR is against the clean reference; the detector of record runs at threshold 5.
+Each cell reads ΔSDR all / clicks missed / false detections. ΔSDR is against the clean reference; the detector of record runs at threshold 5. False detections are the tool's own gaps that touch no injected click (the f32 build stands for cathar, ffmpeg's are residual detections); see the header.
 
 | Reference | Seed | ffmpeg adeclick | cathar declick | cumple (f64, shipped) | RX 8 |
 |---|---|---|---|---|---|
 | fixture | 12 | -0.00 / 0 of 6 / 0 | +0.00 / 0 of 6 / 0 | +0.00 / 0 of 6 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
 | a08-violin | 12 | +0.14 / 0 of 40 / 1 | +0.00 / 0 of 40 / 0 | +0.00 / 0 of 40 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
-| a16-clarinet | 12 | +0.05 / 0 of 40 / 2 | -0.00 / 0 of 40 / 11 | +0.00 / 0 of 40 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
-| a18-bassoon | 12 | +0.25 / 0 of 40 / 3 | -0.00 / 2 of 40 / 5 | +0.00 / 0 of 40 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
-| a25-harp | 12 | -0.64 / 0 of 40 / 0 | +0.00 / 0 of 40 / 0 | -0.00 / 0 of 40 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
+| a16-clarinet | 12 | +0.05 / 0 of 40 / 2 | -0.00 / 0 of 40 / 151 | +0.00 / 0 of 40 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
+| a18-bassoon | 12 | +0.25 / 0 of 40 / 3 | -0.00 / 2 of 40 / 63 | +0.00 / 0 of 40 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
+| a25-harp | 12 | -0.64 / 0 of 40 / 0 | +0.00 / 0 of 40 / 0 | -0.00 / 0 of 40 / 1 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
 | a35-glockenspiel | 12 | +0.23 / 0 of 40 / 1 | +0.00 / 0 of 40 / 0 | +0.00 / 0 of 40 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
-| a41-celesta | 12 | -0.10 / 0 of 40 / 4 | -0.00 / 0 of 40 / 7 | -0.00 / 0 of 40 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
-| a42-accordion | 12 | +0.49 / 0 of 44 / 2 | -0.00 / 0 of 44 / 1 | +0.00 / 0 of 44 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
-| a58-guitar | 12 | +0.04 / 0 of 32 / 1 | -0.00 / 0 of 32 / 1 | +0.00 / 0 of 32 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
+| a41-celesta | 12 | -0.10 / 0 of 40 / 4 | -0.00 / 0 of 40 / 60 | -0.00 / 0 of 40 / 2 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
+| a42-accordion | 12 | +0.49 / 0 of 44 / 2 | -0.00 / 0 of 44 / 133 | +0.00 / 0 of 44 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
+| a58-guitar | 12 | +0.04 / 0 of 32 / 1 | -0.00 / 0 of 32 / 147 | +0.00 / 0 of 32 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
 | a60-piano | 12 | +0.06 / 0 of 40 / 0 | +0.00 / 0 of 40 / 0 | +0.00 / 0 of 40 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
 | a66-wind-ensemble | 12 | +0.02 / 0 of 36 / 0 | +0.00 / 0 of 36 / 0 | +0.00 / 0 of 36 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
-| librivox-60s | 12 | +0.06 / 0 of 60 / 0 | -0.00 / 0 of 60 / 0 | +0.00 / 0 of 60 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
-| librivox-600s | 12 | +0.09 / 0 of 60 / 0 | -0.00 / 0 of 60 / 0 | +0.00 / 0 of 60 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
-| librivox-1200s | 12 | +0.01 / 0 of 60 / 0 | -0.00 / 0 of 60 / 3 | +0.00 / 0 of 60 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
+| librivox-60s | 12 | +0.06 / 0 of 60 / 0 | -0.00 / 0 of 60 / 4 | +0.00 / 0 of 60 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
+| librivox-600s | 12 | +0.09 / 0 of 60 / 0 | -0.00 / 0 of 60 / 35 | +0.00 / 0 of 60 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
+| librivox-1200s | 12 | +0.01 / 0 of 60 / 0 | -0.00 / 0 of 60 / 107 | +0.00 / 0 of 60 / 0 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) |
 
 Fidelity is the f32 build against cathar (rule 1: max sample under 1e-06, ΔSDR difference under 0.01 dB). Precision is f64 minus f32 (rule 1b). Chunking is the whole-file ΔSDR minus the chunked ΔSDR of the f64 build (rule 2).
 
@@ -351,17 +355,17 @@ Each tool's mean over the files it ran on; infinite values are left out of a mea
 
 | Damage | Tool | Files ran | Mean ΔSDR all (dB) | Mean ΔSDR damaged (dB) | Mean peak error (dB) | Clicks missed | False detections | Mean wall time (s) |
 |---|---|---|---|---|---|---|---|---|
-| De-clip | ffmpeg | 44 of 98 | +4.47 | +4.87 | -4.0 | n/a | n/a | 5.04 |
-| De-clip | cathar | 98 of 98 | +8.48 | +8.48 | -1.9 | n/a | n/a | 6.16 |
-| De-clip | cumple | 98 of 98 | +8.32 | +8.32 | -1.9 | n/a | n/a | 4.16 |
+| De-clip | ffmpeg | 44 of 98 | +4.47 | +4.87 | -4.0 | n/a | n/a | 4.97 |
+| De-clip | cathar | 98 of 98 | +8.48 | +8.48 | -1.9 | n/a | n/a | 6.06 |
+| De-clip | cumple | 98 of 98 | +8.32 | +8.32 | -1.9 | n/a | n/a | 4.11 |
 | De-clip | RX 8 | 0 of 98 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) | | | | | |
 | Impulse De-click | ffmpeg | 14 of 14 | +16.12 | n/a | n/a | 19 of 578 | 9 | 0.38 |
-| Impulse De-click | cathar | 14 of 14 | +35.99 | n/a | n/a | 52 of 578 | 20 | 0.19 |
-| Impulse De-click | cumple | 14 of 14 | +36.95 | n/a | n/a | 0 of 578 | 0 | 0.17 |
+| Impulse De-click | cathar | 14 of 14 | +35.99 | n/a | n/a | 52 of 578 | 999 | 0.20 |
+| Impulse De-click | cumple | 14 of 14 | +36.95 | n/a | n/a | 0 of 578 | 3 | 0.15 |
 | Impulse De-click | RX 8 | 0 of 14 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) | | | | | |
 | Burst De-click | ffmpeg | 14 of 14 | +0.05 | n/a | n/a | 0 of 578 | 14 | 0.37 |
-| Burst De-click | cathar | 14 of 14 | -0.00 | n/a | n/a | 2 of 578 | 28 | 0.23 |
-| Burst De-click | cumple | 14 of 14 | +0.00 | n/a | n/a | 0 of 578 | 0 | 0.08 |
+| Burst De-click | cathar | 14 of 14 | -0.00 | n/a | n/a | 2 of 578 | 700 | 0.22 |
+| Burst De-click | cumple | 14 of 14 | +0.00 | n/a | n/a | 0 of 578 | 3 | 0.07 |
 | Burst De-click | RX 8 | 0 of 14 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) | | | | | |
 
 ## Summary, paired
@@ -370,13 +374,13 @@ Only the files ffmpeg, cathar and cumple all ran on, per damage type; the rows o
 
 | Damage | Tool | Files ran | Mean ΔSDR all (dB) | Mean ΔSDR damaged (dB) | Mean peak error (dB) | Clicks missed | False detections | Mean wall time (s) |
 |---|---|---|---|---|---|---|---|---|
-| De-clip | ffmpeg | 44 of 98 | +4.47 | +4.87 | -4.0 | n/a | n/a | 5.04 |
-| De-clip | cathar | 44 of 98 | +11.46 | +11.46 | -0.2 | n/a | n/a | 5.44 |
-| De-clip | cumple | 44 of 98 | +11.36 | +11.36 | -0.2 | n/a | n/a | 3.55 |
+| De-clip | ffmpeg | 44 of 98 | +4.47 | +4.87 | -4.0 | n/a | n/a | 4.97 |
+| De-clip | cathar | 44 of 98 | +11.46 | +11.46 | -0.2 | n/a | n/a | 5.36 |
+| De-clip | cumple | 44 of 98 | +11.36 | +11.36 | -0.2 | n/a | n/a | 3.50 |
 | Impulse De-click | ffmpeg | 14 of 14 | +16.12 | n/a | n/a | 19 of 578 | 9 | 0.38 |
-| Impulse De-click | cathar | 14 of 14 | +35.99 | n/a | n/a | 52 of 578 | 20 | 0.19 |
-| Impulse De-click | cumple | 14 of 14 | +36.95 | n/a | n/a | 0 of 578 | 0 | 0.17 |
+| Impulse De-click | cathar | 14 of 14 | +35.99 | n/a | n/a | 52 of 578 | 999 | 0.20 |
+| Impulse De-click | cumple | 14 of 14 | +36.95 | n/a | n/a | 0 of 578 | 3 | 0.15 |
 | Burst De-click | ffmpeg | 14 of 14 | +0.05 | n/a | n/a | 0 of 578 | 14 | 0.37 |
-| Burst De-click | cathar | 14 of 14 | -0.00 | n/a | n/a | 2 of 578 | 28 | 0.23 |
-| Burst De-click | cumple | 14 of 14 | +0.00 | n/a | n/a | 0 of 578 | 0 | 0.08 |
+| Burst De-click | cathar | 14 of 14 | -0.00 | n/a | n/a | 2 of 578 | 700 | 0.22 |
+| Burst De-click | cumple | 14 of 14 | +0.00 | n/a | n/a | 0 of 578 | 3 | 0.07 |
 
