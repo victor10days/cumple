@@ -40,15 +40,15 @@ pub enum DeclickMethod {
     Cubic,
 }
 
-fn from_f64<F: Float>(x: f64) -> F {
+pub(crate) fn from_f64<F: Float>(x: f64) -> F {
     <F as num_traits::NumCast>::from(x).expect("an f64 converts to any float type")
 }
 
-fn from_usize<F: Float>(n: usize) -> F {
+pub(crate) fn from_usize<F: Float>(n: usize) -> F {
     <F as num_traits::NumCast>::from(n).expect("a count converts to any float type")
 }
 
-fn to_f64<F: Float>(x: F) -> f64 {
+pub(crate) fn to_f64<F: Float>(x: F) -> f64 {
     x.to_f64().expect("any float type converts to f64")
 }
 
@@ -109,8 +109,9 @@ pub fn local_rms<F: Float>(signal: &[F], window: usize) -> Vec<F> {
 }
 
 /// Redraw `signal[start + 1..end]` as a cubic Hermite curve from `signal[start]` to `signal[end]`; a span
-/// shorter than 4 is left alone.
-fn cubic_interpolate<F: Float>(signal: &mut [F], start: usize, end: usize) {
+/// shorter than 4 is left alone. cathar's De-clip has the same function as `cubic_fill` (declip.rs 91 to 104),
+/// line for line, so [`crate::declip`] uses this one.
+pub(crate) fn cubic_interpolate<F: Float>(signal: &mut [F], start: usize, end: usize) {
     if end - start < 4 {
         return;
     }

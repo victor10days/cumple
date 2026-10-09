@@ -16,6 +16,14 @@ Ported functions, each in a file whose first line names its source file and comm
 - `src/inpaint.rs`, from `crates/cathar/src/inpaint.rs`: `inpaint_gap`, `estimate_ar_known`, `levinson`,
   `coef_autocorr`, `solve_gap` and `solve_spd_banded`, with the constants `AR_ORDER` and `MAX_SOLVE`.
   `inpaint_auto` is not ported.
+- `src/declip.rs`, from `crates/cathar/src/declip.rs`: `declip_with_method` (lines 57 to 69, its early return
+  and its dispatch, in `Declip::process`), `project_gamma` (73 to 83), `frame_starts` (106 to 116),
+  `cola_divisor` (118 to 130), `hard_threshold_k` (132 to 146, its cutoff found by selection rather than a
+  full sort, which gives the same value), `declip_cubic` (162 to 182, in `Declip::cubic`), `declip_spade` (186
+  to 272, in `Spade::run`) and the `Spade` and `Cubic` variants of the `DeclipMethod` enum; and, from
+  `crates/cathar/src/util.rs`, `hann_window` (lines 5 to 13). `cubic_fill` (declip.rs 91 to 104) is line for
+  line restore.rs's `cubic_interpolate`, so `src/declip.rs` calls the port in `src/declick.rs`. The Social, OMP,
+  NMF and Neural methods are not ported.
 
 `Window::HannSymmetric` in `src/stft.rs` computes the same formula as cathar's `hann_window`
 (`crates/cathar/src/util.rs`) so the ports can be tested against it; it is not copied code.
