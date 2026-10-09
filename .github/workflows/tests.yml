@@ -20,6 +20,46 @@ jobs:
           python-version: "3.12"
       - name: Install
         run: uv sync --group dev
+      # The repair core is Rust (crates/). `uv sync` above shows the base install needs no toolchain; the
+      # sync below builds cumple-dsp into the environment so the core-gated tests run on all three runners.
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Install with the repair core
+        run: uv sync --group dev --extra repair
+      - name: Rust format
+        run: cargo fmt --all -- --check
+      - name: Rust lint
+        # pyo3's build script asks a Python interpreter for its version; abi3-py312 refuses one older than
+        # 3.12, and the runner's own python3 can be. VIRTUAL_ENV points it at the project's 3.12.
+        env:
+          VIRTUAL_ENV: ${{ github.workspace }}/.venv
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Rust tests
+        run: cargo test -p cumple-dsp
+      - name: Rust licences
+        # Licences do not vary by runner, so one leg checks them.
+        if: runner.os == 'Linux'
+        uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check licenses
+      # The cathar CLI is the subprocess baseline the repair tests compare with. Its cache is keyed by the
+      # pinned revision alone, not by Cargo.lock, which keys rust-cache's.
+      - name: Cache the cathar baseline
+        id: cathar-cache
+        if: runner.os == 'Linux'
+        uses: actions/cache@v6
+        with:
+          path: ~/.cargo/bin/cathar
+          key: cathar-${{ runner.os }}-f2c2842f89084589d069e5a8a0b61311aa70d928
+      - name: Build the cathar baseline
+        if: runner.os == 'Linux' && steps.cathar-cache.outputs.cache-hit != 'true'
+        run: cargo install --git https://github.com/vbasky/cathar --rev f2c2842f89084589d069e5a8a0b61311aa70d928 cathar-cli --locked
+      - name: cathar baseline
+        if: runner.os == 'Linux'
+        run: |
+          "$HOME/.cargo/bin/cathar" --version
       - name: Install ffmpeg (the decode tests run only where it exists)
         if: runner.os == 'Linux'
         run: |
@@ -34,9 +74,18 @@ jobs:
       - name: Test
         # The 29 EBU conformance cases skip here: the EBU test set is free but not redistributed;
         # the conformance job below runs them when the repository holds a link to a copy. The
-        # ffmpeg-gated decode tests run on Linux, where the step above installs ffmpeg, and skip
-        # on macOS and Windows.
+        # ffmpeg-gated decode tests and the cathar-gated repair tests run on Linux, in the next step,
+        # and skip on macOS and Windows.
+        if: runner.os != 'Linux'
         run: uv run pytest
+      - name: Tests (Linux, with the cathar baseline required)
+        # In bash, where $HOME expands (a tilde in an env block stays literal). With
+        # CUMPLE_REQUIRE_CATHAR=1 a missing cathar stops the run instead of skipping its tests.
+        if: runner.os == 'Linux'
+        run: |
+          export CUMPLE_CATHAR="$HOME/.cargo/bin/cathar"
+          export CUMPLE_REQUIRE_CATHAR=1
+          uv run pytest
       - name: Build
         if: runner.os == 'Linux'
         run: uv build

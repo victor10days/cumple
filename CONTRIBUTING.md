@@ -9,7 +9,7 @@ destination, or report a number that disagrees with a published document.
 git clone https://github.com/victor10days/cumple
 cd cumple
 uv sync            # Python 3.12, runtime and dev dependencies
-uv run pytest      # 261 tests; the 29 EBU cases skip until you fetch the test set into ~/.cache/cumple
+uv run pytest      # 262 tests; the 29 EBU cases skip until you fetch the test set into ~/.cache/cumple
 uv run ruff check src tests scripts && uv run ruff format --check src tests scripts
 uv sync --extra app --group packaging     # the desktop app (pywebview) and PyInstaller
 uv run cumple app                         # the window, from the source tree
@@ -28,6 +28,33 @@ not redistributed here. Download `ebu-loudness-test-setv05.zip` in a browser
 folder in `~/.cache/cumple/`, or point `CUMPLE_EBU_TEST_SET` at it. The 29
 conformance cases then run, and `scripts/conformance_report.py` regenerates
 `docs/CONFORMANCE.md`.
+
+## The repair core (Rust)
+
+Audio repair runs through a compiled core: `crates/cumple-dsp` (pure Rust)
+and `crates/cumple-dsp-py` (its PyO3 bindings, which maturin builds into the
+distribution `cumple-dsp`, imported as `cumple_dsp`). `uv sync` never builds
+it, so a checkout without Rust runs everything else and the tests that need
+the core skip. With a stable Rust toolchain from rustup.rs
+(`rust-toolchain.toml` adds clippy and rustfmt):
+
+```
+uv sync --extra repair                                   # builds the core into .venv
+uv sync --extra repair --reinstall-package cumple-dsp    # after every edit to a .rs file or a Cargo.toml
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test -p cumple-dsp
+cargo deny check licenses                                # cargo install cargo-deny --locked
+```
+
+The reinstall line is not optional. uv rebuilds the core when `uv sync
+--extra repair` sees a change in the files `crates/cumple-dsp-py/pyproject.toml`
+lists as cache keys, but a bare `uv run` keeps the build it has, so a test run
+after a Rust edit without that line exercises the old core. A plain `uv sync`
+afterwards removes the core again, since it installs exactly what it is told.
+pyo3's build script, which clippy runs, needs Python 3.12 or newer: it uses
+`VIRTUAL_ENV` when set, otherwise the first `python` or `python3` on `PATH`, so
+prefix clippy with `VIRTUAL_ENV=.venv` when that one is older.
 
 ## Add a destination
 
