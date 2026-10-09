@@ -71,7 +71,7 @@ says the same.
   detector, Leq(m) from the TASA response table, the rules engine with
   either/or rules and the speech switch, the audio diff, the watch folder,
   the gain-only fix, the QC sheet, the macOS droplet, 39 profiles.
-- **Tests and benchmarks.** 322 tests, including synthetic signals with
+- **Tests and benchmarks.** 323 tests, including synthetic signals with
   analytic answers and the official EBU cases; cross-checks against
   libebur128, pyloudnorm, ffmpeg's `ebur128` filter, loudcheck and an
   independently designed interpolator;
@@ -316,6 +316,12 @@ bits, storing 0.7 of a step as 0 and -0.3 as -1, so the runner now rounds an
 integer copy to its grid itself, which makes the residual exact and removes
 the half-step bias. The cost of streaming a two-module chain in 8,192-frame
 blocks, against one pass over the whole file, measured -0.12 to +0.06 dB over
-24 damage layouts and is held in a test. `docs/REPAIR.md` scores the modules
+24 damage layouts with De-click first and -0.10 to +0.09 dB with De-clip first,
+and is held in a test. The final review of the branch found the second order
+broken: De-click had added the clipped lookahead to its running sum of squares
+and then subtracted De-clip's larger rebuilt peaks, so the sum went below zero
+and a minute of clipped speech came back with 265 false clicks. De-click now
+redoes its running sum from the first sample that changed, and finds none.
+`docs/REPAIR.md` scores the modules
 against ffmpeg and cathar on synthetic damage, with RX columns that wait for
 Victor's own RX runs.

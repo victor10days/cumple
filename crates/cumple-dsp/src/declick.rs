@@ -15,9 +15,15 @@
 //!
 //! As a [`Module`] the port runs over a file in blocks of any size and gives the same result as one call over
 //! the whole file, as long as each click's run, its shoulders and the AR context fit inside
-//! `CONTEXT_FRAMES`. Between calls it keeps the raw samples and their local RMS behind the centre, the
-//! running sum, the place the detector reached, and the rebuilt samples past the centre, which reach every
-//! later centre they fall in; a gap belongs to the call whose centre holds its first sample.
+//! `CONTEXT_FRAMES`. Between calls it keeps the raw samples behind the centre with the running sum after each
+//! of them, the place the detector reached, and the rebuilt samples past the centre, which reach every later
+//! centre they fall in; a gap belongs to the call whose centre holds its first sample.
+//!
+//! In a chain, a module after the first gets the raw lookahead as its right context, and the next call's
+//! centre holds those file samples after the modules before it. Where they differ, the running sum is taken
+//! back to the last step whose window held none of them and carried forward again over the new values in
+//! upstream's order, so the sum never keeps a square it will not take out. When none differs, as for a module
+//! alone or first in its chain, nothing is redone.
 
 use num_traits::Float;
 
@@ -169,10 +175,11 @@ pub struct Declick<F> {
     /// The local RMS is known for file samples below this.
     rms_end: usize,
     acc: RunningRms<F>,
-    /// The file sample at index 0 of `raw` and `rms`.
+    /// The file sample at index 0 of `raw` and `sums`.
     base: usize,
     raw: Vec<F>,
-    rms: Vec<F>,
+    /// The running sum after each sample's step, whose `rms()` is that sample's local RMS.
+    sums: Vec<RunningRms<F>>,
     work: Vec<F>,
     /// Rebuilt samples of a gap that ran past the last centre, for the start of the next one.
     carry: Vec<F>,
@@ -224,7 +231,7 @@ impl<F: Float> Declick<F> {
             acc: RunningRms::new(),
             base: 0,
             raw: Vec::new(),
-            rms: Vec::new(),
+            sums: Vec::new(),
             work: Vec::new(),
             carry: Vec::new(),
             gaps: Vec::new(),
@@ -245,25 +252,70 @@ impl<F: Float> Declick<F> {
         self.finished
     }
 
-    /// Keep the raw samples and the local RMS from `at.lo` on, then append this input's raw samples (its
-    /// left context is earlier output, so the raw samples behind the centre come from the last call).
+    /// Keep the raw samples and the running sums from `at.lo` on, then append this input's raw samples (its
+    /// left context is earlier output, so the raw samples behind the centre come from the last call). When the
+    /// centre changes a sample the last call read as raw lookahead, redo the running sum from there.
     fn keep_history(&mut self, input: &[f64], at: Span) {
         debug_assert!(
             self.base <= at.lo && at.lo <= self.rms_end && self.rms_end <= at.lo + at.n_in
         );
+        // The last call's input ran to `seen`; this one's centre starts at `done`, so the file samples between
+        // were its right context and are this call's centre (and right context, for a block shorter than it).
+        let seen = (self.base + self.raw.len()).min(at.lo + at.n_in);
+        let changed = (self.done..seen).find(|&j| {
+            let (old, new) = (self.raw[j - self.base], from_f64::<F>(input[j - at.lo]));
+            !(old == new || old.is_nan() && new.is_nan())
+        });
         let shift = at.lo - self.base;
-        let keep_rms = self.rms_end - at.lo;
+        let keep_sums = self.rms_end - at.lo;
         self.raw.copy_within(shift..shift + at.left, 0);
         self.raw.truncate(at.left);
         self.raw
             .extend(input[at.left..at.n_in].iter().map(|&v| from_f64::<F>(v)));
-        self.rms.copy_within(shift..shift + keep_rms, 0);
-        self.rms.truncate(keep_rms);
+        self.sums.copy_within(shift..shift + keep_sums, 0);
+        self.sums.truncate(keep_sums);
         self.base = at.lo;
+        if let Some(first) = changed {
+            self.redo_sums(first, at);
+        }
     }
 
-    /// Carry the running sum on to every sample whose window this input holds: rms[i] needs raw samples up
-    /// to i + half, so a call that does not end the file stops half a window before the end of its input.
+    /// One step of upstream's running sum, for sample `i`: `i - half` leaves the window and `i + half` enters.
+    fn step(&mut self, i: usize, at: Span) {
+        let half = self.window / 2;
+        if i >= half {
+            self.acc.leave(self.raw[i - half - at.lo]);
+        }
+        if at.file_len.is_none_or(|n| i + half < n) {
+            self.acc.enter(self.raw[i + half - at.lo]);
+        }
+    }
+
+    /// Take the running sum back to the state before the first step whose window holds file sample `first`,
+    /// and redo every step the last calls took from there over the samples now in `raw`. The steps before
+    /// that one read no sample from `first` on, so the result is the sum upstream's loop takes over these
+    /// values, bit for bit.
+    fn redo_sums(&mut self, first: usize, at: Span) {
+        let half = self.window / 2;
+        let from = first.saturating_sub(half);
+        if from == 0 {
+            // Back to the file's start (so `at.lo` is 0): upstream starts the sum with the first half window.
+            self.acc = RunningRms::new();
+            for s in self.raw.iter().take(half.min(at.n_in)) {
+                self.acc.enter(*s);
+            }
+        } else {
+            self.acc = self.sums[from - 1 - at.lo];
+        }
+        for i in from..self.rms_end {
+            self.step(i, at);
+            self.sums[i - at.lo] = self.acc;
+        }
+    }
+
+    /// Carry the running sum on to every sample whose window this input holds: the local RMS of sample i needs
+    /// raw samples up to i + half, so a call that does not end the file stops half a window before the end of
+    /// its input.
     fn extend_rms(&mut self, at: Span) {
         let half = self.window / 2;
         let limit = (at.lo + at.n_in).saturating_sub(half).max(self.rms_end);
@@ -275,13 +327,8 @@ impl<F: Float> Declick<F> {
             }
         }
         for i in self.rms_end..limit {
-            if i >= half {
-                self.acc.leave(self.raw[i - half - at.lo]);
-            }
-            if at.file_len.is_none_or(|n| i + half < n) {
-                self.acc.enter(self.raw[i + half - at.lo]);
-            }
-            self.rms.push(self.acc.rms());
+            self.step(i, at);
+            self.sums.push(self.acc);
         }
         self.rms_end = limit;
     }
@@ -291,8 +338,8 @@ impl<F: Float> Declick<F> {
     /// RMS, so collecting the gaps first and filling them after, in order, is upstream's order of operations.
     fn detect(&mut self, at: Span) {
         let half = self.window / 2;
-        let (raw, rms, lo, threshold) = (&self.raw, &self.rms, at.lo, self.threshold);
-        let flagged = |j: usize| raw[j - lo].abs() > threshold * rms[j - lo];
+        let (raw, sums, lo, threshold) = (&self.raw, &self.sums, at.lo, self.threshold);
+        let flagged = |j: usize| raw[j - lo].abs() > threshold * sums[j - lo].rms();
         // Upstream scans while i + half < n and grows a run while end + half < n; within one call the local
         // RMS is known below `bound`.
         let bound = (at.lo + at.n_in).saturating_sub(half);
@@ -743,6 +790,127 @@ mod tests {
                 out.iter().all(|v| v.is_finite()),
                 "window {window}, one call"
             );
+        }
+    }
+
+    /// Feed `m` the calls a chain runner gives a module after the first (src/cumple/repair/runner.py): each
+    /// centre from `upstream`, the left context the module's own output, the right context the raw lookahead
+    /// from `raw`. After each call `check` sees the module and the end of the centre it returned.
+    fn second_in_a_chain<F: Float + Send>(
+        m: &mut Declick<F>,
+        raw: &[f64],
+        upstream: &[f64],
+        block: usize,
+        mut check: impl FnMut(&Declick<F>, usize),
+    ) -> Vec<f64> {
+        let n = raw.len();
+        let (mut out, mut input, mut output) = (vec![0.0; n], Vec::new(), Vec::new());
+        let mut start = 0;
+        while start < n {
+            let mut end = (start + block).min(n);
+            if n - end < CONTEXT_FRAMES {
+                end = n;
+            }
+            let last = end == n;
+            let lo = start.saturating_sub(CONTEXT_FRAMES);
+            let hi = if last { n } else { end + CONTEXT_FRAMES };
+            input.clear();
+            input.extend_from_slice(&out[lo..start]);
+            input.extend_from_slice(&upstream[start..end]);
+            input.extend_from_slice(&raw[end..hi]);
+            output.resize(input.len(), 0.0);
+            let edge = Edge {
+                first: lo == 0,
+                last,
+                padding: 0,
+            };
+            m.process(&input, &mut output, edge);
+            out[start..end].copy_from_slice(&output[start - lo..end - lo]);
+            check(m, end);
+            start = end;
+        }
+        out
+    }
+
+    /// The running sum after step `i` of upstream's loop over `signal`, as `local_rms` takes it.
+    fn running_sum_after<F: Float>(signal: &[F], window: usize, i: usize) -> RunningRms<F> {
+        let (n, half) = (signal.len(), window / 2);
+        let mut acc = RunningRms::new();
+        for s in signal.iter().take(half.min(n)) {
+            acc.enter(*s);
+        }
+        for j in 0..=i {
+            if j >= half {
+                acc.leave(signal[j - half]);
+            }
+            if j + half < n {
+                acc.enter(signal[j + half]);
+            }
+        }
+        acc
+    }
+
+    fn sums_match_a_fresh_sum_after_every_call<F: Float + Send + std::fmt::Debug>(
+        window: usize,
+        block: usize,
+    ) {
+        // Upstream turns the signal up fourfold, as De-clip rebuilds peaks above a clipped plateau: every
+        // right context this module reads is quieter than the centre it becomes.
+        let raw: Vec<f64> = two_tones(60_000)
+            .iter()
+            .map(|&v| from_f64::<F>(v).to_f64().unwrap())
+            .collect();
+        let upstream: Vec<f64> = raw.iter().map(|v| 4.0 * v).collect();
+        let label = format!(
+            "{}, window {window}, block {block}",
+            std::any::type_name::<F>()
+        );
+        let mut m = Declick::<F>::new(5.0, window, DeclickMethod::Ar, 3).unwrap();
+        let out = second_in_a_chain(&mut m, &raw, &upstream, block, |m, c_end| {
+            // What the module has seen so far: upstream's samples up to the end of this centre, raw after.
+            let seen: Vec<F> = upstream[..c_end]
+                .iter()
+                .chain(&raw[c_end..])
+                .map(|&v| from_f64::<F>(v))
+                .collect();
+            let want = local_rms(&seen, window);
+            for (k, sum) in m.sums.iter().enumerate() {
+                let i = m.base + k;
+                assert_eq!(
+                    sum.rms(),
+                    want[i],
+                    "{label}: local RMS of sample {i} after the centre ending at {c_end}"
+                );
+            }
+            let fresh = running_sum_after(&seen, window, m.rms_end - 1);
+            assert_eq!(
+                (m.acc.sum_sq, m.acc.count),
+                (fresh.sum_sq, fresh.count),
+                "{label}: the running sum after the centre ending at {c_end}"
+            );
+        });
+        // Upstream's signal holds no click, so one call over it finds none, and neither may the chain.
+        assert!(
+            m.report().events.is_empty(),
+            "{label}: {:?}",
+            m.report().events
+        );
+        assert_eq!(out, upstream, "{label}");
+    }
+
+    #[test]
+    fn a_lookahead_that_differs_from_the_next_centre_leaves_the_sum_a_fresh_sum_would_hold() {
+        // Blocks shorter than the context, so a sample is right context for many calls before it is a centre,
+        // and longer; the widest window reaches back over the whole left context.
+        for (window, block) in [
+            (64, 8_192),
+            (64, 1_000),
+            (64, 20_000),
+            (4_096, 5_000),
+            (MAX_WINDOW, 8_192),
+        ] {
+            sums_match_a_fresh_sum_after_every_call::<f64>(window, block);
+            sums_match_a_fresh_sum_after_every_call::<f32>(window, block);
         }
     }
 

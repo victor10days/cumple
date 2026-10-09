@@ -27,7 +27,9 @@ BLOCK = 8192
 # +0.0125 in all, -0.1326 of it De-clip's chunking, +0.1451 the raw right context. Over 24 layouts (input SDR 3,
 # 5 and 10 dB, seeds 1 to 8): the total -0.124 to +0.056, De-clip's chunking -0.208 to +0.238, the raw right
 # context -0.257 to +0.204. The raw right context costs no more than A-SPADE's own block edges, and the two partly
-# cancel. The tolerance is twice the largest total measured.
+# cancel. In the other order, De-clip then De-click, the same 24 layouts cost -0.104 to +0.093 in all, with every
+# De-click gap list equal to the whole-file one (before De-click redid its running sum over a changed lookahead,
+# +0.53 at worst and 19 of 24 gap lists wrong). The tolerance is twice the largest total measured in either order.
 CHAIN_COST_TOLERANCE = 0.25
 
 
@@ -228,6 +230,29 @@ def test_a_two_module_chain_in_blocks_costs_what_raw_right_context_costs(tmp_pat
     )
     assert [rep["module"] for rep in r.reports] == ["declick", "declip"]
     assert r.reports[0]["clicks"] > 0 and r.reports[1]["runs"] > 0
+    assert abs(cost) < CHAIN_COST_TOLERANCE
+
+
+def test_declick_after_declip_in_blocks_lists_the_gaps_one_pass_over_declips_whole_output_lists(tmp_path):
+    """De-click second in a chain reads De-clip's rebuilt peaks in each centre where its last call read the clipped
+    lookahead. Its running sum must take out the squares it put in, or it drifts below zero, the local RMS floors at
+    1e-10 and every quiet sample reads as a click: 17 gaps here against 3, and 265 on a minute of LibriVox."""
+    import cumple_dsp
+
+    src, x, y, thr, fs = clicked_and_clipped(tmp_path, seed=1)
+    assert len(y) > 4 * BLOCK
+    r = repair_file(
+        src, chain.parse(f"declip(threshold={thr!r}),declick()"), tmp_path / "chain.wav", block_frames=BLOCK
+    )
+    out = read(tmp_path / "chain.wav")[:, 0]
+    declick = cumple_dsp.Declick(fs)
+    whole = declick.process_whole(cumple_dsp.Declip(fs, threshold=thr).process_whole(y))
+    ours, theirs = r.reports[1], declick.report()
+    assert ours["module"] == "declick" and theirs["clicks"] > 0
+    assert (ours["positions"], ours["widths"]) == (theirs["positions"], theirs["widths"])
+    assert ours["linear_fallbacks"] == 0 and ours["context_fallbacks"] == 0
+    cost = metrics.delta_sdr(x, y, whole) - metrics.delta_sdr(x, y, out)
+    print(f"De-clip then De-click at {BLOCK}: cost {cost:+.4f} dB, max sample {np.max(np.abs(out - whole)):.2e}")
     assert abs(cost) < CHAIN_COST_TOLERANCE
 
 
