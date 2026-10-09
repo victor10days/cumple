@@ -1,0 +1,7 @@
+id: declick-declip
+summary: Clicks first, then clipped peaks; the clip threshold is for a file clipped at full scale.
+steps:
+  - module: declick
+    params: { threshold: 5.0, window: 64, method: ar, iterations: 3 }
+  - module: declip
+    params: { threshold: 0.95, method: spade }

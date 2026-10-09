@@ -1,0 +1,30 @@
+[build-system]
+requires = ["maturin>=1.9.4,<2"]
+build-backend = "maturin"
+
+[project]
+name = "cumple-dsp"
+# Static, so `uv lock` reads the metadata without running maturin (a dynamic version would make it build).
+version = "0.1.0"
+description = "The compiled audio repair core of cumple (De-click, De-clip, STFT). Install it as cumple[repair]."
+requires-python = ">=3.12"
+license = "MIT"
+# PEP 639 takes paths inside this folder only, so the notices a wheel must carry have their own copy here.
+license-files = ["THIRD_PARTY.md"]
+dependencies = ["numpy>=2.0"]
+
+[tool.maturin]
+module-name = "cumple_dsp"
+features = ["pyo3/abi3-py312"]
+
+[tool.uv]
+# uv rebuilds a workspace member only when one of these changes. A bare `uv run` still keeps the old build,
+# so every Rust edit is followed by `uv sync --extra repair --reinstall-package cumple-dsp` (CONTRIBUTING.md).
+cache-keys = [
+  { file = "pyproject.toml" },
+  { file = "Cargo.toml" },
+  { file = "src/**/*.rs" },
+  { file = "../cumple-dsp/Cargo.toml" },
+  { file = "../cumple-dsp/src/**/*.rs" },
+  { file = "../../Cargo.lock" },
+]

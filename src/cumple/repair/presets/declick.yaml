@@ -1,0 +1,5 @@
+id: declick
+summary: Narrow impulse clicks rebuilt by AR interpolation; at threshold 5 the detector also fires on lone low-level samples in digital silence.
+steps:
+  - module: declick
+    params: { threshold: 5.0, window: 64, method: ar, iterations: 3 }

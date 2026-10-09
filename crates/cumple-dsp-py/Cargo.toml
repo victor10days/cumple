@@ -1,0 +1,22 @@
+[package]
+name = "cumple-dsp-py"
+version = "0.1.0"
+description = "Python bindings for cumple's audio repair core, built by maturin into the distribution cumple-dsp."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+# The bindings link against Python; `cargo test -p cumple-dsp` tests the core and pytest tests the wheel.
+test = false
+
+[dependencies]
+# The core under another name: `#[pymodule] fn cumple_dsp` emits a module called cumple_dsp, which would
+# shadow a dependency of that name (E0659, E0425).
+dsp = { package = "cumple-dsp", path = "../cumple-dsp" }
+numpy = "0.29"
+# No `extension-module`: the feature is deprecated, and maturin 1.9.4 and newer link the module without it.
+pyo3 = { version = "0.29", features = ["abi3-py312"] }

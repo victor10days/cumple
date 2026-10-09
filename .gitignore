@@ -12,6 +12,9 @@ dist/
 .coverage
 htmlcov/
 
+# Rust
+target/
+
 # OS / editors
 .hallmark/
 .DS_Store

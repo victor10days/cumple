@@ -1,0 +1,21 @@
+[workspace]
+resolver = "3"
+members = ["crates/cumple-dsp", "crates/cumple-dsp-py"]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.87"
+license = "MIT"
+repository = "https://github.com/victor10days/cumple"
+
+[workspace.dependencies]
+# rustfft, realfft and num-complex are the versions cathar's Cargo.lock holds at f2c2842. The exact pins keep
+# the f32 build's FFT arithmetic equal to cathar's (docs/superpowers/specs/2026-10-08-repair-foundation-design.md,
+# section 1); moving them is a decision, not an update.
+rustfft = "=6.4.1"
+realfft = "=3.5.0"
+num-complex = "=0.4.6"
+num-traits = "0.2.19"
+
+[profile.release]
+lto = "thin"

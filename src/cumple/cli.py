@@ -19,6 +19,10 @@ from .diff import describe, diff_files, diff_to_dict, sum_stems_against
 from .fix import fix_file
 from .io import load_package, probe
 from .meters.measure import measure, measure_args
+from .repair import RepairUnavailable, require
+from .repair.chain import presets as repair_presets
+from .repair.chain import resolve as resolve_chain
+from .repair.runner import repair_file
 from .report import print_report, report_to_dict, write_diff_sheet, write_sheet
 from .report.qc_sheet import sheet_target
 from .report.specs_md import render_specs_markdown
@@ -464,6 +468,117 @@ def fix(
         + ("" if report.passed else "  (other rules still fail; see `cumple check`)")
     )
     raise typer.Exit(0 if report.passed else 1)
+
+
+def _count(n: int, one: str, many: str) -> str:
+    return f"{n} {one if n == 1 else many}"
+
+
+def _repair_summary(report: dict) -> str:
+    """One line from a module's report: what it repaired, and anything it had to fall back on."""
+    if report["module"] == "declick":
+        line = f"{_count(report['clicks'], 'click', 'clicks')} repaired"
+        if report["linear_fallbacks"]:
+            line += f", {report['linear_fallbacks']} filled linearly (longer than the AR solve)"
+        if report["context_fallbacks"]:
+            line += f", {report['context_fallbacks']} filled linearly at a block edge"
+        return line
+    line = f"{_count(report['runs'], 'clipped run', 'clipped runs')} rebuilt"
+    if report["runs"]:
+        line += f", the longest {_count(report['longest_run'], 'sample', 'samples')}"
+        line += f", peak {report['peak_in']:.3f} → {report['peak_out']:.3f}"
+    return line
+
+
+def _dbfs(v: float | None) -> str:
+    return "-inf" if v is None else f"{v:+.1f}"
+
+
+@app.command()
+def repair(
+    path: Path | None = typer.Argument(None, exists=True, dir_okay=False, help="The PCM file to repair."),
+    chain: str | None = typer.Option(
+        None,
+        "--chain",
+        "-c",
+        help='Modules in order with their parameters, such as "declick(threshold=5),declip()".',
+    ),
+    preset: str | None = typer.Option(None, "--preset", "-p", help="A preset id instead (see --list-presets)."),
+    out: Path | None = typer.Option(None, "--out", "-o", help="The repaired copy to write (required)."),
+    residual: Path | None = typer.Option(
+        None, "--residual", help="Also write the input minus the copy: what the chain removed."
+    ),
+    receipt: Path | None = typer.Option(
+        None, "--receipt", help="Where the JSON receipt goes (default: <out>.cumple-repair.json)."
+    ),
+    list_presets: bool = typer.Option(False, "--list-presets", help="List the presets, built-in and your own."),
+) -> None:
+    """Write a repaired copy of a PCM file through the compiled core, with a JSON receipt of what ran.
+
+    Exit 0 when the copy was written; 1 when no module found anything to repair, so there is nothing to change and no copy is written (fix exits 0 there, because for fix a file that already complies is the goal); 2 on an error.
+
+    declick sees only narrow clicks (no sample's ratio to a local RMS that includes it can exceed sqrt(window), 8 at window 64) and fires on lone low-level samples in digital silence, so on a clean file with sparse dither it can write a copy. declip rebuilds the samples at or above its threshold, 0.95 by default, for a file clipped at full scale.
+    """
+    if list_presets:
+        try:
+            found = repair_presets()
+        except (ValueError, OSError) as e:  # a preset that does not validate, or a file that cannot be read
+            console.print(f"[red]cannot read the presets:[/] {escape(str(e))}")
+            raise typer.Exit(2) from None
+        table = Table(box=box.SIMPLE_HEAD, title=f"{len(found)} repair presets", title_justify="left")
+        table.add_column("id", style="bold", no_wrap=True)
+        table.add_column("chain", overflow="fold")
+        table.add_column("summary")
+        for c in sorted(found.values(), key=lambda c: c.id):
+            table.add_row(escape(c.id), escape(c.text()), escape(c.summary))
+        console.print(table)
+        return
+    try:
+        require()
+    except RepairUnavailable as e:
+        console.print(f"[red]{escape(str(e))}[/]")
+        raise typer.Exit(2) from None
+    if path is None or out is None or (chain is None) == (preset is None):
+        console.print("[red]give a file, --out, and either --chain or --preset[/] (see `cumple repair --help`)")
+        raise typer.Exit(2)
+    try:
+        c = resolve_chain(chain if chain is not None else preset)
+    except ValueError as e:
+        console.print(f"[red]bad chain:[/] {escape(str(e))}")
+        raise typer.Exit(2) from None
+    except OSError as e:  # a user preset that cannot be read
+        console.print(f"[red]cannot read the presets:[/] {escape(str(e))}")
+        raise typer.Exit(2) from None
+    try:
+        result = repair_file(path, c, out, residual, receipt_path=receipt)
+    except Exception as e:  # unreadable file, a refused destination, a decoded file, libsndfile errors
+        console.print(f"[red]cannot repair {escape(str(path))}:[/] {escape(str(e))}")
+        raise typer.Exit(2) from None
+    if not result.changed:
+        console.print(
+            f"[yellow]nothing to change:[/] {escape(c.text())} found nothing to repair in {escape(str(path))}; "
+            "no copy written"
+        )
+        raise typer.Exit(1)
+    before, after = result.receipt.before, result.receipt.after
+    console.print(
+        f"wrote [bold]{escape(str(result.dst))}[/]  [dim](sample peak {_dbfs(before.sample_peak_dbfs)} → "
+        f"{_dbfs(after.sample_peak_dbfs)} dBFS, clipped runs {before.clipped_runs} → {after.clipped_runs})[/]"
+    )
+    for step, report in zip(c.steps, result.reports, strict=True):
+        console.print(f"  {escape(step.text())}: {escape(_repair_summary(report))}")
+    # A float copy holds peaks past full scale; only an integer one clips them again.
+    if after.clipped_runs > before.clipped_runs and not probe(result.dst).is_float:
+        console.print(
+            "[yellow]note: rebuilt peaks pass full scale, and an integer copy clips them again; "
+            "lower the level before repairing to keep them[/]"
+        )
+    if residual is not None:
+        console.print(f"[dim]residual:[/] {escape(str(residual))}")
+    console.print(f"[dim]receipt:[/] {escape(str(result.receipt_path))}")
+    console.print(
+        "[dim]note: the copy carries no bext/iXML metadata; re-embed it in your DAW if the destination requires it[/]"
+    )
 
 
 @app.command("app")

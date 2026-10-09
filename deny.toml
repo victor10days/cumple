@@ -1,0 +1,15 @@
+# cargo-deny: `cargo deny check licenses` is a step of CONTRIBUTING.md's checklist and of the Linux CI job.
+# A dependency whose licence is not on this list fails the check, so a transitive licence change is caught.
+
+[licenses]
+version = 2
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-3.0",
+    "Zlib",
+]

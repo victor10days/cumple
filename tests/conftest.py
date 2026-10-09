@@ -1,10 +1,24 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import numpy as np
 import pytest
 import soundfile as sf
+
+
+def pytest_configure(config):
+    """With CUMPLE_REQUIRE_CATHAR=1 (CI's Linux leg) a missing cathar CLI stops the run instead of skipping."""
+    if os.environ.get("CUMPLE_REQUIRE_CATHAR") != "1":
+        return
+    from scripts.benchmark_repair import find_cathar
+
+    if find_cathar() is None:
+        raise pytest.UsageError(
+            "CUMPLE_REQUIRE_CATHAR=1 but no cathar CLI was found (CUMPLE_CATHAR, PATH, ~/.cargo/bin/cathar); "
+            "the cathar-gated tests would only skip"
+        )
 
 
 @pytest.fixture

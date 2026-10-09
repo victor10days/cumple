@@ -1,0 +1,5 @@
+id: declip
+summary: Clipped peaks rebuilt by A-SPADE; the clip threshold is for a file clipped at full scale.
+steps:
+  - module: declip
+    params: { threshold: 0.95, method: spade }

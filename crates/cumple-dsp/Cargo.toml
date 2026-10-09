@@ -1,0 +1,16 @@
+[package]
+name = "cumple-dsp"
+version = "0.1.0"
+description = "cumple's audio repair core: a streaming STFT and the module contract the repair modules implement."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+num-complex.workspace = true
+num-traits = { workspace = true }
+realfft.workspace = true
+# realfft reaches rustfft through its own dependency; naming it here applies the workspace's exact pin.
+rustfft.workspace = true
