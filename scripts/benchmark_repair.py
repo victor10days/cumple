@@ -213,6 +213,22 @@ def fmt_mean(values: list[float], spec: str = "+.2f") -> str:
     return format(float(np.mean(finite)), spec) if finite else "n/a"
 
 
+HEAD = "| Damage | Tool | Files ran | Mean ΔSDR all (dB) | Mean ΔSDR damaged (dB) | Mean peak error (dB) | Clicks missed | False detections | Mean wall time (s) |"
+SEP = "|---|---|---|---|---|---|---|---|---|"
+
+
+def summary_row(title: str, tool: str, kind: str, got: list[Cell], entries: list[damage.Damaged], coverage: str) -> str:
+    """One summary line; every figure is over the same files `got` covers."""
+    clip = kind == "clip"
+    total = sum(len(e.clicks or []) for e in entries)
+    missed = "n/a" if clip else f"{sum(c.missed for c in got)} of {total}"
+    false = "n/a" if clip else str(sum(c.false for c in got))
+    dmg = fmt_mean([c.d_dmg for c in got]) if clip else "n/a"
+    peak = fmt_mean([c.peak_db for c in got], "+.1f") if clip else "n/a"
+    secs = fmt_mean([c.seconds for c in got], ".2f")
+    return f"| {title} | {tool} | {coverage} | {fmt_mean([c.d_all for c in got])} | {dmg} | {peak} | {missed} | {false} | {secs} |"
+
+
 def main() -> None:
     tools = find_ffmpeg()
     if tools is None:
@@ -247,15 +263,31 @@ def main() -> None:
         + ".",
         "",
     ]
-    for tool, label in (("ffmpeg", "ffmpeg"), ("cathar", "cathar")):
-        vacuous = [n for n, c in cells[tool].items() if c.unchanged]
+    for tool in ("ffmpeg", "cathar"):
+        ran = [n for n, c in cells[tool].items() if c.d_all is not None]
+        same = [n for n in ran if cells[tool][n].unchanged]
         lines.append(
-            f"- {label} left {len(vacuous)} of {len(cells[tool])} damaged files byte-for-byte unchanged"
-            + (": a baseline that changes nothing makes its column vacuous." if vacuous else ".")
+            f"- {tool} ran on {len(ran)} of {len(cells[tool])} damaged files and left {len(same)} of {len(ran)} that ran unchanged."
         )
+        if same:
+            kind_of = {e.name: e.kind for e in manifest.damaged}
+            odd = [n for n in same if kind_of[n] != "burst"]
+            lines.append(
+                f"  - Unchanged: {', '.join(same)}."
+                + (
+                    " All are burst files: their clicks sit below the detector's sqrt(window) bound, so nothing was detected "
+                    "and nothing should change (spec rule 0 exempts this)."
+                    if not odd
+                    else f" Not explained by the bound, so the column may be vacuous there: {', '.join(odd)}."
+                )
+            )
     lines += [
         f"- ffmpeg ran under a budget of {FFMPEG_BUDGET_FACTOR:g} times the file's duration plus {FFMPEG_BUDGET_FLOOR_S:g} s: "
         'adeclip is far slower on heavily clipped audio, and a file that exceeds the budget reads "not run" with the reason.',
+        "  The budget is a property of the machine that generated this report, not of ffmpeg.",
+        "- SQAM tracks are 20 s excerpts starting at 2 s (whole when shorter), so ffmpeg can finish them; LibriVox excerpts are 30 s.",
+        "- The tables and the first summary list each tool's mean over the files it ran on, with its coverage; "
+        "the paired summary compares the tools over only the files both ran, per damage type.",
         "",
     ]
 
@@ -282,25 +314,53 @@ def main() -> None:
         lines.append("")
     lines += burst_visibility(manifest, refs, root)
 
-    lines += ["## Summary", "", "Means over the files each tool ran on; infinite values are left out of a mean.", ""]
+    by_name = {e.name: e for e in manifest.damaged}
     lines += [
-        "| Damage | Tool | Files | Mean ΔSDR all (dB) | Mean ΔSDR damaged (dB) | Mean peak error (dB) | Clicks missed | False detections | Mean wall time (s) |"
+        "## Summary",
+        "",
+        "Each tool's mean over the files it ran on; infinite values are left out of a mean.",
+        "",
     ]
-    lines += ["|---|---|---|---|---|---|---|---|---|"]
+    lines += [HEAD, SEP]
     for kind, (title, *_rest) in kinds.items():
         names = [e.name for e in manifest.damaged if e.kind == kind]
         for tool in ("ffmpeg", "cathar"):
-            got = [cells[tool][n] for n in names if cells[tool][n].d_all is not None]
-            total = sum(len(next(e for e in manifest.damaged if e.name == n).clicks or []) for n in names)
-            missed = f"{sum(c.missed for c in got)} of {total}" if kind != "clip" else "n/a"
-            false = str(sum(c.false for c in got)) if kind != "clip" else "n/a"
-            dmg = fmt_mean([c.d_dmg for c in got]) if kind == "clip" else "n/a"
-            peak = fmt_mean([c.peak_db for c in got], "+.1f") if kind == "clip" else "n/a"
+            ran = [n for n in names if cells[tool][n].d_all is not None]
             lines.append(
-                f"| {title} | {tool} | {len(got)} | {fmt_mean([c.d_all for c in got])} | {dmg} | {peak} | {missed} | {false} | {fmt_mean([c.seconds for c in got], '.2f')} |"
+                summary_row(
+                    title,
+                    tool,
+                    kind,
+                    [cells[tool][n] for n in ran],
+                    [by_name[n] for n in ran],
+                    f"{len(ran)} of {len(names)}",
+                )
             )
-        lines.append(f"| {title} | cumple | 0 | {NOT_RUN_CUMPLE} | | | | | |")
-        lines.append(f"| {title} | RX 8 | 0 | {NOT_RUN_RX} | | | | | |")
+        lines.append(f"| {title} | cumple | 0 of {len(names)} | {NOT_RUN_CUMPLE} | | | | | |")
+        lines.append(f"| {title} | RX 8 | 0 of {len(names)} | {NOT_RUN_RX} | | | | | |")
+    lines += [
+        "",
+        "## Summary, paired",
+        "",
+        "Only the files both ffmpeg and cathar ran on, per damage type; the two rows of a damage type cover the same files.",
+        "",
+    ]
+    lines += [HEAD, SEP]
+    for kind, (title, *_rest) in kinds.items():
+        names = [e.name for e in manifest.damaged if e.kind == kind]
+        both = [n for n in names if cells["ffmpeg"][n].d_all is not None and cells["cathar"][n].d_all is not None]
+        for tool in ("ffmpeg", "cathar"):
+            lines.append(
+                summary_row(
+                    title,
+                    tool,
+                    kind,
+                    [cells[tool][n] for n in both],
+                    [by_name[n] for n in both],
+                    f"{len(both)} of {len(names)}",
+                )
+            )
+    lines.append("")
     print("\n".join(lines))
 
 

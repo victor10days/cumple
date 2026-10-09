@@ -32,12 +32,12 @@ repaired intervals; the files are 32-bit float, so values above 0 dBFS are store
 | Parameter (preset `ParamID`) | Value |
 |---|---|
 | Algorithm (`Declicker Algorithm`) | Single Band (`Single-band Click.xml` carries no value for it, which makes it the default) |
-| Sensitivity (`Declicker Sensitivity`) | the value the module shows when it opens: READ OFF AND WRITE HERE: ______ |
-| Click widening (`Declicker Widening`) | the value the module shows when it opens: ______ |
+| Sensitivity (`Declicker Sensitivity`) | TO FILL IN (Victor): the value RX 8 shows when the module opens: ______ |
+| Click widening (`Declicker Widening`) | TO FILL IN (Victor): the value RX 8 shows when the module opens: ______ |
 | Frequency skew | greyed out in Single Band |
 | Output clicks only | off |
 
-Open the De-click module on a fresh session, change nothing, write the three shown values into the blanks above and
+Victor's step, not done yet: open the De-click module on a fresh session in RX 8, change nothing, write the shown values into the blanks above and
 commit this file with them. Those are the numbers a user gets by opening the module and pressing Render, which is
 the comparison this table is for. Single Band is the algorithm RX describes as working "well on very narrow
 'digital' clicks", the kind the IMPULSE damage preset adds.
