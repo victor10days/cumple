@@ -11,8 +11,10 @@ not processed yet. Memory holds a few blocks and each module's context, whatever
 from __future__ import annotations
 
 import contextlib
+import itertools
 import os
 import time
+import unicodedata
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
@@ -41,8 +43,28 @@ class RepairResult:
 def _refuse(src: Path, target: Path, option: str) -> None:
     if target.is_dir():
         raise ValueError(f"{target} is a directory; give {option} a file path")
-    if target.exists() and target.resolve() == src.resolve():
+    # samefile as well as resolve(): on a case-insensitive volume (macOS's default, Windows) TAKE.WAV is take.wav,
+    # yet the two resolve to different paths, and os.replace onto TAKE.WAV would replace the source.
+    if target.exists() and (target.resolve() == src.resolve() or os.path.samefile(target, src)):
         raise ValueError(f"refusing to overwrite the source file {src}; give {option} a different path")
+
+
+def _folded(path: Path) -> str:
+    return unicodedata.normalize("NFC", path.name).casefold()
+
+
+def _one_file(a: Path, b: Path) -> bool:
+    """Whether two destinations may name one file. Neither need exist yet, so besides resolve() and samefile this
+    compares the names in one folder after case folding and NFC normalisation, which macOS's default volume and
+    Windows both ignore (os.path.normcase would not do: on macOS it changes nothing). On a case-sensitive volume
+    two names that differ only in case are refused too, which costs nothing."""
+    if a.resolve() == b.resolve() or (a.exists() and b.exists() and os.path.samefile(a, b)):
+        return True
+    try:
+        same_folder = os.path.samefile(a.parent, b.parent)
+    except OSError:  # a folder that does not exist; writing there fails later with its own message
+        same_folder = a.resolve().parent == b.resolve().parent
+    return same_folder and _folded(a) == _folded(b)
 
 
 def _stored(info) -> Callable[[np.ndarray], np.ndarray]:
@@ -119,8 +141,9 @@ def repair_file(
         targets["--residual"] = residual
     for option, target in targets.items():
         _refuse(src, target, option)
-    if len({t.resolve() for t in targets.values()}) < len(targets):
-        raise ValueError(f"{', '.join(targets)} must name different files")
+    for (option_a, a), (option_b, b) in itertools.combinations(targets.items(), 2):
+        if _one_file(a, b):
+            raise ValueError(f"{option_a} and {option_b} name the same file, {a} and {b}; give each a different path")
     info = probe(src)
     if info.via_ffmpeg or not info.is_pcm:
         raise ValueError(

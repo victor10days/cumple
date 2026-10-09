@@ -71,6 +71,48 @@ def test_repair_exits_2_on_a_bad_chain_the_source_as_out_and_a_missing_choice(tm
     assert sorted(p.name for p in tmp_path.iterdir()) == ["clicks.wav"]
 
 
+def case_insensitive(folder) -> bool:
+    """Whether the folder's volume treats names that differ only in case as one file (macOS's default, Windows)."""
+    probe = folder / "case-probe.txt"
+    probe.write_text("")
+    try:
+        return (folder / "CASE-PROBE.TXT").exists()
+    finally:
+        probe.unlink()
+
+
+@needs_core
+def test_a_case_variant_of_the_source_never_replaces_it(tmp_path):
+    """On a case-insensitive volume (macOS's default, Windows) CLICKS.WAV is clicks.wav, so writing it as any target
+    would replace the source: refused. On a case-sensitive volume (Linux) it is another file: written, and the
+    source stays as it was. Either way the test runs, so the CI counts in README stay exact."""
+    one_file = case_insensitive(tmp_path)
+    src, *_ = clicked_fixture(tmp_path)
+    before = src.read_bytes()
+    variant = tmp_path / "CLICKS.WAV"
+    for option in ("--out", "--residual", "--receipt"):
+        also = [] if option == "--out" else ["--out", tmp_path / "out.wav"]
+        r = run("repair", src, "--chain", "declick()", option, variant, *also)
+        if one_file:
+            assert r.exit_code == 2 and "source" in r.stdout, f"{option}: {r.stdout}"
+        else:
+            assert r.exit_code == 0, f"{option}: {r.stdout}"
+        assert src.read_bytes() == before, option
+    if one_file:
+        assert sorted(p.name for p in tmp_path.iterdir()) == ["clicks.wav"]
+
+
+@needs_core
+def test_two_targets_that_differ_only_in_case_are_refused(tmp_path):
+    """x.wav and X.WAV are one file on a case-insensitive volume, where two writes would interleave in it. Refused
+    on every volume: a name that differs only in case is no way to name a second file."""
+    src, *_ = clicked_fixture(tmp_path)
+    for option in ("--residual", "--receipt"):
+        r = run("repair", src, "--chain", "declick()", "--out", tmp_path / "x.wav", option, tmp_path / "X.WAV")
+        assert r.exit_code == 2 and "same file" in flat(r.stdout), f"{option}: {r.stdout}"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["clicks.wav"]
+
+
 @needs_core
 def test_a_clean_file_exits_1_with_nothing_to_change(tmp_path):
     src = tmp_path / "clean.wav"
