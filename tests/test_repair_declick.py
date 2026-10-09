@@ -151,3 +151,14 @@ def test_chunking_cost_is_measured_and_small():
     b = chunked(cumple_dsp.Declick(fs), y[:, None], block=16384)[:, 0]
     np.testing.assert_allclose(a, whole, atol=1e-9)  # every gap here is far shorter than the context covers
     np.testing.assert_allclose(b, whole, atol=1e-9)
+    # Blocks shorter than a 17-sample gap: its rebuilt samples must reach every centre they fall in. The click
+    # at 10005 has the file start in its left context; the one at 20005 has a left context of earlier output.
+    clean = 0.3 * np.sin(2 * np.pi * 440 * np.arange(40_000) / 16_000)
+    for k in (10_005, 20_005):
+        y = clean.copy()
+        y[k] += 3.0
+        whole = cumple_dsp.Declick(16_000).process_whole(y)
+        assert abs(whole[k] - clean[k]) < 0.1
+        for block in (4, 8):
+            out = chunked(cumple_dsp.Declick(16_000), y[:, None], block=block)[:, 0]
+            np.testing.assert_allclose(out, whole, atol=1e-9, err_msg=f"click at {k}, block {block}")

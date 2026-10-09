@@ -13,11 +13,11 @@
 //! `i + window/2` and includes `i` itself, so no ratio exceeds `sqrt(window)`; a lone non-zero sample in
 //! digital silence sits exactly on that bound and fires at any threshold below it.
 //!
-//! As a [`Module`] the port runs over a file in blocks and gives the same result as one call over the whole
-//! file, as long as each click's run, its shoulders and the AR context fit inside `CONTEXT_FRAMES`. Between
-//! calls it keeps the raw samples and their local RMS behind the centre, the running sum, the place the
-//! detector reached, and the rebuilt samples of a gap that runs past the centre; a gap belongs to the call
-//! whose centre holds its first sample.
+//! As a [`Module`] the port runs over a file in blocks of any size and gives the same result as one call over
+//! the whole file, as long as each click's run, its shoulders and the AR context fit inside
+//! `CONTEXT_FRAMES`. Between calls it keeps the raw samples and their local RMS behind the centre, the
+//! running sum, the place the detector reached, and the rebuilt samples past the centre, which reach every
+//! later centre they fall in; a gap belongs to the call whose centre holds its first sample.
 
 use num_traits::Float;
 
@@ -316,9 +316,13 @@ impl<F: Float> Declick<F> {
                 while end < bound && flagged(end) {
                     end += 1;
                 }
-                // Shoulder pad: leave known samples at the edges for the solver.
-                let gap_start = start.saturating_sub(pad);
-                let gap_end = at.file_len.map_or(end + pad, |n| (end + pad).min(n));
+                // Shoulder pad: leave known samples at the edges for the solver. Upstream clips the gap to
+                // the file; a call clips it to its input, which in one call over the whole file is the same
+                // clip. In blocks it bites only when a run fills the input: a run grown back to the start of
+                // the left context, or one reaching the end of the input at a half window of 1, where the
+                // shoulder of 2 is longer than the half window.
+                let gap_start = start.saturating_sub(pad).max(lo);
+                let gap_end = (end + pad).min(at.lo + at.n_in);
                 if at.file_len.is_none() && gap_start >= at.c_end {
                     break; // the next call's gap
                 }
@@ -435,7 +439,8 @@ impl<F: Float + Send> Module for Declick<F> {
             self.detect(at);
         }
         let gaps = std::mem::take(&mut self.gaps);
-        let mut fill_end = at.c_end;
+        // Carried samples that run past this centre too go on to the next call with this call's own fills.
+        let mut fill_end = at.c_end.max(lo + at.left + carried);
         for &(gap_start, gap_end) in &gaps {
             if self.fill(gap_start, gap_end, at, edge) {
                 self.events.push(Event {
@@ -653,35 +658,90 @@ mod tests {
         }
     }
 
+    /// Chunked at `block`, both builds give what one call gives, report included. The f32 build carries its
+    /// running sum across calls, so it agrees bit for bit too.
+    fn assert_blocks_match_one_call(x: &[f64], block: usize, clicks: usize, label: &str) {
+        let mut a = declick::<f64>(5.0, 64);
+        let mut b = declick::<f64>(5.0, 64);
+        let one = whole(&mut a, x);
+        assert_eq!(a.report().events.len(), clicks, "{label}");
+        assert_eq!(chunked(&mut b, x, block), one, "{label}");
+        assert_eq!(b.report(), a.report(), "{label}");
+        let x32: Vec<f64> = x.iter().map(|&v| v as f32 as f64).collect();
+        let mut a = declick::<f32>(5.0, 64);
+        let mut b = declick::<f32>(5.0, 64);
+        let one = whole(&mut a, &x32);
+        assert_eq!(chunked(&mut b, &x32, block), one, "f32, {label}");
+        assert_eq!(b.report(), a.report(), "f32, {label}");
+    }
+
+    fn two_tones(n: usize) -> Vec<f64> {
+        sine(n, 0.3, 440.0, 48_000.0)
+            .iter()
+            .zip(sine(n, 0.2, 1_250.0, 48_000.0))
+            .map(|(a, b)| a + b)
+            .collect()
+    }
+
     #[test]
     fn clicks_around_a_block_edge_are_repaired_as_in_one_call() {
         // One single-sample click near each of four block edges, at the same offset from each, for offsets
         // that put the click, its shoulders or the detector's jump across the edge.
         let block = 8_192;
-        let clean: Vec<f64> = sine(60_000, 0.3, 440.0, 48_000.0)
-            .iter()
-            .zip(sine(60_000, 0.2, 1_250.0, 48_000.0))
-            .map(|(a, b)| a + b)
-            .collect();
+        let clean = two_tones(60_000);
         for offset in [-40, -31, -12, -9, -8, -3, -1, 0, 1, 3, 7, 8, 9, 12, 30, 40] {
             let mut x = clean.clone();
             for edge in 1..=4 {
                 let k = (edge * block) as isize + offset;
                 x[k as usize] += 3.0;
             }
-            let mut a = declick::<f64>(5.0, 64);
-            let mut b = declick::<f64>(5.0, 64);
-            let one = whole(&mut a, &x);
-            assert_eq!(a.report().events.len(), 4, "offset {offset}");
-            assert_eq!(chunked(&mut b, &x, block), one, "offset {offset}");
-            assert_eq!(b.report(), a.report(), "offset {offset}");
-            // The f32 build carries its running sum across calls, so its blocks agree with one call too.
-            let x32: Vec<f64> = x.iter().map(|&v| v as f32 as f64).collect();
-            let mut a = declick::<f32>(5.0, 64);
-            let mut b = declick::<f32>(5.0, 64);
-            let one = whole(&mut a, &x32);
-            assert_eq!(chunked(&mut b, &x32, block), one, "f32, offset {offset}");
-            assert_eq!(b.report(), a.report(), "f32, offset {offset}");
+            assert_blocks_match_one_call(&x, block, 4, &format!("offset {offset}"));
+        }
+    }
+
+    #[test]
+    fn a_gap_longer_than_a_block_is_carried_into_every_centre_it_reaches() {
+        // A 17-sample gap spans several centres when blocks are shorter than it, so its rebuilt samples must
+        // reach each of them, not only the next. Every phase of the click against the block edges, for
+        // blocks from 1 to 16. The file is one context plus 128 samples: blocks tile the first 128, where
+        // the click is, and the last call takes the rest.
+        let n = CONTEXT_FRAMES + 128;
+        let clean = two_tones(n);
+        for block in [1, 2, 3, 4, 5, 8, 13, 16] {
+            for phase in 0..block {
+                let mut x = clean.clone();
+                x[48 + phase] += 3.0;
+                assert_blocks_match_one_call(
+                    &x,
+                    block,
+                    1,
+                    &format!("block {block}, click at {}", 48 + phase),
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn a_run_as_long_as_the_input_never_reaches_past_it() {
+        // Every sample of a slow decay passes the detector at window 2 or 3 and threshold 1 (each sample
+        // exceeds the next) and at threshold 0.5 for wider windows, so one run spans the file. In blocks the
+        // run reaches the end of each input, where a shoulder of 2 against a half window of 1 used to push
+        // the gap one sample past it, and grows back to the start of the left context, where the shoulder
+        // used to reach before it. Chunked runs need not match one call here; nothing may panic.
+        let x: Vec<f64> = (0..60_000).map(|i| 0.9999f64.powi(i)).collect();
+        for (window, threshold) in [(2, 1.0), (3, 1.0), (4, 0.5), (64, 0.5)] {
+            for block in [8_192, 1_000] {
+                let out = chunked(&mut declick::<f64>(threshold, window), &x, block);
+                assert!(
+                    out.iter().all(|v| v.is_finite()),
+                    "window {window}, block {block}"
+                );
+            }
+            let out = whole(&mut declick::<f64>(threshold, window), &x);
+            assert!(
+                out.iter().all(|v| v.is_finite()),
+                "window {window}, one call"
+            );
         }
     }
 
