@@ -123,7 +123,7 @@ def test_a_clean_file_exits_1_with_nothing_to_change(tmp_path):
 
 
 @needs_core
-def test_peaks_rebuilt_past_full_scale_in_an_integer_copy_get_a_note(tmp_path):
+def test_peaks_rebuilt_past_full_scale_get_a_note_in_an_integer_copy_only(tmp_path):
     """Speech pushed 3 dB past full scale and clipped at 0.99: A-SPADE rebuilds peaks above 1, which 24 bits clip."""
     x, fs = sf.read(FIXTURE, dtype="float64")
     src = tmp_path / "hot.wav"
@@ -133,6 +133,14 @@ def test_peaks_rebuilt_past_full_scale_in_an_integer_copy_get_a_note(tmp_path):
     assert "pass full scale" in r.stdout
     out = sf.read(tmp_path / "out.wav")[0]
     assert out.max() == 1 - 2.0**-23 and out.min() == -1.0  # held at the 24-bit rails, never wrapped around
+    # The same audio in a float file: the copy keeps the rebuilt peaks above 1, so there is nothing to warn about,
+    # though the copy's runs at full scale outnumber the source's here too.
+    sf.write(src, sf.read(src)[0], fs, subtype="FLOAT")
+    r = run("repair", src, "--chain", "declip()", "--out", tmp_path / "float.wav")
+    assert r.exit_code == 0, r.stdout
+    receipt = json.loads((tmp_path / "float.wav.cumple-repair.json").read_text(encoding="utf-8"))
+    assert receipt["after"]["clipped_runs"] > receipt["before"]["clipped_runs"]
+    assert sf.read(tmp_path / "float.wav")[0].max() > 1.0 and "pass full scale" not in r.stdout
 
 
 def test_without_the_core_repair_exits_2_with_the_install_route(tmp_path, monkeypatch):
@@ -166,3 +174,18 @@ def test_list_presets_names_the_built_ins_and_help_names_the_detector_limits():
         assert preset in r.stdout.split()
     text = flat(run("repair", "--help").stdout)
     assert "narrow clicks" in text and "digital silence" in text and "nothing to change" in text
+
+
+@needs_core
+def test_an_unreadable_user_preset_exits_2_and_names_it(tmp_path):
+    """A user preset that cannot be read (here a folder named like one) is an error to report, not a traceback."""
+    broken = tmp_path / "config" / "cumple" / "repair" / "[broken].yaml"
+    broken.mkdir(parents=True)
+    src = tmp_path / "clean.wav"
+    sf.write(src, tone(), 48000, subtype="PCM_24")
+    for args in (("--list-presets",), (src, "--preset", "declick", "--out", tmp_path / "out.wav")):
+        r = run("repair", *args)
+        assert r.exit_code == 2 and isinstance(r.exception, SystemExit), (args, r.stdout)
+        # the name, brackets intact (an OSError quotes the path with repr, which doubles Windows' backslashes)
+        assert "cannot read the presets" in r.stdout and "[broken].yaml" in r.stdout, (args, r.stdout)
+    assert not (tmp_path / "out.wav").exists()

@@ -9,6 +9,8 @@ version = "0.1.0"
 description = "The compiled audio repair core of cumple (De-click, De-clip, STFT). Install it as cumple[repair]."
 requires-python = ">=3.12"
 license = "MIT"
+# PEP 639 takes paths inside this folder only, so the notices a wheel must carry have their own copy here.
+license-files = ["THIRD_PARTY.md"]
 dependencies = ["numpy>=2.0"]
 
 [tool.maturin]

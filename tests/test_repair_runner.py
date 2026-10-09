@@ -127,6 +127,13 @@ def test_repair_refuses_the_source_a_directory_and_a_decoded_file(tmp_path, monk
         repair_file(src, c, tmp_path / "out.wav", residual=src)
     with pytest.raises(ValueError, match="different"):
         repair_file(src, c, tmp_path / "out.wav", residual=tmp_path / "out.wav")
+    missing = tmp_path / "no such folder"
+    with pytest.raises(ValueError, match="--receipt.*does not exist"):
+        repair_file(src, c, tmp_path / "out.wav", receipt_path=missing / "receipt.json")
+    with pytest.raises(ValueError, match="--residual.*does not exist"):
+        repair_file(src, c, tmp_path / "out.wav", residual=missing / "res.wav")
+    with pytest.raises(ValueError, match="--out.*does not exist"):
+        repair_file(src, c, missing / "out.wav")
     real = runner.probe(src)
     decoded = dataclasses.replace(real, subtype="AAC", decoder="ffmpeg 9.0.1", codec="aac")
     monkeypatch.setattr(runner, "probe", lambda path: decoded)
@@ -254,6 +261,32 @@ def test_declick_after_declip_in_blocks_lists_the_gaps_one_pass_over_declips_who
     cost = metrics.delta_sdr(x, y, whole) - metrics.delta_sdr(x, y, out)
     print(f"De-clip then De-click at {BLOCK}: cost {cost:+.4f} dB, max sample {np.max(np.abs(out - whole)):.2e}")
     assert abs(cost) < CHAIN_COST_TOLERANCE
+
+
+def test_a_tail_longer_than_declips_context_but_shorter_than_declicks_joins_the_last_call(tmp_path):
+    """The runner merges a tail shorter than the chain's longest context (De-click's 16,384) into the last call, so
+    De-clip's last input runs past a block plus twice its own context of 4,096. Cubic De-clip in blocks gives what
+    one call gives, so the copy must equal one pass over the whole file, the long last call included."""
+    import cumple_dsp
+
+    fs, tail = 16_000, 10_000
+    n = 5 * BLOCK + tail
+    assert cumple_dsp.Declip(fs).context_frames < tail < cumple_dsp.Declick(fs).context_frames
+    thr = float(np.float32(0.02))  # the clip level as the float file stores it
+    y = np.clip(tone(fs, n / fs + 1)[:n], -thr, thr)  # flat tops on every peak, no digital silence
+    src = tmp_path / "clipped.wav"
+    sf.write(src, y, fs, subtype="FLOAT")
+    y = read(src)[:, 0]
+    assert len(y) == n
+    for method in ("cubic", "spade"):
+        out = tmp_path / f"{method}.wav"
+        c = chain.parse(f"declick(),declip(threshold={thr!r},method={method})")
+        r = repair_file(src, c, out, block_frames=BLOCK)
+        copy = read(out)[:, 0]
+        assert len(copy) == n and r.reports[0]["clicks"] == 0 and r.reports[1]["runs"] > 0, method
+        if method == "cubic":
+            whole = cumple_dsp.Declip(fs, threshold=thr, method="cubic").process_whole(y)
+            assert np.array_equal(copy, whole.astype(np.float32)), method
 
 
 def test_the_file_edges_reach_the_module_as_file_edges(tmp_path):

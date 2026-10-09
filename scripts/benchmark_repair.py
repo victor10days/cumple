@@ -499,6 +499,10 @@ def main() -> None:
             )
     clip_names = [e.name for e in manifest.damaged if e.kind == "clip"]
     click_names = [e.name for e in manifest.damaged if e.kind != "clip"]
+    seen = burst_seen(manifest, root)
+    shares = [100 * hit / total for hit, total in seen.values() if total]
+    visible = f"{min(shares):.0f} to {max(shares):.0f} %" if shares else "none"
+    cumple_missed = sum(cells["cumple"][n].missed or 0 for n in click_names if cells["cumple"][n].d_all is not None)
     measured = [n for n in details if details[n].fid_max is not None]
     misses = [(n, m) for n in details for m in details[n].misses]
     lines += [
@@ -517,7 +521,10 @@ def main() -> None:
         "residual detections: runs the detector of record still finds in ffmpeg's output that touch no injected click and that the clean "
         "reference does not trigger (a detection that ffmpeg filled cannot be seen). The three are not the same count; the cumple and cathar "
         "figures are the ones to compare. Clicks missed is the residual count for every tool: an injected click the detector still sees "
-        "in the output.",
+        "in the output. That detector is the f64 build's own formula (`cumple.repair.metrics.local_rms_ratio`, in float64), so a click "
+        f"cumple's detector missed is invisible to it too: cumple's Clicks missed ({cumple_missed} over both De-click tables) holds by "
+        f"construction, not as an independent check. On the burst table the detector sees only {visible} of the clicks in each width "
+        'band (see "Burst clicks the detector of record can see"), so no tool\'s Clicks missed there says much.',
         "- The tables and the first summary list each tool's mean over the files it ran on, with its coverage; "
         "the paired summary compares the tools over only the files all three ran, per damage type.",
         "",
@@ -572,11 +579,17 @@ def main() -> None:
         lead = {n: cells["cumple"][n].d_all - cells["cathar"][n].d_all for n in imp}
         top = max(lead, key=lead.get)
         rest = [lead[n] for n in imp if n != top]
+        # Measured by hand on that file at impulse seed 11; for another top file only its name and dB print.
+        examined = (
+            " In a35-glockenspiel impulse11, cathar's float32 running sum drifts and it fills a 140-sample gap at 627239 in clean audio "
+            "with an artefact reaching 3.04e-2 (about -30 dBFS). The lead is one file, not a general advantage."
+            if top == "a35-glockenspiel.impulse11"
+            else ""
+        )
         lines += [
             f"- **What drives cumple's impulse De-click lead over cathar:** the mean lead is {np.mean(list(lead.values())):+.2f} dB over {len(imp)} files, "
-            f"and {top} alone leads by {lead[top]:+.2f} dB; without that file the mean lead is {np.mean(rest):+.2f} dB. "
-            "In a35-glockenspiel impulse11, cathar's float32 running sum drifts and it fills a 140-sample gap at 627239 in clean audio "
-            "with an artefact reaching 3.04e-2 (about -30 dBFS). The lead is one file, not a general advantage.",
+            f"and {top} alone leads by {lead[top]:+.2f} dB; without that file the mean lead is {np.mean(rest):+.2f} dB."
+            + examined,
             "- **The precision effect runs both ways.** In quiet passages cathar's float32 running sum drifts down, so it fills spurious gaps; "
             "elsewhere it drifts up, so it misses real clicks (see the clicks-missed counts of the impulse table, a16-clarinet among them). "
             "Which way it goes depends on the file.",
@@ -595,9 +608,9 @@ def main() -> None:
         lines += [
             f"## {title}",
             "",
-            f"Each cell reads {cols}. ΔSDR is against the clean reference; the detector of record runs at threshold {DETECTOR_THRESHOLD:g}. "
+            f"Each cell reads {cols}. ΔSDR is against the clean reference; the detector of record runs at threshold {DETECTOR_THRESHOLD:g}."
             + (
-                "False detections are the tool's own gaps that touch no injected click (the f32 build stands for cathar, ffmpeg's are residual detections); see the header."
+                " False detections are the tool's own gaps that touch no injected click (the f32 build stands for cathar, ffmpeg's are residual detections); see the header."
                 if kind != "clip"
                 else ""
             ),
@@ -624,7 +637,7 @@ def main() -> None:
             level = f"{e.sdr_db:g}" if kind == "clip" else str(e.seed)
             lines.append(f"| {e.reference} | {level} | " + " | ".join(detail_cells(kind, details[e.name])) + " |")
         lines.append("")
-    lines += burst_visibility(manifest, refs, root)
+    lines += burst_visibility(seen)
     lines += clip_peak_errors(manifest, cells)
 
     by_name = {e.name: e for e in manifest.damaged}
@@ -662,7 +675,8 @@ def main() -> None:
                 )
             )
         else:
-            lines.append(f"| {title} | RX 8 | 0 of {len(names)} | {NOT_RUN_RX} | | | | | |")
+            # spec rule 4: every cell of a row RX 8 did not run says so, not only the first
+            lines.append(f"| {title} | RX 8 | 0 of {len(names)} | {NOT_RUN_RX} |" + " not run |" * 5)
     lines += [
         "",
         "## Summary, paired",
@@ -734,8 +748,8 @@ def clip_peak_errors(manifest: damage.Manifest, cells: dict[str, dict[str, Cell]
     return lines + [""]
 
 
-def burst_visibility(manifest: damage.Manifest, refs: dict[str, np.ndarray], root: Path) -> list[str]:
-    """Share of burst clicks the detector of record sees in the damaged files, by width band: its real weakness."""
+def burst_seen(manifest: damage.Manifest, root: Path) -> dict[tuple[int, int], list[int]]:
+    """(visible, total) burst clicks per width band: those the detector of record sees in the damaged files."""
     bands = [(4, 8), (9, 16), (17, 32), (33, 64)]
     seen = {b: [0, 0] for b in bands}
     for e in (e for e in manifest.damaged if e.kind == "burst"):
@@ -745,6 +759,11 @@ def burst_visibility(manifest: damage.Manifest, refs: dict[str, np.ndarray], roo
             band = next(b for b in bands if b[0] <= c.width <= b[1])
             seen[band][0] += int(ratio[first : last + 1].max() > DETECTOR_THRESHOLD)
             seen[band][1] += 1
+    return seen
+
+
+def burst_visibility(seen: dict[tuple[int, int], list[int]]) -> list[str]:
+    """Share of burst clicks the detector of record sees in the damaged files, by width band: its real weakness."""
     lines = [
         "## Burst clicks the detector of record can see",
         "",

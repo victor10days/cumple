@@ -32,3 +32,24 @@ def test_stft_matches_scipy_within_tolerance():
     common = min(ours.shape[0], theirs.shape[1] - first)
     assert common == ours.shape[0], "every one of our frames has a scipy column to meet"
     np.testing.assert_allclose(ours[:common].T, theirs[:, first : first + common], atol=1e-9, rtol=0)
+
+
+def test_the_wheel_carries_the_same_licence_texts_as_the_core():
+    """A built cumple-dsp wheel holds cathar's ported code and links rust-numpy, so it ships both notices. PEP 639
+    takes license-files inside the member's own folder only, so the member keeps a copy of the texts in
+    crates/cumple-dsp/THIRD_PARTY.md, and this test holds the copy equal to it."""
+    import re
+    import tomllib
+    from pathlib import Path
+
+    crates = Path(__file__).resolve().parents[1] / "crates"
+    member = crates / "cumple-dsp-py"
+    project = tomllib.loads((member / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    assert project["license-files"] == ["THIRD_PARTY.md"]
+
+    def texts(path: Path) -> list[str]:
+        return re.findall(r"^```\n(.*?)^```$", path.read_text(encoding="utf-8"), re.S | re.M)
+
+    ours, core = texts(member / "THIRD_PARTY.md"), texts(crates / "cumple-dsp" / "THIRD_PARTY.md")
+    assert len(core) == 2 and ours == core
+    assert "Copyright (c) The cathar Authors" in ours[0] and "Copyright (c) 2017, Toshiki Teramura" in ours[1]

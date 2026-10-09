@@ -597,24 +597,23 @@ mod tests {
         // numpy, every step in float32 and in util.rs's order: n = float32(1023), x = float32(i) / n, then
         // 0.5 - 0.5 * cos(float32(2) * float32(pi) * x). numpy's float32 cos and the platform's cosf differ in
         // the last bit at some indices (55 of the 1,024 on the Mac this was written on), so the pinned indices
-        // are ones where numpy's float32 cos, a correctly rounded cosf and that Mac's cosf agree.
-        let want: [(usize, u32); 17] = [
+        // are ones where numpy's float32 cos, a correctly rounded cosf and that Mac's cosf agree. Each also has
+        // its exact cosine at least 0.116 ULP from an f32 rounding midpoint, so a cosf within glibc's
+        // documented 0.56 ULP rounds it the same way on every runner. Indices 5, 10, 800 and 1022, at 0.006 to
+        // 0.063 ULP from one, are left out.
+        let want: [(usize, u32); 13] = [
             (0, 0x0000_0000),
             (2, 0x381e_4000),
             (3, 0x38b2_0000),
-            (5, 0x3977_3800),
-            (10, 0x3a77_2600),
             (50, 0x3cbf_a130),
             (100, 0x3dbb_25a0),
             (300, 0x3f22_5c74),
             (600, 0x3f6d_8d3f),
             (700, 0x3f33_610c),
             (767, 0x3f00_3250),
-            (800, 0x3ecc_da47),
             (900, 0x3e0b_48fc),
             (1000, 0x3ba3_3400),
             (1020, 0x38b2_0000),
-            (1022, 0x371e_0000),
             (1023, 0x0000_0000),
         ];
         let w = hann_window::<f32>(L);

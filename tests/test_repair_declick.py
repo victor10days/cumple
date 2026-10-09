@@ -125,7 +125,8 @@ def test_declick_matches_upstream_cathar_whole_file(tmp_path):
 
 @needs_core
 def test_the_precision_effect_is_measured():
-    """Spec rule 1b: the shipped f64 build against the f32 build, printed, not gated; only rule 0 and rule 3 hold for both."""
+    """Spec rule 1b: the shipped f64 build against the f32 build, printed, not gated; rules 0 and 3 hold for both, rule 3
+    on float32-exact input, which the f32 build stores without loss."""
     import cumple_dsp
 
     # a layout where the two builds' detections differ; see the note on PRECISION_SEED
@@ -139,6 +140,14 @@ def test_the_precision_effect_is_measured():
     assert not np.array_equal(b, y) and not np.array_equal(a, y)
     # f32 drift is visible here, so a build that computes local_rms in f64 cannot pass the fidelity test
     assert ma.report()["positions"] != mb.report()["positions"]
+    # spec rule 3 for each build: outside its own gaps, dilated by the shoulder pad, the output is the input
+    y32 = y.astype(np.float32).astype(np.float64)
+    for precision in ("f32", "f64"):
+        m = cumple_dsp.Declick(fs, precision=precision)
+        est = m.process_whole(y32)
+        gaps = damage.dilate(gap_mask(len(y32), m.report()["positions"], m.report()["widths"]), 8)
+        assert gaps.any() and not gaps.all(), precision
+        np.testing.assert_allclose(est[~gaps], y32[~gaps], atol=1e-9, rtol=0, err_msg=precision)
 
 
 @needs_core

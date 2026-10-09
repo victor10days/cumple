@@ -12,7 +12,11 @@
 //! - the centres tile the file in order, so `Edge::centre` locates a call's centre from the number of
 //!   samples earlier centres covered. A module that reports positions in file samples counts them that way.
 //!
-//! A call's input is therefore never longer than the block plus twice `context_frames()`.
+//! Under [`Chunker`] a call's input is therefore never longer than the block plus twice `context_frames()`. A
+//! chain runner (src/cumple/repair/runner.py) gives every module in the chain the same centres and merges a tail
+//! shorter than the longest context in the chain into the call before it, so there a module's last input can
+//! reach the block plus its own context plus the chain's longest context. A module sizes its buffers from the
+//! longest input it is given, not from the block.
 
 use std::ops::Range;
 

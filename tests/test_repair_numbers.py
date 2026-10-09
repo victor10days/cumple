@@ -140,6 +140,14 @@ def test_paired_summary_covers_the_same_files_for_every_tool_it_compares():
             _check_summary_row(kind, row, _score_rows(kind), names)
 
 
+# The summary columns that do not apply to a damage kind, the only cells of a summary that may read "n/a".
+NOT_APPLICABLE = {
+    "clip": {"Clicks missed", "False detections"},
+    "impulse": {"Mean ΔSDR damaged (dB)", "Mean peak error (dB)"},
+    "burst": {"Mean ΔSDR damaged (dB)", "Mean peak error (dB)"},
+}
+
+
 def test_every_table_cell_is_a_number_or_not_run_and_nothing_says_not_checked():
     assert ("not " + "checked") not in REPORT.lower()  # spec rule 4
     for kind in KINDS:
@@ -151,6 +159,16 @@ def test_every_table_cell_is_a_number_or_not_run_and_nothing_says_not_checked():
             for key, cell in row.items():
                 if key not in ("Reference", KINDS[kind]):
                     assert cell.startswith("not run") or _floats(cell) or cell in ("equal", "differ"), (kind, key, cell)
+    for section in ("Summary", "Summary, paired"):
+        rows = _summary(section)
+        assert {r["Damage"] for r in rows} == set(TITLES.values()), section
+        for row in rows:
+            kind = _kind_of(row["Damage"])
+            for key, cell in row.items():
+                if key in ("Damage", "Tool"):
+                    continue
+                figure = _floats(cell) if key not in NOT_APPLICABLE[kind] else cell == "n/a"
+                assert cell.startswith("not run") or figure, (section, row["Damage"], row["Tool"], key, cell)
 
 
 def test_cumple_is_scored_on_every_file_and_the_precision_effect_is_reported():
@@ -193,7 +211,9 @@ def test_chunking_cost_is_held_and_only_references_longer_than_a_block_are_chunk
             assert d["Reference"] != "fixture"
             (c,) = _floats(d[cost])
             assert abs(c) < 0.5, (kind, d["Reference"], _level(d), c)
-            assert _floats(d["Chunking max sample"]), (kind, d["Reference"])
+            (worst,) = _floats(d["Chunking max sample"])
+            if kind != "clip":  # spec rule 2: De-click's context covers the AR reach, so blocks match one call
+                assert worst <= 1e-9, (kind, d["Reference"], _level(d), worst)
 
 
 def test_false_detections_are_the_tools_own_gaps_and_rule_3_is_reported():
@@ -208,6 +228,18 @@ def test_false_detections_are_the_tools_own_gaps_and_rule_3_is_reported():
             kind = _kind_of(row["Damage"])
             counted = sum(_clicks(_tool_column(r, row["Tool"]))[2] for r in _score_rows(kind))
             assert row["False detections"] == str(counted)
+
+
+def test_the_clicks_missed_note_names_its_detector_and_the_burst_share_it_sees():
+    """Clicks missed is counted by the f64 build's own formula, so cumple's count is not a second opinion, and on the
+    burst table that detector sees little: the note says both, with the share the visibility table gives."""
+    assert "That detector is the f64 build's own formula" in REPORT and "holds by construction" in REPORT
+    rows = _tables(_section("Burst clicks the detector of record can see"), "| Width (samples) |")
+    shares = [int(r["Visible"].removesuffix(" %")) for r in rows if r["Visible"] != "n/a"]
+    m = re.search(r"the detector sees only (\d+) to (\d+) % of the clicks in each width band", REPORT)
+    assert shares and m and (int(m.group(1)), int(m.group(2))) == (min(shares), max(shares))
+    missed = [_clicks(_tool_column(r, "cumple"))[0] for kind in ("impulse", "burst") for r in _score_rows(kind)]
+    assert f"cumple's Clicks missed ({sum(missed)} over both De-click tables)" in REPORT
 
 
 def test_the_rx_columns_say_not_run_or_carry_numbers():

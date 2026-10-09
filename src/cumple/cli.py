@@ -517,12 +517,12 @@ def repair(
 
     Exit 0 when the copy was written; 1 when no module found anything to repair, so there is nothing to change and no copy is written (fix exits 0 there, because for fix a file that already complies is the goal); 2 on an error.
 
-    declick sees only narrow clicks (no sample's ratio to a local RMS that includes it can reach sqrt(window), 8 at window 64) and fires on lone low-level samples in digital silence, so on a clean file with sparse dither it can write a copy. declip rebuilds the samples at or above its threshold, 0.95 by default, for a file clipped at full scale.
+    declick sees only narrow clicks (no sample's ratio to a local RMS that includes it can exceed sqrt(window), 8 at window 64) and fires on lone low-level samples in digital silence, so on a clean file with sparse dither it can write a copy. declip rebuilds the samples at or above its threshold, 0.95 by default, for a file clipped at full scale.
     """
     if list_presets:
         try:
             found = repair_presets()
-        except ValueError as e:
+        except (ValueError, OSError) as e:  # a preset that does not validate, or a file that cannot be read
             console.print(f"[red]cannot read the presets:[/] {escape(str(e))}")
             raise typer.Exit(2) from None
         table = Table(box=box.SIMPLE_HEAD, title=f"{len(found)} repair presets", title_justify="left")
@@ -546,6 +546,9 @@ def repair(
     except ValueError as e:
         console.print(f"[red]bad chain:[/] {escape(str(e))}")
         raise typer.Exit(2) from None
+    except OSError as e:  # a user preset that cannot be read
+        console.print(f"[red]cannot read the presets:[/] {escape(str(e))}")
+        raise typer.Exit(2) from None
     try:
         result = repair_file(path, c, out, residual, receipt_path=receipt)
     except Exception as e:  # unreadable file, a refused destination, a decoded file, libsndfile errors
@@ -564,7 +567,8 @@ def repair(
     )
     for step, report in zip(c.steps, result.reports, strict=True):
         console.print(f"  {escape(step.text())}: {escape(_repair_summary(report))}")
-    if after.clipped_runs > before.clipped_runs:
+    # A float copy holds peaks past full scale; only an integer one clips them again.
+    if after.clipped_runs > before.clipped_runs and not probe(result.dst).is_float:
         console.print(
             "[yellow]note: rebuilt peaks pass full scale, and an integer copy clips them again; "
             "lower the level before repairing to keep them[/]"

@@ -22,7 +22,7 @@ class DeclickParams(BaseModel):
         allow_inf_nan=False,
         description=(
             "Detection threshold in multiples of the local RMS, from 1 to below sqrt(window). The local RMS includes "
-            "the sample tested, so no ratio reaches sqrt(window) (8 at window 64): the detector sees only narrow "
+            "the sample tested, so no ratio exceeds sqrt(window) (8 at window 64): the detector sees only narrow "
             "clicks, and a lone low-level sample in digital silence sits exactly on the bound, so it fires there."
         ),
     )
@@ -40,7 +40,7 @@ class DeclickParams(BaseModel):
         if self.threshold >= bound:
             raise ValueError(
                 f"threshold {self.threshold:g} must be below sqrt(window) = {bound:g}: the local RMS includes the "
-                "sample tested, so no ratio reaches sqrt(window) and the detector would never fire"
+                "sample tested, so no ratio exceeds sqrt(window) and the detector would never fire"
             )
         return self
 

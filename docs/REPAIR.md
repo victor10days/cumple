@@ -15,7 +15,7 @@ Seeds: impulse 11, burst 12 (recorded per file in the manifest). Detector of rec
   The budget is a property of the machine that generated this report, not of ffmpeg.
 - SQAM tracks are 20 s excerpts starting at 2 s (whole when shorter), so ffmpeg can finish them; LibriVox excerpts are 30 s.
 - The cumple column is the shipped f64 build: each damaged file through `repair_file` with a per-file chain (`declip(threshold=<the manifest value>)` for clip files, `declick(threshold=5)` for click files), which streams the file in blocks of 262,144 frames and stores 32-bit float. Its wall time is the whole call, including the two loudness measurements the receipt records. A receipt's `iterations` and `frames` are summed over calls and channels.
-- **False detections** (De-click tables and summaries) are, for cumple, the gaps the f64 build handed to its filler that touch no injected click, counted whether or not the gap was filled, so a lone one-LSB sample in digital silence counts. The cathar CLI has no gap output, so for cathar the f32 build stands in: rule 1 makes its gap list equal cathar's, compared through `tests/repair_helpers.cathar_gaps`, a float32 model of cathar's detector. ffmpeg has no gap output either, so its figure is the residual detections: runs the detector of record still finds in ffmpeg's output that touch no injected click and that the clean reference does not trigger (a detection that ffmpeg filled cannot be seen). The three are not the same count; the cumple and cathar figures are the ones to compare. Clicks missed is the residual count for every tool: an injected click the detector still sees in the output.
+- **False detections** (De-click tables and summaries) are, for cumple, the gaps the f64 build handed to its filler that touch no injected click, counted whether or not the gap was filled, so a lone one-LSB sample in digital silence counts. The cathar CLI has no gap output, so for cathar the f32 build stands in: rule 1 makes its gap list equal cathar's, compared through `tests/repair_helpers.cathar_gaps`, a float32 model of cathar's detector. ffmpeg has no gap output either, so its figure is the residual detections: runs the detector of record still finds in ffmpeg's output that touch no injected click and that the clean reference does not trigger (a detection that ffmpeg filled cannot be seen). The three are not the same count; the cumple and cathar figures are the ones to compare. Clicks missed is the residual count for every tool: an injected click the detector still sees in the output. That detector is the f64 build's own formula (`cumple.repair.metrics.local_rms_ratio`, in float64), so a click cumple's detector missed is invisible to it too: cumple's Clicks missed (0 over both De-click tables) holds by construction, not as an independent check. On the burst table the detector sees only 0 to 8 % of the clicks in each width band (see "Burst clicks the detector of record can see"), so no tool's Clicks missed there says much.
 - The tables and the first summary list each tool's mean over the files it ran on, with its coverage; the paired summary compares the tools over only the files all three ran, per damage type.
 
 ## Tolerances of the scoring rule
@@ -34,7 +34,7 @@ Seeds: impulse 11, burst 12 (recorded per file in the manifest). Detector of rec
 
 ## De-clip
 
-Each cell reads ΔSDR all / ΔSDR damaged / peak error (dB). ΔSDR is against the clean reference; the detector of record runs at threshold 5. 
+Each cell reads ΔSDR all / ΔSDR damaged / peak error (dB). ΔSDR is against the clean reference; the detector of record runs at threshold 5.
 
 | Reference | Input SDR (dB) | ffmpeg adeclip | cathar declip | cumple (f64, shipped) | RX 8 |
 |---|---|---|---|---|---|
@@ -358,15 +358,15 @@ Each tool's mean over the files it ran on; infinite values are left out of a mea
 | De-clip | ffmpeg | 44 of 98 | +4.47 | +4.87 | -4.0 | n/a | n/a | 4.97 |
 | De-clip | cathar | 98 of 98 | +8.48 | +8.48 | -1.9 | n/a | n/a | 6.06 |
 | De-clip | cumple | 98 of 98 | +8.32 | +8.32 | -1.9 | n/a | n/a | 4.11 |
-| De-clip | RX 8 | 0 of 98 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) | | | | | |
+| De-clip | RX 8 | 0 of 98 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) | not run | not run | not run | not run | not run |
 | Impulse De-click | ffmpeg | 14 of 14 | +16.12 | n/a | n/a | 19 of 578 | 9 | 0.38 |
 | Impulse De-click | cathar | 14 of 14 | +35.99 | n/a | n/a | 52 of 578 | 999 | 0.20 |
 | Impulse De-click | cumple | 14 of 14 | +36.95 | n/a | n/a | 0 of 578 | 3 | 0.15 |
-| Impulse De-click | RX 8 | 0 of 14 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) | | | | | |
+| Impulse De-click | RX 8 | 0 of 14 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) | not run | not run | not run | not run | not run |
 | Burst De-click | ffmpeg | 14 of 14 | +0.05 | n/a | n/a | 0 of 578 | 14 | 0.37 |
 | Burst De-click | cathar | 14 of 14 | -0.00 | n/a | n/a | 2 of 578 | 700 | 0.22 |
 | Burst De-click | cumple | 14 of 14 | +0.00 | n/a | n/a | 0 of 578 | 3 | 0.07 |
-| Burst De-click | RX 8 | 0 of 14 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) | | | | | |
+| Burst De-click | RX 8 | 0 of 14 | not run (RX 8 outputs not present; see docs/repair/rx8-recipe.md) | not run | not run | not run | not run | not run |
 
 ## Summary, paired
 

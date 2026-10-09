@@ -2,8 +2,8 @@
 
 The file goes through the chain in blocks by the chunk protocol of crates/cumple-dsp/src/module.rs
 (`Chunker::run`): each call's centre is one block, with up to `context_frames` of the module's own
-earlier output on the left and `context_frames` raw samples on the right; a tail shorter than the
-context joins the call before it, and `Edge` says where the file starts and ends. In a chain every module
+earlier output on the left and `context_frames` raw samples on the right; a tail shorter than the longest
+context in the chain joins the call before it, and `Edge` says where the file starts and ends. In a chain every module
 keeps its own left context, and its right context is the raw lookahead, which the modules before it have
 not processed yet. Memory holds a few blocks and each module's context, whatever the file's length.
 """
@@ -144,6 +144,13 @@ def repair_file(
     for (option_a, a), (option_b, b) in itertools.combinations(targets.items(), 2):
         if _one_file(a, b):
             raise ValueError(f"{option_a} and {option_b} name the same file, {a} and {b}; give each a different path")
+    # Refused here, before any work: the receipt is written last, so a missing folder there would leave a copy in
+    # place with no receipt beside it.
+    for option, target in targets.items():
+        if not target.parent.is_dir():
+            raise ValueError(
+                f"the folder for {option}, {target.parent}, does not exist; create it or give another path"
+            )
     info = probe(src)
     if info.via_ffmpeg or not info.is_pcm:
         raise ValueError(

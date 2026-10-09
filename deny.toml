@@ -1,4 +1,4 @@
-# cargo-deny: `cargo deny check licenses` runs before each commit and on the Ubuntu CI leg.
+# cargo-deny: `cargo deny check licenses` is a step of CONTRIBUTING.md's checklist and of the Linux CI job.
 # A dependency whose licence is not on this list fails the check, so a transitive licence change is caught.
 
 [licenses]

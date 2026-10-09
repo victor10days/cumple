@@ -9,7 +9,7 @@ destination, or report a number that disagrees with a published document.
 git clone https://github.com/victor10days/cumple
 cd cumple
 uv sync            # Python 3.12, runtime and dev dependencies
-uv run pytest      # 323 tests; the 29 EBU cases skip until you fetch the test set into ~/.cache/cumple
+uv run pytest      # 327 tests; the 29 EBU cases skip until you fetch the test set into ~/.cache/cumple
 uv run ruff check src tests scripts && uv run ruff format --check src tests scripts
 uv sync --extra app --group packaging     # the desktop app (pywebview) and PyInstaller
 uv run cumple app                         # the window, from the source tree
@@ -54,7 +54,9 @@ after a Rust edit without that line exercises the old core. A plain `uv sync`
 afterwards removes the core again, since it installs exactly what it is told.
 pyo3's build script, which clippy runs, needs Python 3.12 or newer: it uses
 `VIRTUAL_ENV` when set, otherwise the first `python` or `python3` on `PATH`, so
-prefix clippy with `VIRTUAL_ENV=.venv` when that one is older.
+prefix clippy with `VIRTUAL_ENV="$PWD/.venv"`, run from the repository root,
+when that one is older. The path must be absolute: the build script runs in the
+crate's own folder, where `.venv` names nothing.
 
 ## Add a destination
 

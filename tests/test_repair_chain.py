@@ -55,7 +55,7 @@ def test_parse_names_a_parameter_the_module_does_not_have():
 
 
 def test_the_declick_threshold_is_held_below_sqrt_window():
-    """The local RMS includes the sample tested, so no ratio reaches sqrt(window): 8 at window 64."""
+    """The local RMS includes the sample tested, so no ratio exceeds sqrt(window): 8 at window 64."""
     with pytest.raises(ValueError, match=r"sqrt\(window\)"):
         chain.parse("declick(threshold=9)")
     with pytest.raises(ValueError, match=r"sqrt\(window\) = 8"):
