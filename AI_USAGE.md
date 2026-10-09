@@ -71,7 +71,7 @@ says the same.
   detector, Leq(m) from the TASA response table, the rules engine with
   either/or rules and the speech switch, the audio diff, the watch folder,
   the gain-only fix, the QC sheet, the macOS droplet, 39 profiles.
-- **Tests and benchmarks.** 284 tests, including synthetic signals with
+- **Tests and benchmarks.** 311 tests, including synthetic signals with
   analytic answers and the official EBU cases; cross-checks against
   libebur128, pyloudnorm, ffmpeg's `ebur128` filter, loudcheck and an
   independently designed interpolator;
@@ -282,3 +282,40 @@ music-and-effects material where the heuristic reads up to 92 %, and it is
 worse on quiet dialogue under music, 9.2 LU under the reference on Sintel
 against the heuristic's 6.7. The README carries both numbers from the same
 run.
+
+## Audio repair, build 1 (8 and 9 October)
+
+On 8 October Victor decided that cumple becomes a full open-source audio DSP
+tool benchmarked against iZotope RX, reversing the September ruling that
+repair lies outside a QC tool. The decision came out of a research run in
+`docs/graph-runs/2026-10-08-rx-parity-landscape/`: five research branches, a
+skeptic in a fresh context that disproved five "gaps" with a sibling branch's
+own find (cathar, an MIT or Apache-2.0 Rust restoration toolkit, has code for
+each), and a recommendation that costed three architectures. Victor chose a
+Rust core seeded from cathar, with Python bindings behind an extra.
+
+Five more fresh-context skeptics read the build-1 plan before any of it was
+written. The first two found that at cathar's own defaults neither module
+would touch the test damage: the click detector compares a sample with an RMS
+that includes it, so no ratio can exceed sqrt(64) = 8 against a default
+threshold of 10, and a fidelity test would have passed two no-ops. Two
+tolerance designs for comparing cathar's float32 arithmetic with a float64
+port then failed in turn, and Victor chose to port both precisions instead:
+the float32 build matches the cathar command line bit for bit, and the
+float64 build is the one that ships.
+
+Build 1 adds `cumple repair`: De-click with AR interpolation and De-clip by
+A-SPADE, chains in one line or in YAML, presets, a runner that streams the
+file through the core in blocks, and a JSON receipt beside every copy. Claude
+wrote the code and the tests, and a separate model context reviewed each task
+before the next began. A review caught a rebuilt gap dropped after one call,
+so blocks of four and eight samples kept a click the report called repaired.
+A test caught a residual (input minus copy) one 24-bit step off on 123
+samples: libsndfile 1.2.2 truncates toward minus infinity when it writes 24
+bits, storing 0.7 of a step as 0 and -0.3 as -1, so the runner now rounds an
+integer copy to its grid itself, which makes the residual exact and removes
+the half-step bias. The cost of streaming a two-module chain in 8,192-frame
+blocks, against one pass over the whole file, measured -0.12 to +0.06 dB over
+24 damage layouts and is held in a test. `docs/REPAIR.md` scores the modules
+against ffmpeg and cathar on synthetic damage, with RX columns that wait for
+Victor's own RX runs.
