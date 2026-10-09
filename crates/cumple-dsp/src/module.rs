@@ -60,6 +60,18 @@ pub struct Report {
     pub counters: Vec<(String, f64)>,
 }
 
+/// Parameters a module refuses, with the reason, which the bindings raise as `ValueError`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ParamError(pub String);
+
+impl std::fmt::Display for ParamError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl std::error::Error for ParamError {}
+
 /// A repair module. One instance processes one channel of one file.
 ///
 /// A module sizes its buffers once, from `context_frames` and the longest input it is given;

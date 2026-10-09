@@ -5,13 +5,15 @@
 
 use std::borrow::Cow;
 
+use dsp::Module;
 use numpy::ndarray::Dimension;
 use numpy::{
-    Complex64, Element, PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray, PyReadonlyArray1,
-    PyReadonlyArray2, PyUntypedArrayMethods,
+    Complex64, Element, PyArray1, PyArray2, PyArrayDyn, PyArrayMethods, PyReadonlyArray,
+    PyReadonlyArray1, PyReadonlyArray2, PyReadonlyArrayDyn, PyUntypedArrayMethods,
 };
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use pyo3::types::PyDict;
 
 /// The array's elements in C order: a view when it already is, a copy otherwise.
 fn c_order<'a, T: Element + Copy, D: Dimension>(a: &'a PyReadonlyArray<'_, T, D>) -> Cow<'a, [T]> {
@@ -114,6 +116,286 @@ impl Stft {
     }
 }
 
+/// The frames and channels of a signal given as (frames,) or (frames, channels).
+fn frames_and_channels(shape: &[usize]) -> PyResult<(usize, usize)> {
+    match *shape {
+        [frames] => Ok((frames, 1)),
+        [frames, channels] if channels > 0 => Ok((frames, channels)),
+        _ => Err(PyValueError::new_err(format!(
+            "audio must be float64 of shape (frames,) or (frames, channels) with at least one channel, \
+             got shape {shape:?}"
+        ))),
+    }
+}
+
+/// One De-click instance per channel, at one precision, with the buffers that move each channel in and out.
+struct Bank<F> {
+    template: dsp::Declick<F>,
+    channels: Vec<dsp::Declick<F>>,
+    /// Audio has gone through the instances, so their number is fixed.
+    started: bool,
+    input: Vec<f64>,
+    output: Vec<f64>,
+}
+
+impl<F: dsp::Float + Send> Bank<F> {
+    fn new(template: dsp::Declick<F>) -> Self {
+        Bank {
+            template,
+            channels: Vec::new(),
+            started: false,
+            input: Vec::new(),
+            output: Vec::new(),
+        }
+    }
+
+    /// File samples done so far and whether the file has finished; every channel moves in step.
+    fn state(&self) -> (usize, bool) {
+        self.channels
+            .first()
+            .map_or((0, false), |m| (m.done(), m.finished()))
+    }
+
+    /// Instances for `channels` channels: made on first use, fixed after that.
+    fn ensure(&mut self, channels: usize) -> PyResult<()> {
+        if !self.started {
+            self.channels = vec![self.template.clone(); channels];
+        } else if self.channels.len() != channels {
+            return Err(PyValueError::new_err(format!(
+                "this Declick processes {} channels, got a block with {channels}",
+                self.channels.len()
+            )));
+        }
+        Ok(())
+    }
+
+    /// Run each channel of `x` (frames by channels, C order) through its own instance into `out`.
+    fn run(&mut self, x: &[f64], out: &mut [f64], edge: dsp::Edge, whole: bool) {
+        self.started = true;
+        let n = self.channels.len();
+        let frames = x.len() / n;
+        for (c, m) in self.channels.iter_mut().enumerate() {
+            self.input.clear();
+            self.input.extend(x.iter().skip(c).step_by(n));
+            self.output.resize(frames, 0.0);
+            if whole {
+                dsp::process_whole(m, &self.input, &mut self.output);
+            } else {
+                m.process(&self.input, &mut self.output, edge);
+            }
+            for (o, v) in out.iter_mut().skip(c).step_by(n).zip(&self.output) {
+                *o = *v;
+            }
+        }
+    }
+
+    fn reports(&self) -> Vec<dsp::Report> {
+        self.channels.iter().map(|m| m.report()).collect()
+    }
+}
+
+enum Banks {
+    F32(Bank<f32>),
+    F64(Bank<f64>),
+}
+
+/// Runs `$body` with `$bank` bound to whichever precision's bank `$banks` holds.
+macro_rules! with_bank {
+    ($banks:expr, $bank:ident => $body:expr) => {
+        match $banks {
+            Banks::F32($bank) => $body,
+            Banks::F64($bank) => $body,
+        }
+    };
+}
+
+/// De-click, ported from cathar: impulse clicks found against a sliding local RMS and rebuilt by AR
+/// interpolation.
+///
+/// `threshold` is in local-RMS multiples and must be below sqrt(window): the local RMS includes the sample
+/// tested, so no ratio exceeds sqrt(window), and a lone non-zero sample in digital silence sits exactly on
+/// it, so any threshold below fires on it. `window` is the detector window in samples (cathar's CLI fixes
+/// 64), `method` "ar" or "cubic", `iterations` the AR refinement passes (cathar passes 3). `precision="f32"`
+/// selects the fidelity build, which does cathar's float32 arithmetic in cathar's order; "f64" ships.
+///
+/// Audio is float64 of shape (frames,) or (frames, channels); each channel runs through its own instance.
+/// `process(block, edge=(first, last, padding))` takes one call of the chunk protocol (crates/cumple-dsp,
+/// module.rs): up to `context_frames` of this object's own earlier output, the block, then `context_frames`
+/// raw samples, or the rest of the file when `last`. `process_whole(x)` is one call over a whole signal on a
+/// fresh object. `report()` lists each span handed to a filler (its start and its length in file samples,
+/// shoulders included, and its channel) and the counts of linear and context fallbacks.
+#[pyclass(module = "cumple_dsp", name = "Declick")]
+struct Declick {
+    banks: Banks,
+}
+
+#[pymethods]
+impl Declick {
+    #[new]
+    #[pyo3(signature = (samplerate, threshold = 5.0, window = 64, method = "ar", iterations = 3, precision = "f64"))]
+    fn new(
+        samplerate: i64,
+        threshold: f64,
+        window: usize,
+        method: &str,
+        iterations: u32,
+        precision: &str,
+    ) -> PyResult<Self> {
+        if samplerate <= 0 {
+            return Err(PyValueError::new_err(format!(
+                "samplerate must be positive, got {samplerate}"
+            )));
+        }
+        let method = match method {
+            "ar" => dsp::DeclickMethod::Ar,
+            "cubic" => dsp::DeclickMethod::Cubic,
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "method must be \"ar\" or \"cubic\", got {other:?}"
+                )));
+            }
+        };
+        let refuse = |e: dsp::ParamError| PyValueError::new_err(e.0);
+        let banks = match precision {
+            "f32" => Banks::F32(Bank::new(
+                dsp::Declick::new(threshold, window, method, iterations).map_err(refuse)?,
+            )),
+            "f64" => Banks::F64(Bank::new(
+                dsp::Declick::new(threshold, window, method, iterations).map_err(refuse)?,
+            )),
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "precision must be \"f32\" or \"f64\", got {other:?}"
+                )));
+            }
+        };
+        Ok(Declick { banks })
+    }
+
+    #[getter]
+    fn context_frames(&self) -> usize {
+        with_bank!(&self.banks, b => b.template.context_frames())
+    }
+
+    #[getter]
+    fn latency_frames(&self) -> usize {
+        with_bank!(&self.banks, b => b.template.latency_frames())
+    }
+
+    /// One call of the chunk protocol; returns every frame of `block` processed, the caller keeping the centre.
+    #[pyo3(signature = (block, *, edge))]
+    fn process<'py>(
+        &mut self,
+        py: Python<'py>,
+        block: PyReadonlyArrayDyn<'py, f64>,
+        edge: (bool, bool, usize),
+    ) -> PyResult<Bound<'py, PyArrayDyn<f64>>> {
+        let (frames, channels) = frames_and_channels(block.shape())?;
+        let (first, last, padding) = edge;
+        let context = self.context_frames();
+        with_bank!(&mut self.banks, bank => {
+            let (done, finished) = bank.state();
+            if finished {
+                return Err(PyValueError::new_err(
+                    "this Declick has had its last block; one object processes one file",
+                ));
+            }
+            if first != (done <= context) {
+                return Err(PyValueError::new_err(format!(
+                    "edge first must be {} after {done} samples: the left context reaches the start of the file \
+                     only within the first context_frames ({context})",
+                    done <= context
+                )));
+            }
+            let left = context.min(done);
+            let right = if last { 0 } else { context };
+            if frames < left + right + padding {
+                return Err(PyValueError::new_err(format!(
+                    "after {done} samples a block needs {left} frames of left context, {right} of right context \
+                     and {padding} of padding, at least {} frames; got {frames}",
+                    left + right + padding
+                )));
+            }
+            bank.ensure(channels)?;
+            let x = c_order(&block);
+            let out = PyArrayDyn::<f64>::zeros(py, block.shape().to_vec(), false);
+            {
+                let mut rw = out.readwrite();
+                let y = rw.as_slice_mut().expect("a new array is contiguous");
+                let edge = dsp::Edge { first, last, padding };
+                py.detach(|| bank.run(&x, y, edge, false));
+            }
+            Ok(out)
+        })
+    }
+
+    /// One call over the whole of `x`, both ends the file's; the object must not have processed audio yet.
+    fn process_whole<'py>(
+        &mut self,
+        py: Python<'py>,
+        x: PyReadonlyArrayDyn<'py, f64>,
+    ) -> PyResult<Bound<'py, PyArrayDyn<f64>>> {
+        let (_, channels) = frames_and_channels(x.shape())?;
+        with_bank!(&mut self.banks, bank => {
+            if bank.started {
+                return Err(PyValueError::new_err(
+                    "process_whole runs over a whole file on a fresh Declick; this one has processed audio",
+                ));
+            }
+            bank.ensure(channels)?;
+            let input = c_order(&x);
+            let out = PyArrayDyn::<f64>::zeros(py, x.shape().to_vec(), false);
+            {
+                let mut rw = out.readwrite();
+                let y = rw.as_slice_mut().expect("a new array is contiguous");
+                py.detach(|| bank.run(&input, y, dsp::Edge::default(), true));
+            }
+            Ok(out)
+        })
+    }
+
+    /// Nothing: De-click has no latency, so it holds no samples back. An empty (0, channels) array.
+    fn flush<'py>(&mut self, py: Python<'py>) -> Bound<'py, PyArray2<f64>> {
+        let channels = with_bank!(&mut self.banks, bank => {
+            for m in &mut bank.channels {
+                m.flush(&mut []);
+            }
+            bank.channels.len()
+        });
+        PyArray2::<f64>::zeros(py, [0, channels], false)
+    }
+
+    /// What every channel has done: `clicks`, and for each span `positions`, `widths` and `channels`, ordered
+    /// by channel, then position; `linear_fallbacks` and `context_fallbacks` summed over the channels.
+    fn report<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
+        let reports = with_bank!(&self.banks, bank => bank.reports());
+        let (mut positions, mut widths, mut channels) = (Vec::new(), Vec::new(), Vec::new());
+        let (mut linear, mut context) = (0u64, 0u64);
+        for (c, r) in reports.iter().enumerate() {
+            for e in &r.events {
+                positions.push(e.start);
+                widths.push(e.len);
+                channels.push(c);
+            }
+            for (name, value) in &r.counters {
+                match name.as_str() {
+                    "linear_fallbacks" => linear += *value as u64,
+                    "context_fallbacks" => context += *value as u64,
+                    _ => {}
+                }
+            }
+        }
+        let d = PyDict::new(py);
+        d.set_item("clicks", positions.len())?;
+        d.set_item("positions", positions)?;
+        d.set_item("widths", widths)?;
+        d.set_item("channels", channels)?;
+        d.set_item("linear_fallbacks", linear)?;
+        d.set_item("context_fallbacks", context)?;
+        Ok(d)
+    }
+}
+
 /// The version of the core crate (cumple-dsp) this module was built with.
 #[pyfunction]
 fn core_version() -> &'static str {
@@ -125,5 +407,6 @@ fn cumple_dsp(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_function(wrap_pyfunction!(core_version, m)?)?;
     m.add_class::<Stft>()?;
+    m.add_class::<Declick>()?;
     Ok(())
 }

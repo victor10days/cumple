@@ -10,8 +10,15 @@ and used here under MIT. Source commit: f2c2842f89084589d069e5a8a0b61311aa70d928
 
 Ported functions, each in a file whose first line names its source file and commit:
 
-- none yet. `Window::HannSymmetric` in `src/stft.rs` computes the same formula as cathar's `hann_window`
-  (`crates/cathar/src/util.rs`) so the ports can be tested against it; it is not copied code.
+- `src/declick.rs`, from `crates/cathar/src/restore.rs`: `declick_with_method` (lines 116 to 169, the
+  detector loop and the fill branches, split into `Declick::detect` and `Declick::fill`), `local_rms` (171 to
+  194, with its running sum in `RunningRms`), `cubic_interpolate` (196 to 213) and the `DeclickMethod` enum.
+- `src/inpaint.rs`, from `crates/cathar/src/inpaint.rs`: `inpaint_gap`, `estimate_ar_known`, `levinson`,
+  `coef_autocorr`, `solve_gap` and `solve_spd_banded`, with the constants `AR_ORDER` and `MAX_SOLVE`.
+  `inpaint_auto` is not ported.
+
+`Window::HannSymmetric` in `src/stft.rs` computes the same formula as cathar's `hann_window`
+(`crates/cathar/src/util.rs`) so the ports can be tested against it; it is not copied code.
 
 ```
 MIT License
