@@ -1,4 +1,6 @@
-# 03 Skeptic (opus, fresh context; read only the files above; verbatim)
+# 03 Skeptic: the RX parity landscape
+
+Date: 2026-10-08. Run: `docs/graph-runs/2026-10-08-rx-parity-landscape/`. Fresh opus context; read only the files above (frame, 02a to 02e, 02f) and the three earlier receipts. Kept verbatim.
 
 Inputs read: the whole plan file (frame, 02a to 02e, 02f), the three earlier receipts, devils-advocate SKILL.md and its three references. Fetched: `gh api` repo, commit, contents and tree calls; Zenodo, Hugging Face and PyPI APIs; juce.com/get-juce; Gribonval's SPADE post; locally cumple's `pyproject.toml`, its venv (scipy 1.18.1), the RX 8 manual folder. Three checks not finished: docs.izotope.com blocked (RX 12 module coverage unverified); three GitHub searches for a Python VST3 host came back empty; izotope.com product page timed out.
 

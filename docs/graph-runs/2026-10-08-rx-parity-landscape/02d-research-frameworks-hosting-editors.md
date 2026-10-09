@@ -1,4 +1,6 @@
-# 02d Research: frameworks, hosting, editors, licensing (branch report, verbatim)
+# 02d Research: frameworks, hosting, editors, licensing
+
+Date: 2026-10-08. Run: `docs/graph-runs/2026-10-08-rx-parity-landscape/`. Branch report, kept verbatim as a receipt; its "GPL optional extra is legal" row is overruled in `04-recommendation.md` (section 7), which keeps the frame's rule.
 
 Inputs read: the brief; cumple `measure.py`, `bs1770.py` (head), `reader.py`, `fix.py`, `pyproject.toml`, `CONTRIBUTING.md`; `gh api repos/<r>`, `/commits?per_page=1`, LICENSE or COPYING files; source files Audacity `ClickRemovalEffect.h`, `EffectInterface.h`, `au3/src/Experimental.cmake`, FFmpeg `filters.h`, `af_adeclick.c`, SoX `sox.h`, Essentia `framecutter.h`; pages: pedalboard reference, Audacity manual (Macros, Scripting), Essentia streaming, torchaudio transforms, GNU GPL FAQ, GNU licence list, OSI OSD, CC FAQ, MPL FAQ, Apache-2.0 text, SPDX list, PyPI JSON. All read 2026-10-08.
 

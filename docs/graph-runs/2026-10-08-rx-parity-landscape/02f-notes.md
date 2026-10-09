@@ -1,4 +1,6 @@
-# 02f Note: a repository Victor sent mid-run (main session, read-only check, 2026-10-08)
+# 02f Notes: two references Victor sent mid-run
+
+Date: 2026-10-08. Run: `docs/graph-runs/2026-10-08-rx-parity-landscape/`. Read-only checks by the main session, kept verbatim.
 
 https://github.com/GareBear99/ARC-AudioBench. `gh api`: created 2026-05-06, last push 2026-05-06 (same day), Python, 3 stars, licence field NOASSERTION (the README badge says MIT; the LICENSE file was not read). README: "local-first benchmark suite" that generates sine, silence, impulse and log-sweep test tones, analyses WAVs (peak, RMS, crest factor, DC offset, clipping, zero-crossing frequency estimate, SHA-256), validates JSON results against thresholds, compares runs, renders HTML and Markdown reports and builds "evidence packs"; it is designed around the author's own JUCE projects (FreeEQ8, FreeVox8, Voxel Audio) and a cluster of "awesome" lists. Nothing in its feature list measures anything cumple does not already measure (cumple has BS.1770 loudness, true peak, LRA, dialogue gating and a conformance suite; ARC has sample peak, RMS and DC). Its ideas worth noting: a JSON schema for benchmark output, threshold validation, and release evidence packs, which cumple already has in the form of `docs/graph-runs/*/05-receipt.md`, `docs/CONFORMANCE.md` and the CI conformance diff. Treat as a reference for the harness's report format, not as a dependency.
 

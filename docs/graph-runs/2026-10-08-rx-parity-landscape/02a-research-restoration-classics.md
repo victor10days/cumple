@@ -1,4 +1,6 @@
-# 02a Research: restoration classics (branch report, verbatim)
+# 02a Research: restoration classics
+
+Date: 2026-10-08. Run: `docs/graph-runs/2026-10-08-rx-parity-landscape/`. Branch report, kept verbatim as a receipt; the gap cells it states are corrected in `03-skeptic.md` (Concern 1) and `04-recommendation.md` (section 4).
 
 Inputs read: the brief; the RX 8 manual on disk (21 module pages); the RX 8 factory preset XML; cumple meters; `gh api repos/<o>/<r>`; `gh search repos` for declipping, "audio declipping", "spade declipping", declick, decrackle, "audio restoration", "audio inpainting", dehum, "hum removal", "wow and flutter", gcc-phat, "phase rotation audio", "noise shaping dither", "plosive removal", "mouth click removal", "lip smack", "matching equalizer"; web pages ffmpeg-filters.html, ipol.im/pub/art/2015/64 and 2018/23, arxiv 2007.07663, rajmic.github.io/declipping2020, perso.ens-lyon.fr/remi.gribonval/?p=647, essentia.upf.edu/algorithms_reference.html, src.infinitewave.ca. All read 2026-10-08. GitHub search hit its rate limit once; affected queries re-run.
 

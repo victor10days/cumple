@@ -1,4 +1,6 @@
-# 02b Research: noise and reverb (branch report, verbatim)
+# 02b Research: noise and reverb
+
+Date: 2026-10-08. Run: `docs/graph-runs/2026-10-08-rx-parity-landscape/`. Branch report, kept verbatim as a receipt; its De-rustle and De-wind gap cells and its DeepFilterNet3 weights claim are corrected in `03-skeptic.md` (Concerns 1 and 2) and `04-recommendation.md` (sections 4 and 7).
 
 Inputs read: the brief; RX 8 manual pages on disk for all 13 modules, grepped for the method each uses; `gh api repos/<owner>/<repo>` for about 55 repos (L = LICENSE file read through the contents API; A = API field only); Hugging Face model API (`?blobs=true`) for weight sizes and licence tags; Zenodo API for VoiceFixer weights; the arXiv papers named below; cumple's `pyproject.toml` (`vad = ["onnxruntime>=1.17"]`); in the venv scipy 1.18.1 has `ShortTimeFFT` and onnxruntime 1.30.0 is installed. All read 2026-10-08.
 

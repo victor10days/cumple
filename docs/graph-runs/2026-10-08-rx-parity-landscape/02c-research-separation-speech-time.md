@@ -1,4 +1,6 @@
-# 02c Research: separation, speech and time (branch report, verbatim)
+# 02c Research: separation, speech and time
+
+Date: 2026-10-08. Run: `docs/graph-runs/2026-10-08-rx-parity-landscape/`. Branch report, kept verbatim as a receipt.
 
 Inputs read: the brief; RX 8 manual on disk (12 module pages; Streaming Preview, Scene Rebalance and Stems View are not in it, read from https://docs.izotope.com/rx12/en/ pages streaming-preview, scene-rebalance, dialogue-isolate); about 75 GitHub repos via `gh api`, plus Zenodo, Hugging Face and PyPI metadata, arXiv abstracts 2309.02612, 2310.01809, 2401.13276, 2407.07275 and arXiv 2006.00848; local checks: soundfile 0.14.0 with libsndfile 1.2.2 in cumple's venv, ffmpeg 9.0.1 (`-encoders`, `-filters`), `rubberband -h` (4.0.0), the machine (M1 Pro, 16 GB, no torch). All read 2026-10-08. Licence sources: A = API field, L = licence text, Z = Zenodo record, HF = Hugging Face card.
 

@@ -1,4 +1,6 @@
-# 02e Research: plugin and editor stack (branch report, verbatim)
+# 02e Research: plugin and editor stack
+
+Date: 2026-10-08. Run: `docs/graph-runs/2026-10-08-rx-parity-landscape/`. Branch report, kept verbatim as a receipt; its architecture recommendation (a C++ core) is costed against two alternatives in `04-recommendation.md` (section 3), which picks the Rust core seeded from cathar.
 
 Inputs read: plan file "01 Frame" only; `gh api repos/...` for about 70 repos, all read 2026-10-08; LICENSE text read directly for JUCE, iPlug2, choc, VSTGUI, VST3 SDK, Faust, cabbage3, KissFFT, PFFFT, pocketfft, KFR, DaisySP, STK, chowdsp_utils, vst3-sys, pybind11, Audacity, Signalsmith; README licence sections for nih-plug, DPF `LICENSING.md`, ARA SDK, clap-wrapper, Elementary, KFR, chowdsp; code: CLAP `ext/` plus `render.h` and `draft/undo.h`, clap-wrapper `src/detail/ara/ara.h` and `vst3/aravst3.h`, JUCE `juce_FFT.cpp`, `CHANGE_LIST.md`, plugin_client listing; RX 8 manual `rx-connect/index.html` on disk; cumple `pyproject.toml`, `.github/workflows/release.yml`, `src/cumple/app/ui/`; web: juce.com/get-juce and /legal/juce-9-licence, SpectraLayers 11 ARA help, Acon Acoustica 7.4 press release, searches on RX ARA, embedding Python in a plugin, notarisation, Intel IPP.
 
