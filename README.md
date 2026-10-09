@@ -314,8 +314,9 @@ the chain took out. The file streams through in blocks, so memory stays flat
 on long files. Past the end of each block, every module reads the source as
 it was, before the modules earlier in the chain have repaired it; on 24 test
 layouts that changed the gain in signal-to-distortion ratio by -0.12 to
-+0.09 dB against one pass over the whole file, in either order. Exit codes: 0 wrote the copy, 2 an error, and 1 when no module
-found anything, in which case nothing is written. That last one differs from
++0.09 dB against one pass over the whole file, in either order. Exit codes:
+0 wrote the copy, 2 an error, and 1 when no module found anything, in which
+case nothing is written. That last one differs from
 `fix`, which exits 0 on a file that already complies: a batch script wants to
 know that a repair found nothing.
 
